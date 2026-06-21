@@ -1,9 +1,9 @@
 import { en } from "./locales/en";
-import { si } from "./locales/si";
-import { ta } from "./locales/ta";
 import { DEFAULT_LOCALE, type Locale } from "./types";
 
-const dictionaries = { en, si, ta } as const;
+// One dictionary per locale. English-only at launch; add a new entry (and a `locales/*.ts`
+// file + a Locale in ./types) to introduce another language later.
+const dictionaries = { en } as const;
 
 type Params = Record<string, string | number>;
 
@@ -34,7 +34,7 @@ export const t = getT();
 
 // --- locale-aware formatters (use these, never inline toLocaleString) ---
 
-const localeTag: Record<Locale, string> = { en: "en-LK", si: "si-LK", ta: "ta-LK" };
+const localeTag: Record<Locale, string> = { en: "en-LK" };
 
 /** Format integer minor units (e.g. cents) as currency. Money is always integer minor units. */
 export function formatMoney(minorUnits: number, locale: Locale = DEFAULT_LOCALE, currency = "LKR"): string {

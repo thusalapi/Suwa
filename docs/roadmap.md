@@ -14,7 +14,7 @@ provider with no code rewrite (see "Migration path" below).
 | Concern | Choice | Notes |
 |---------|--------|-------|
 | UI | **Tailwind CSS, hand-built components** | **No shadcn/ui.** Components organized by **atomic design** (atoms → molecules → organisms → templates → pages). |
-| Branding & i18n | **Centralized** | Product brand **Suwa**; all copy via `t()` in `en`/`si`/`ta`. No hard-coded names/strings. See `branding.md`. |
+| Branding & i18n | **Centralized** | Product brand **Suwa**; all copy via `t()`. **English-only at launch**, but built on the multi-locale file pattern so `si`/`ta` drop in later. No hard-coded names/strings. See `branding.md`. |
 | Auth | **Self-hosted credentials auth** | **No Clerk.** Email/username + password, hashed (argon2/bcrypt), HTTP-only session cookies, server-side role checks. |
 | DB migrations | **Liquibase** | Versioned changelogs, runs against local Postgres. **Not** Drizzle/Prisma migrate. |
 | Patient identity | **Phone number is the lookup key** | Unique per clinic. **NIC is optional.** UUID stays as the internal PK. |
@@ -29,8 +29,9 @@ provider with no code rewrite (see "Migration path" below).
   `templates/`. No component library — primitives (Button, Input, Field, Badge…) are
   hand-built with Tailwind.
 - **Centralized branding** (`lib/branding/brand.ts` — product brand **Suwa**, logo,
-  palette) and **centralized translations** (`lib/i18n`, locales `en`/`si`/`ta`) from the
-  first screen. No hard-coded brand names or user-facing strings. See `branding.md`.
+  palette) and **centralized translations** (`lib/i18n`, **English-only at launch** on the
+  multi-locale file pattern) from the first screen. No hard-coded brand names or
+  user-facing strings. See `branding.md`.
 - **Local PostgreSQL** install + connection; **Liquibase** changelog with initial schema
 - **Self-hosted auth flow** (see below) with roles (owner / staff / doctor); session
   middleware gates the dashboard
@@ -121,7 +122,8 @@ inventory, SMS, insurance claims, multi-branch, variable reference ranges.
 7. **Phone number as the patient lookup key**; NIC optional
 8. **No cloud lock-in** — runs on the clinic PC, portable to any provider later
 9. **Centralized branding & translations** — no hard-coded brand name or user-facing
-   string; everything via `lib/branding` + `lib/i18n` (`en`/`si`/`ta`)
+   string; everything via `lib/branding` + `lib/i18n` (English-only at launch, multi-locale
+   file pattern kept so more languages drop in later)
 
 ## Validation cadence
 

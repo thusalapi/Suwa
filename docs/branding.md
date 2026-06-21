@@ -27,8 +27,8 @@ name). **Colours/theme live in the design-token layer** (`src/lib/design`, see
 export const brand = {
   name: "Suwa",
   tagline: "Health, managed.",
-  // script variants (optional, for localized headers)
-  nameLocalized: { en: "Suwa", si: "සුව", ta: "ஆரோக்கியம்" },
+  // script variants (optional, for localized headers) — English-only at launch
+  nameLocalized: { en: "Suwa" },
   logo: { light: "/brand/suwa-logo.svg", dark: "/brand/suwa-logo-dark.svg" },
 } as const;
 ```
@@ -43,26 +43,27 @@ Rules:
 
 ## Centralized translations (i18n)
 
-Locales at launch: **English (`en`)**, **Sinhala (`si`)**, **Tamil (`ta`)** — the three
-languages a Sri Lankan clinic serves. English is the fallback.
+Locale at launch: **English (`en`)** only. We keep the **multi-locale file pattern** in
+place — one dictionary file per language, a `Locale` union, `t()` with a fallback chain —
+so adding Sinhala (`si`) / Tamil (`ta`) later is a drop-in (new `locales/*.ts` file +
+extend the union), **not** a refactor. Do not hard-code strings just because there is one
+language today.
 
 Layout: `src/lib/i18n/`
 ```
 src/lib/i18n/
 ├── index.ts            # t(), locale resolution, fallback chain
 ├── locales/
-│   ├── en.ts           # source-of-truth keys
-│   ├── si.ts
-│   └── ta.ts
-└── types.ts            # Locale union, TranslationKey type
+│   └── en.ts           # source-of-truth keys (only locale at launch)
+└── types.ts            # Locale union, DEFAULT_LOCALE
 ```
 
 Rules:
 - **No hard-coded user-facing strings in components.** Every label, button, toast,
   validation message, table header, empty state, and PDF caption is a key resolved via
   `t("patients.search.placeholder")`.
-- `en.ts` is the canonical key set; `si.ts`/`ta.ts` mirror its shape. A missing key
-  falls back to `en` (and should fail typecheck / be linted, not crash).
+- `en.ts` is the canonical key set. Any locale added later lives in its own
+  `locales/*.ts`, mirrors this shape, and falls back to `en` for missing keys.
 - Keys are namespaced by feature (`patients.*`, `billing.*`, `reports.*`, `auth.*`,
   `common.*`).
 - Interpolation uses named params: `t("billing.total", { amount })`.
@@ -77,13 +78,14 @@ Rules:
   code — edit config + dictionaries, regenerate nothing.
 - Future, more optimized code generation can reshape components freely as long as it keeps
   reading from `brand.*` and `t(...)`.
-- Adding a language later = one new `locales/*.ts` file.
+- Adding a language later = one new `locales/*.ts` file + extend the `Locale` union — no
+  component changes, because nothing hard-codes copy.
 
 ## Checklist for any generated UI
 
 - [ ] No literal brand name / hex / logo path — use `brand.*`.
 - [ ] No literal user-facing string — use `t("namespace.key")`.
-- [ ] New strings added to `en.ts` first, then `si.ts` and `ta.ts`.
+- [ ] New strings added to `en.ts` (the only locale at launch).
 - [ ] Money/date/number rendered via locale-aware formatters.
 - [ ] Document (PDF) chrome uses **clinic identity** from the DB, product brand from
       `brand.*`.

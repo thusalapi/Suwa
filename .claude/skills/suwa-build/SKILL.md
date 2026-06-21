@@ -45,7 +45,7 @@ incomplete.
 | Backups | Nightly `pg_dump` → encrypted → **Google Drive** upload (rclone/Drive API), Windows Task Scheduler. |
 | Patient identity | **Phone number is the unique lookup key** (per clinic). **NIC is optional.** UUID stays the internal PK. |
 | Branding | Centralized in `src/lib/branding/brand.ts`. Never hard-code the name "Suwa", a hex colour, or a logo path. |
-| Translations | Centralized in `src/lib/i18n/`. Locales: `en` (fallback), `si`, `ta`. **No literal user-facing strings in components** — use `t("namespace.key")`. |
+| Translations | Centralized in `src/lib/i18n/`. **English-only at launch (`en`)**, kept on the multi-locale file pattern so `si`/`ta` drop in later (new `locales/*.ts` + extend the `Locale` union). **No literal user-facing strings in components** — use `t("namespace.key")`. |
 | Money | Integers (smallest currency unit, LKR). No floats. |
 | Numbering | `bill_number` / `report_number` sequential per clinic, gap-free, generated atomically. |
 | Reproducibility | Reports freeze `template_snapshot`; bills snapshot price + description. Re-render reads only frozen data. |
@@ -64,7 +64,7 @@ src/
 │   ├── db/              # drizzle schema + client (queries/types)
 │   ├── auth/            # hashing, sessions, role guards
 │   ├── branding/        # brand.ts (single source of truth)
-│   ├── i18n/            # t(), locales/{en,si,ta}.ts
+│   ├── i18n/            # t(), locales/en.ts (English-only at launch)
 │   ├── schema/          # template JSON schema + Zod validators
 │   ├── pdf/             # @react-pdf builders (report, invoice)
 │   ├── flagging/        # reference-range -> flag logic
@@ -78,8 +78,8 @@ scripts/                 # setup (seed owner), backup, restore
 
 1. Build from atoms up; reuse existing atoms/molecules before adding new ones.
 2. No literal brand name / hex / logo path → read from `brand.*`.
-3. No literal copy → `t("namespace.key")`; add the key to `en.ts` first, then `si.ts`,
-   `ta.ts`.
+3. No literal copy → `t("namespace.key")`; add the key to `en.ts` (the only locale at
+   launch).
 4. Money, dates, numbers → locale-aware formatters, never string concatenation.
 
 ## When generating server/data code
