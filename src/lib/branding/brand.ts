@@ -9,7 +9,8 @@ import type { Locale } from "@/lib/i18n/types";
 export const brand = {
   name: "Suwa",
   tagline: "Health, managed.",
-  nameLocalized: { en: "Suwa", si: "සුව", ta: "ஆரோக்கியம்" } satisfies Record<Locale, string>,
+  // English-only at launch. Add script variants here as locales are introduced.
+  nameLocalized: { en: "Suwa" } satisfies Record<Locale, string>,
   logo: {
     light: "/brand/suwa-logo.svg",
     dark: "/brand/suwa-logo-dark.svg",

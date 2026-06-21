@@ -38,7 +38,7 @@ without a rewrite (see roadmap "Migration path").
 | Drag-drop (later) | **dnd-kit** | Phase 3 template builder; same underlying schema |
 | Validation | **Zod** | Validate template schemas and form input |
 | Styling | **Tailwind CSS**, hand-built components | **No shadcn/ui.** Components follow **atomic design** (atoms → molecules → organisms → templates → pages) |
-| Branding & i18n | **Centralized** (`lib/branding` + `lib/i18n`) | Product brand **Suwa**; all copy via `t()` in `en`/`si`/`ta`. No hard-coded names or strings. See `branding.md` |
+| Branding & i18n | **Centralized** (`lib/branding` + `lib/i18n`) | Product brand **Suwa**; all copy via `t()`. **English-only at launch** on the multi-locale file pattern (`si`/`ta` drop in later). No hard-coded names or strings. See `branding.md` |
 | Hosting | **Clinic's PC (self-hosted Node server)** | No cloud at MVP; portable to any Node host/container later |
 | Backups | **Nightly Google Drive upload** | `pg_dump` → encrypted dump → Google Drive (rclone or Drive API) via Windows Task Scheduler |
 
@@ -104,7 +104,7 @@ clinic-management-system/
 │   │   ├── db/                # drizzle schema + client (queries/types)
 │   │   ├── auth/              # password hashing, sessions, role guards
 │   │   ├── branding/          # brand.ts — single source of truth (name, logo, colors)
-│   │   ├── i18n/              # t(), locales/{en,si,ta}.ts — centralized translations
+│   │   ├── i18n/              # t(), locales/en.ts — centralized translations (English-only at launch)
 │   │   ├── schema/            # template JSON schema types + Zod validators
 │   │   ├── pdf/               # PDF builders (report, invoice)
 │   │   ├── flagging/          # reference-range -> flag logic

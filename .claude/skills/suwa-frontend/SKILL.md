@@ -20,7 +20,7 @@ the detail layer for the **frontend**. Docs win on any conflict; flag drift.
 | Data fetching | Server Components + **Server Actions**; client fetching only when interactivity demands it |
 | Icons | One icon set (e.g. `lucide-react`), imported per-icon (no barrel) |
 | Branding | `lib/branding/brand.ts` — never hard-code name/hex/logo |
-| i18n | `lib/i18n` — every string via `t()`; locales `en`/`si`/`ta` |
+| i18n | `lib/i18n` — every string via `t()`; **English-only at launch (`en`)**, multi-locale file pattern kept for later |
 | PDF | `@react-pdf/renderer` components under `components/pdf/` |
 
 ## Component standards
@@ -77,8 +77,8 @@ or sideways into another feature's organism.
 - Patient forms: **phone is required** (the lookup key) and validated; **NIC is optional**.
 
 ### Branding & i18n (hard rules)
-- No literal user-facing string in JSX — `t("namespace.key")`. Add keys to `en.ts` first,
-  then `si.ts`, `ta.ts`.
+- No literal user-facing string in JSX — `t("namespace.key")`. Add keys to `en.ts` (the
+  only locale at launch; the file pattern stays multi-locale-ready).
 - No literal brand name / logo path / hex — read from `brand.*`.
 - Numbers, currency (LKR), dates → locale-aware formatters from `lib/i18n`, never string
   concatenation or `toLocaleString` scattered inline.
@@ -105,7 +105,7 @@ or sideways into another feature's organism.
 ## Definition of done (any UI change)
 - [ ] Built from existing atoms/molecules where possible; new primitives are generic.
 - [ ] No hard-coded brand value (name/hex/logo) and no literal copy — `brand.*` + `t()`.
-- [ ] New i18n keys added to `en`/`si`/`ta`.
+- [ ] New i18n keys added to `en` (the only locale at launch).
 - [ ] Server/Client boundary correct; no server-only imports in client code.
 - [ ] Accessible: labels, focus, keyboard, non-colour signals.
 - [ ] Loading / empty / error states handled.

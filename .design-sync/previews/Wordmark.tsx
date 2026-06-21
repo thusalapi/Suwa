@@ -1,5 +1,4 @@
 import { Wordmark } from "suwa";
 
+// English-only at launch; the locale prop stays for when more languages are added.
 export const Default = () => <Wordmark />;
-export const Sinhala = () => <Wordmark locale="si" />;
-export const Tamil = () => <Wordmark locale="ta" />;

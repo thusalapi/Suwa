@@ -5,8 +5,9 @@
 > tick items off, move "Next up" items into "Done", and note any decisions/gotchas.
 
 **Last updated:** 2026-06-21
-**Current stage:** Stage 0 — Foundation (in progress)
-**Build status:** ✅ `npm run build` + `npm run typecheck` pass
+**Current stage:** Stage 0 — Foundation (in progress; auth flow landed)
+**Build status:** ✅ `npm run typecheck` passes. `npm run build` needs `DATABASE_URL` set
+(the db client opens the connection at import) — that's a clinic-PC setup step.
 
 ## How to run
 
@@ -17,7 +18,14 @@ npm run build      # production build (standalone output for the clinic PC)
 npm run typecheck  # tsc --noEmit
 ```
 
-There is **no database yet**, so login is a non-functional placeholder UI.
+Login is **fully wired** (Server Action → verify hash → session cookie). It needs a local
+PostgreSQL with migrations applied and a seeded owner to actually sign in:
+
+```bash
+npm run db:migrate   # apply Liquibase changelog (needs local Postgres + .env)
+npm run seed:owner -- --clinic "Suwa Medical Centre" \
+  --name "Dr. Perera" --email owner@clinic.lk --password "a-strong-password"
+```
 
 ## Reference (read alongside this file)
 
@@ -45,13 +53,34 @@ There is **no database yet**, so login is a non-functional placeholder UI.
 - [x] `src/lib/branding/brand.ts` — product identity (name "Suwa", tagline, logo, localized
       name). Colours now live in the design-token layer (above).
 - [x] `src/lib/i18n/` — `t()` with fallback to `en`, `{param}` interpolation,
-      `formatMoney` (integer minor units → LKR) and `formatDate`. Locales: `en`, `si`,
-      `ta` (all keys mirrored).
+      `formatMoney` (integer minor units → LKR) and `formatDate`. **English-only at launch
+      (`en`)** on the multi-locale file pattern — add a `locales/*.ts` + extend the `Locale`
+      union to introduce another language later.
 
 ### Atomic components (`src/components/`)
 - [x] atoms: `Button`, `Input`, `Label`, `Field`, `Badge`, `Spinner`, `Wordmark`
+- [x] molecules: `Topbar`, `LogoutButton`
 - [x] templates: `AuthShell`
-- [x] App: root `layout.tsx`, `/` → redirect to `/login`, `(auth)/login` placeholder page
+- [x] App: root `layout.tsx`, `/` → redirect to `/login`, `(auth)/login` (wired form),
+      `(app)/layout.tsx` (gated shell) + `(app)/dashboard`
+
+### Authentication (`src/lib/auth/` + middleware) ✅
+- [x] Session: stateless HMAC-SHA256 signed token (Web Crypto, verifies in edge + node),
+      HTTP-only `suwa_session` cookie, 8h expiry (`session.ts`).
+- [x] Passwords: argon2id via `@node-rs/argon2` (`password.ts`, server-only).
+- [x] Guards: `getSession` / `getCurrentUser` / `requireUser` / `requireRole` (`index.ts`).
+- [x] Middleware gates everything except `/login` + static; redirects both directions.
+- [x] Login Server Action (`(auth)/login/actions.ts`) — Zod-validated, constant-ish time
+      on unknown email, generic errors, sets cookie + audits `auth.login`. Client form via
+      `useActionState` (`LoginForm.tsx`).
+- [x] Logout Server Action (`lib/auth/actions.ts`) — audits `auth.logout`, clears cookie.
+- [x] Shared `loginSchema` (`lib/schema/auth.ts`).
+- [x] One-time `scripts/seed-owner.ts` (`npm run seed:owner`) — creates clinic + owner,
+      refuses if an owner exists. No public sign-up.
+
+### Audit log (`src/lib/audit/`) ✅
+- [x] `recordAudit(entry, exec?)` — accepts `db` or a transaction handle so the change and
+      its audit row commit together. `Tx`/`Executor` types in `lib/db/index.ts`.
 
 ### Database layer (`src/lib/db/` + `liquibase/`)
 - [x] Drizzle schema (`schema.ts`) — all 10 tables mirroring `docs/data-model.md` with the
@@ -79,15 +108,12 @@ There is **no database yet**, so login is a non-functional placeholder UI.
 
 ## Next up (ordered — finish Stage 0)
 
-1. **Self-hosted auth** (`src/lib/auth/`)  ← next
-   - argon2/bcrypt password hashing; signed HTTP-only session cookie; middleware to gate
-     `(dashboard)`; server-side role guard helper (owner/staff/doctor).
-   - Wire the login page to a Server Action (verify hash → set session).
-   - `scripts/` one-time **seed-owner** script (no public sign-up).
-2. **Audit log helper** (`src/lib/audit/`) — `recordAudit(tx, …)` used in-transaction.
-3. **Clinic settings** — name, logo, currency, tax rate (reads/writes `clinics`).
-4. **Backups** (`src/lib/backup/` + `scripts/`) — nightly `pg_dump` → encrypt → Google
+1. **Run the DB locally** — install Postgres on the dev/clinic PC, `npm run db:migrate`,
+   `npm run seed:owner`, then verify login end-to-end. (See `liquibase/README.md`.)
+2. **Clinic settings** — name, logo, currency, tax rate (reads/writes `clinics`).
+3. **Backups** (`src/lib/backup/` + `scripts/`) — nightly `pg_dump` → encrypt → Google
    Drive; tested restore script; Windows Task Scheduler note.
+4. **First-login password reset** — `must_reset` flow for invited staff/doctor.
 
 Then Stage 1 (Patient registry — search/dedupe by phone), per `docs/roadmap.md`.
 
@@ -95,8 +121,9 @@ Then Stage 1 (Patient registry — search/dedupe by phone), per `docs/roadmap.md
 
 - **Money** is integer minor units everywhere (LKR cents). Use `formatMoney`.
 - **Patient lookup key = phone** (`unique(clinic_id, phone)`), NIC optional.
-- `en.ts` is the canonical key set (no `as const` — keep values widened to `string` so
-  `si`/`ta` typecheck). Add new keys to `en` first, then `si`, `ta`.
+- `en.ts` is the canonical key set (no `as const` — values widened to `string`). **English
+  only at launch**; the file-per-locale pattern is retained so `si`/`ta` can be added later
+  without touching components. Add new keys to `en`.
 - Brand palette has a single origin in `brand.ts`; don't put raw hex in components — use
   `bg-primary` / `text-ink` etc.
 - No shadcn, no Clerk, no Vercel. Build from atoms up; mutations re-check role server-side.

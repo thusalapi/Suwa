@@ -1,4 +1,6 @@
-export const LOCALES = ["en", "si", "ta"] as const;
+// English-only at launch. The pattern stays multi-locale-ready: add a new `locales/*.ts`
+// file and extend this list to introduce another language later (see docs/branding.md).
+export const LOCALES = ["en"] as const;
 
 export type Locale = (typeof LOCALES)[number];
 
