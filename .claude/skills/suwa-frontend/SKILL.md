@@ -56,9 +56,13 @@ or sideways into another feature's organism.
 ### Styling rules
 - Tailwind utilities only; no inline `style` except for dynamic values that can't be
   expressed as classes.
-- Theme colours come from `brand.colors` via Tailwind tokens / CSS variables — **never a
-  raw hex in a component**.
-- Use semantic token classes (e.g. `bg-primary`, `text-ink`) over literal palette values.
+- Colours come from the **design-token layer** (`lib/design`: primitive → semantic →
+  theme) via Tailwind **semantic** utilities (`bg-primary`, `text-ink`, `border-border`,
+  `bg-surface-raised`…) — **never a raw hex, never a primitive token, in a component**.
+- New role needed? Add it to `tokens.semantic.ts`, map it in `theme.ts` (`cssVarName`) and
+  `globals.css` (`@theme inline`), then use it. See `docs/design-system.md`.
+- Keep the design-system slice (`lib/design`, `components/*`, `lib/i18n`) free of
+  business/data deps so it stays extractable to a shared `packages/ui` at SaaS scale.
 - Extract a repeated class string into a small atom or a `cn()`-composed variant, not
   copy-paste.
 - Build mobile-first; the clinic PC is desktop but keep layouts fluid.

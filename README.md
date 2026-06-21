@@ -36,6 +36,7 @@ developer involvement.
 | [docs/data-model.md](docs/data-model.md) | Database schema, tables, relationships, key decisions |
 | [docs/report-engine.md](docs/report-engine.md) | The template schema + renderer (the core differentiator) |
 | [docs/branding.md](docs/branding.md) | Brand identity + centralized branding & translations (en/si/ta) |
+| [docs/design-system.md](docs/design-system.md) | Token-driven, themeable design system + Claude Design sync + SaaS extraction path |
 | [docs/roadmap.md](docs/roadmap.md) | Build sequence, stages, and what's deliberately out of scope |
 
 Build conventions for code generation live in the project skills under `.claude/skills/`:

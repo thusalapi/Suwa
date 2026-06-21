@@ -33,10 +33,17 @@ There is **no database yet**, so login is a non-functional placeholder UI.
 - [x] Tailwind v4 (`@tailwindcss/postcss`), `globals.css` with `@theme inline`
 - [x] Path alias `@/* → src/*`
 
+### Design system (token-driven, themeable) — `src/lib/design/`
+- [x] `tokens.primitive.ts` (raw palette + radius) → `tokens.semantic.ts` (roles) →
+      `theme.ts` (`defaultTheme`, `buildTheme(override)`, `themeToCssVars`).
+- [x] `globals.css` `@theme inline` maps Tailwind `--color-*` → `--ds-*`; theme injected at
+      the root in `layout.tsx`. Components use semantic utilities (`bg-primary`,
+      `text-ink`…) only — no raw hex. Per-tenant white-label theming ready (SaaS).
+- [x] Structured for extraction to a shared `packages/ui` later. See `docs/design-system.md`.
+
 ### Centralized branding & i18n
-- [x] `src/lib/branding/brand.ts` — single source of truth (name "Suwa", tagline, logo
-      paths, palette). Palette injected as CSS vars at the root; Tailwind tokens
-      (`bg-primary`, `text-ink`, …) resolve from it.
+- [x] `src/lib/branding/brand.ts` — product identity (name "Suwa", tagline, logo, localized
+      name). Colours now live in the design-token layer (above).
 - [x] `src/lib/i18n/` — `t()` with fallback to `en`, `{param}` interpolation,
       `formatMoney` (integer minor units → LKR) and `formatDate`. Locales: `en`, `si`,
       `ta` (all keys mirrored).
@@ -45,6 +52,15 @@ There is **no database yet**, so login is a non-functional placeholder UI.
 - [x] atoms: `Button`, `Input`, `Label`, `Field`, `Badge`, `Spinner`, `Wordmark`
 - [x] templates: `AuthShell`
 - [x] App: root `layout.tsx`, `/` → redirect to `/login`, `(auth)/login` placeholder page
+
+## Design system (claude.ai/design)
+
+- [x] claude.ai login authorized for design-system access
+- [x] Project created: **Suwa Design System** — `0eb0f77b-864f-4cd2-b299-1122bf0b9842`
+- [ ] **Push component cards** — run `/design-sync` (user-invoked skill; the model can't
+      start it). Drive it to generate preview cards for atoms → forms → screens and sync
+      them into the project. App TSX stays source of truth; the Design project is the
+      visual catalog synced *from* it.
 
 ## Next up (ordered — finish Stage 0)
 

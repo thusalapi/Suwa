@@ -19,7 +19,9 @@ read from the database at runtime and merged in for documents.
 
 ## Centralized branding
 
-Single source of truth: `src/lib/branding/brand.ts`
+Product identity lives in `src/lib/branding/brand.ts` (name, tagline, logo, localized
+name). **Colours/theme live in the design-token layer** (`src/lib/design`, see
+`design-system.md`) so the palette is shared and themeable per tenant.
 
 ```ts
 export const brand = {
@@ -28,20 +30,16 @@ export const brand = {
   // script variants (optional, for localized headers)
   nameLocalized: { en: "Suwa", si: "සුව", ta: "ஆரோக்கியம்" },
   logo: { light: "/brand/suwa-logo.svg", dark: "/brand/suwa-logo-dark.svg" },
-  colors: {                 // also mirrored into the Tailwind theme tokens
-    primary: "#0E9F8E",     // teal/green — health
-    primaryDark: "#0B7D70",
-    accent: "#10B981",
-    ink: "#0F172A",
-  },
 } as const;
 ```
 
 Rules:
-- Components reference `brand.*` — never a literal `"Suwa"`, hex code, or logo path.
-- Tailwind theme colours are derived from `brand.colors` (defined once in the Tailwind
-  config / CSS variables), so the palette has a single origin too.
-- Changing the product name/logo/palette = editing `brand.ts` (+ swapping the asset).
+- Components reference `brand.*` for name/logo — never a literal `"Suwa"` or logo path.
+- Colours come from **semantic Tailwind tokens** (`bg-primary`, `text-ink`…) backed by the
+  design-token layer — never a raw hex in a component. The palette has a single origin in
+  `lib/design/tokens.*`; per-tenant theming overrides roles (see `design-system.md`).
+- Changing the product name/logo = editing `brand.ts` (+ swapping the asset). Changing the
+  palette = editing the token files.
 
 ## Centralized translations (i18n)
 

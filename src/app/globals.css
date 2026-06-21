@@ -1,19 +1,25 @@
 @import "tailwindcss";
 
 /*
- * Theme tokens map to the runtime CSS variables injected from `lib/branding/brand.ts`
- * at the document root. `@theme inline` keeps `var(--brand-*)` references in the
- * generated utilities, so brand.ts stays the single origin for the palette.
+ * Tailwind theme tokens map to the `--ds-*` CSS variables injected at the document root
+ * from the resolved design Theme (lib/design/theme.ts → themeToCssVars). `@theme inline`
+ * keeps the var() references in generated utilities, so the token layer stays the single
+ * origin and per-tenant theming is just a different set of `--ds-*` values at runtime.
  */
 @theme inline {
-  --color-primary: var(--brand-primary);
-  --color-primary-dark: var(--brand-primary-dark);
-  --color-accent: var(--brand-accent);
-  --color-ink: var(--brand-ink);
-  --color-surface: var(--brand-surface);
-  --color-muted: var(--brand-muted);
-  --color-border: var(--brand-border);
-  --color-danger: var(--brand-danger);
+  --color-primary: var(--ds-primary);
+  --color-primary-dark: var(--ds-primary-dark);
+  --color-primary-fg: var(--ds-primary-fg);
+  --color-accent: var(--ds-accent);
+  --color-ink: var(--ds-ink);
+  --color-muted: var(--ds-muted);
+  --color-surface: var(--ds-surface);
+  --color-surface-raised: var(--ds-surface-raised);
+  --color-border: var(--ds-border);
+  --color-danger: var(--ds-danger);
+  --color-danger-fg: var(--ds-danger-fg);
+  --color-success: var(--ds-success);
+  --color-warning: var(--ds-warning);
 }
 
 body {
