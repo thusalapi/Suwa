@@ -1,0 +1,22 @@
+@import "tailwindcss";
+
+/*
+ * Theme tokens map to the runtime CSS variables injected from `lib/branding/brand.ts`
+ * at the document root. `@theme inline` keeps `var(--brand-*)` references in the
+ * generated utilities, so brand.ts stays the single origin for the palette.
+ */
+@theme inline {
+  --color-primary: var(--brand-primary);
+  --color-primary-dark: var(--brand-primary-dark);
+  --color-accent: var(--brand-accent);
+  --color-ink: var(--brand-ink);
+  --color-surface: var(--brand-surface);
+  --color-muted: var(--brand-muted);
+  --color-border: var(--brand-border);
+  --color-danger: var(--brand-danger);
+}
+
+body {
+  background-color: var(--color-surface);
+  color: var(--color-ink);
+}

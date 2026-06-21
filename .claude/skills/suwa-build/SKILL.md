@@ -18,6 +18,20 @@ docs win — and flag the drift.
 - `suwa-backend` — server actions, DB/Drizzle, Liquibase, auth, audit, backups standards.
 This skill is the shared source of truth; when FE/BE specifics are needed, use those.
 
+## Session continuity — always track progress
+
+`PROGRESS.md` (repo root) is the living build log and the **first thing to read when a
+session starts**. It records what exists and what's next so work continues across
+sessions. Keep it current as part of every build task:
+- At the **start** of build work, read it to see where things stand.
+- As you finish pieces, move items from "Next up" to "Done" and update "Last updated" /
+  "Current stage".
+- Record any new decision or gotcha there (and in the relevant `docs/*.md` if it's a
+  lasting convention).
+
+Updating `PROGRESS.md` is not optional — a build change without a progress update is
+incomplete.
+
 ## Locked decisions — do not deviate without being asked
 
 | Area | Rule |

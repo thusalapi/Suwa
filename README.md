@@ -48,4 +48,13 @@ Build conventions for code generation live in the project skills under `.claude/
 
 ## Status
 
-Planning / pre-development. See the roadmap for the build sequence.
+In development — Stage 0 (Foundation). See **[PROGRESS.md](PROGRESS.md)** for the live
+build log (what exists, what's next); it's the first thing to read when picking the work
+back up. See the [roadmap](docs/roadmap.md) for the full build sequence.
+
+### Run locally
+
+```bash
+npm install
+npm run dev   # http://localhost:3000
+```
