@@ -38,23 +38,29 @@ clinic_id       uuid fk -> clinics
 name            text
 email           text unique
 role            text          -- owner | staff | doctor
--- password handled by Clerk; store external auth id instead if using Clerk:
-auth_provider_id text
+password_hash   text          -- argon2/bcrypt; self-hosted auth, no external provider
+must_reset      boolean       -- true for invited accounts until first-login password set
 created_at      timestamptz
 ```
+The first owner row is created by the one-time setup script; staff/doctor rows are
+created by the owner from settings and set their password on first login.
 
 ### patients
 Shared backbone for billing and reports. Minimal PII at MVP.
+**Phone number is the lookup key** — staff find and dedupe patients by phone.
+**NIC is optional.**
 ```
 id              uuid pk
 clinic_id       uuid fk -> clinics
 full_name       text
-phone           text
+phone           text          -- primary lookup key; required
+nic             text          nullable  -- national ID, optional
 gender          text          -- male | female | other
 dob             date          nullable
 address         text          nullable
 notes           text          nullable
 created_at      timestamptz
+unique (clinic_id, phone)
 ```
 
 ### services  (price catalog)
@@ -175,3 +181,10 @@ created_at      timestamptz
 
 7. **Audit in-transaction.** The audit row is written in the same DB transaction as the
    change it records, so they can never drift apart.
+
+8. **Phone is the patient lookup key.** UUID stays the internal PK, but `phone` is unique
+   per clinic and is how staff search and dedupe patients. `nic` is optional metadata,
+   never required to register a patient.
+
+9. **Self-hosted credentials.** No external identity provider — `users.password_hash`
+   holds an argon2/bcrypt hash; sessions are server-side, role checks server-side.

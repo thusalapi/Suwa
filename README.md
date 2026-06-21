@@ -1,7 +1,9 @@
-# Clinic Management System
+# Suwa
 
-A SaaS for small medical / diagnostic centers. Two cores built on a shared patient
-registry:
+**Suwa** (Sinhala සුව — "health / wellness") — *"Health, managed."*
+
+A self-hosted clinic management system for small medical / diagnostic centers. Two cores
+built on a shared patient registry:
 
 1. **Billing & invoicing** — itemized bills, payments, branded PDF receipts.
 2. **Self-service report engine** — staff create lab report templates (blood, urine,
@@ -33,7 +35,16 @@ developer involvement.
 | [docs/architecture.md](docs/architecture.md) | System architecture, tech stack, project structure |
 | [docs/data-model.md](docs/data-model.md) | Database schema, tables, relationships, key decisions |
 | [docs/report-engine.md](docs/report-engine.md) | The template schema + renderer (the core differentiator) |
+| [docs/branding.md](docs/branding.md) | Brand identity + centralized branding & translations (en/si/ta) |
 | [docs/roadmap.md](docs/roadmap.md) | Build sequence, stages, and what's deliberately out of scope |
+
+Build conventions for code generation live in the project skills under `.claude/skills/`:
+
+| Skill | Scope |
+|-------|-------|
+| [`suwa-build`](.claude/skills/suwa-build/SKILL.md) | Master conventions — the locked stack & architecture decisions |
+| [`suwa-frontend`](.claude/skills/suwa-frontend/SKILL.md) | UI standards — React/Tailwind/atomic design/branding/i18n |
+| [`suwa-backend`](.claude/skills/suwa-backend/SKILL.md) | Server standards — actions, Drizzle/Liquibase, auth, audit, backups |
 
 ## Status
 
