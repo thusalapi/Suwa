@@ -57,10 +57,13 @@ There is **no database yet**, so login is a non-functional placeholder UI.
 
 - [x] claude.ai login authorized for design-system access
 - [x] Project created: **Suwa Design System** — `0eb0f77b-864f-4cd2-b299-1122bf0b9842`
-- [ ] **Push component cards** — run `/design-sync` (user-invoked skill; the model can't
-      start it). Drive it to generate preview cards for atoms → forms → screens and sync
-      them into the project. App TSX stays source of truth; the Design project is the
-      visual catalog synced *from* it.
+      (https://claude.ai/design/p/0eb0f77b-864f-4cd2-b299-1122bf0b9842)
+- [x] **First sync complete** — all 8 components uploaded with authored previews (graded
+      good), real `.d.ts` contracts, `.prompt.md`, conventions header. Render check 8/8.
+- Synced via `package` shape, synth-entry (`src/design-system.ts` barrel). Config + setup
+  notes in `.design-sync/` (`config.json`, `conventions.md`, `previews/`, `NOTES.md`).
+- **Re-sync when components grow**: re-run `/design-sync`; authored previews + grades carry
+  forward. See `.design-sync/NOTES.md` (re-sync risks).
 
 ## Next up (ordered — finish Stage 0)
 
