@@ -1,0 +1,31 @@
+{
+  "projectId": "0eb0f77b-864f-4cd2-b299-1122bf0b9842",
+  "shape": "package",
+  "pkg": "suwa",
+  "globalName": "Suwa",
+  "tsconfig": "tsconfig.json",
+  "buildCmd": "npx --yes @tailwindcss/cli@4 -i src/app/globals.css -o .design-sync/.cache/ds-styles.css",
+  "cssEntry": ".design-sync/.cache/ds-styles.css",
+  "guidelinesGlob": ["docs/design-system.md", "docs/branding.md"],
+  "readmeHeader": ".design-sync/conventions.md",
+  "dtsPropsFor": {
+    "Button": "variant?: 'primary' | 'secondary' | 'ghost' | 'danger'; size?: 'sm' | 'md'; type?: 'button' | 'submit' | 'reset'; disabled?: boolean; onClick?: React.MouseEventHandler<HTMLButtonElement>; className?: string; children?: React.ReactNode",
+    "Input": "invalid?: boolean; type?: string; value?: string; defaultValue?: string; placeholder?: string; disabled?: boolean; id?: string; name?: string; onChange?: React.ChangeEventHandler<HTMLInputElement>; className?: string",
+    "Label": "htmlFor?: string; className?: string; children?: React.ReactNode",
+    "Field": "label: string; htmlFor: string; hint?: string; error?: string; children: React.ReactNode",
+    "Badge": "tone?: 'neutral' | 'success' | 'danger'; className?: string; children?: React.ReactNode",
+    "Spinner": "label: string; className?: string",
+    "Wordmark": "locale?: 'en' | 'si' | 'ta'; className?: string",
+    "AuthShell": "locale?: 'en' | 'si' | 'ta'; children: React.ReactNode"
+  },
+  "componentSrcMap": {
+    "Button": "src/components/atoms/Button.tsx",
+    "Input": "src/components/atoms/Input.tsx",
+    "Label": "src/components/atoms/Label.tsx",
+    "Field": "src/components/atoms/Field.tsx",
+    "Badge": "src/components/atoms/Badge.tsx",
+    "Spinner": "src/components/atoms/Spinner.tsx",
+    "Wordmark": "src/components/atoms/Wordmark.tsx",
+    "AuthShell": "src/components/templates/AuthShell.tsx"
+  }
+}

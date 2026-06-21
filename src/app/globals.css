@@ -22,6 +22,28 @@
   --color-warning: var(--ds-warning);
 }
 
+/*
+ * Default theme values, mirroring lib/design/theme.ts `defaultTheme`. These make the
+ * design system self-styling without JS (SSR, and the Claude Design catalog/agent which
+ * render components outside our Next layout). At runtime, layout.tsx injects `--ds-*` from
+ * the resolved (possibly per-tenant) theme, overriding these defaults.
+ */
+:root {
+  --ds-primary: #0e9f8e;
+  --ds-primary-dark: #0b7d70;
+  --ds-primary-fg: #ffffff;
+  --ds-accent: #10b981;
+  --ds-ink: #0f172a;
+  --ds-muted: #64748b;
+  --ds-surface: #f8fafc;
+  --ds-surface-raised: #ffffff;
+  --ds-border: #e2e8f0;
+  --ds-danger: #dc2626;
+  --ds-danger-fg: #ffffff;
+  --ds-success: #059669;
+  --ds-warning: #f59e0b;
+}
+
 body {
   background-color: var(--color-surface);
   color: var(--color-ink);
