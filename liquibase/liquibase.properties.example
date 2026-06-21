@@ -1,0 +1,8 @@
+# Copy to liquibase/liquibase.properties (gitignored — it holds the DB password) and edit.
+# Run from the repo root, e.g.:  liquibase --defaults-file=liquibase/liquibase.properties update
+
+changeLogFile=liquibase/changelog/db.changelog-master.xml
+url=jdbc:postgresql://localhost:5432/suwa
+username=suwa
+password=CHANGE_ME
+driver=org.postgresql.Driver

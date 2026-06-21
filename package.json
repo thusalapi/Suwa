@@ -7,10 +7,16 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "db:status": "liquibase --defaults-file=liquibase/liquibase.properties status --verbose",
+    "db:migrate": "liquibase --defaults-file=liquibase/liquibase.properties update",
+    "db:rollback": "liquibase --defaults-file=liquibase/liquibase.properties rollback-count 1",
+    "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
+    "drizzle-orm": "^0.45.2",
     "next": "16.2.9",
+    "postgres": "^3.4.9",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },
@@ -19,6 +25,7 @@
     "@types/node": "^24.0.0",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
+    "drizzle-kit": "^0.31.10",
     "tailwindcss": "^4.1.0",
     "typescript": "^5.7.0"
   }

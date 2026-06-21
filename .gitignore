@@ -27,6 +27,9 @@ next-env.d.ts
 # Drizzle local
 drizzle/.cache
 
+# Liquibase local config (holds the DB password)
+liquibase/liquibase.properties
+
 # design-sync (Claude Design) — staged scripts, build output, machine state
 .ds-sync/
 ds-bundle/

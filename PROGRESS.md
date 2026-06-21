@@ -6,7 +6,7 @@
 
 **Last updated:** 2026-06-21
 **Current stage:** Stage 0 — Foundation (in progress)
-**Build status:** ✅ `npm run build` passes
+**Build status:** ✅ `npm run build` + `npm run typecheck` pass
 
 ## How to run
 
@@ -53,6 +53,18 @@ There is **no database yet**, so login is a non-functional placeholder UI.
 - [x] templates: `AuthShell`
 - [x] App: root `layout.tsx`, `/` → redirect to `/login`, `(auth)/login` placeholder page
 
+### Database layer (`src/lib/db/` + `liquibase/`)
+- [x] Drizzle schema (`schema.ts`) — all 10 tables mirroring `docs/data-model.md` with the
+      decisions: `users.password_hash`/`must_reset`, `patients` `unique(clinic_id, phone)` +
+      optional `nic`, integer money, `clinic_id` everywhere, jsonb for templates/reports.
+- [x] Drizzle client (`client.ts`, server-only, postgres.js) + barrel.
+- [x] **Liquibase** changelog (`liquibase/changelog/` master + `001-initial-schema.sql`) —
+      the migration source of truth, matching the Drizzle schema. `db:migrate`/`db:status`/
+      `db:rollback` npm scripts; `liquibase.properties.example` (real one gitignored).
+- [x] `drizzle.config.ts` for Studio/introspection only (NOT migrations).
+- [ ] **Not yet run** — needs a local PostgreSQL on the clinic PC. See `liquibase/README.md`
+      for one-time setup, then `npm run db:migrate`.
+
 ## Design system (claude.ai/design)
 
 - [x] claude.ai login authorized for design-system access
@@ -67,21 +79,14 @@ There is **no database yet**, so login is a non-functional placeholder UI.
 
 ## Next up (ordered — finish Stage 0)
 
-1. **Database layer**
-   - Local PostgreSQL connection (`src/lib/db/`), Drizzle client + schema mirroring
-     `docs/data-model.md` (clinics, users, patients, services, bills, bill_items,
-     payments, report_templates, reports, audit_logs).
-   - **Liquibase** changelog (`liquibase/`) with the initial schema = the migration source
-     of truth (Drizzle is types/queries only). Include `unique(clinic_id, phone)` and
-     optional `nic` on patients.
-2. **Self-hosted auth** (`src/lib/auth/`)
+1. **Self-hosted auth** (`src/lib/auth/`)  ← next
    - argon2/bcrypt password hashing; signed HTTP-only session cookie; middleware to gate
      `(dashboard)`; server-side role guard helper (owner/staff/doctor).
    - Wire the login page to a Server Action (verify hash → set session).
    - `scripts/` one-time **seed-owner** script (no public sign-up).
-3. **Audit log helper** (`src/lib/audit/`) — `recordAudit(tx, …)` used in-transaction.
-4. **Clinic settings** — name, logo, currency, tax rate (reads/writes `clinics`).
-5. **Backups** (`src/lib/backup/` + `scripts/`) — nightly `pg_dump` → encrypt → Google
+2. **Audit log helper** (`src/lib/audit/`) — `recordAudit(tx, …)` used in-transaction.
+3. **Clinic settings** — name, logo, currency, tax rate (reads/writes `clinics`).
+4. **Backups** (`src/lib/backup/` + `scripts/`) — nightly `pg_dump` → encrypt → Google
    Drive; tested restore script; Windows Task Scheduler note.
 
 Then Stage 1 (Patient registry — search/dedupe by phone), per `docs/roadmap.md`.
