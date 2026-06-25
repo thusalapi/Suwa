@@ -4,8 +4,8 @@
 > what's next, so work continues cleanly across sessions. Keep it updated as you build —
 > tick items off, move "Next up" items into "Done", and note any decisions/gotchas.
 
-**Last updated:** 2026-06-21
-**Current stage:** Stage 0 — Foundation (in progress; auth flow landed)
+**Last updated:** 2026-06-25
+**Current stage:** Stage 0 — Foundation (in progress; auth + clinic settings landed)
 **Build status:** ✅ `npm run typecheck` passes. `npm run build` needs `DATABASE_URL` set
 (the db client opens the connection at import) — that's a clinic-PC setup step.
 
@@ -78,6 +78,16 @@ npm run seed:owner -- --clinic "Suwa Medical Centre" \
 - [x] One-time `scripts/seed-owner.ts` (`npm run seed:owner`) — creates clinic + owner,
       refuses if an owner exists. No public sign-up.
 
+### Clinic settings (`src/lib/clinic/` + `(app)/settings`) ✅
+- [x] `lib/clinic/index.ts` — `getClinic` (tenant-scoped read) + `updateClinicSettings`
+      (change + audit row in one transaction; `clinic.update` audited).
+- [x] Shared `clinicSettingsSchema` (`lib/schema/clinic.ts`) — name/address/phone/logoUrl,
+      3-letter currency, tax entered as %; action converts % → basis points.
+- [x] Owner-only page (`requireRole("owner")`), Server Action re-checks role server-side,
+      `revalidatePath` refreshes the page + layout (Topbar clinic name).
+- [x] `SettingsForm` (`useActionState`) with field/success messaging; Topbar now has a
+      Dashboard + (owner) Settings nav.
+
 ### Audit log (`src/lib/audit/`) ✅
 - [x] `recordAudit(entry, exec?)` — accepts `db` or a transaction handle so the change and
       its audit row commit together. `Tx`/`Executor` types in `lib/db/index.ts`.
@@ -110,10 +120,11 @@ npm run seed:owner -- --clinic "Suwa Medical Centre" \
 
 1. **Run the DB locally** — install Postgres on the dev/clinic PC, `npm run db:migrate`,
    `npm run seed:owner`, then verify login end-to-end. (See `liquibase/README.md`.)
-2. **Clinic settings** — name, logo, currency, tax rate (reads/writes `clinics`).
+2. ~~Clinic settings~~ ✅ done (see above).
 3. **Backups** (`src/lib/backup/` + `scripts/`) — nightly `pg_dump` → encrypt → Google
    Drive; tested restore script; Windows Task Scheduler note.
 4. **First-login password reset** — `must_reset` flow for invited staff/doctor.
+5. **Staff/doctor invites** — owner creates accounts from settings (no public sign-up).
 
 Then Stage 1 (Patient registry — search/dedupe by phone), per `docs/roadmap.md`.
 
