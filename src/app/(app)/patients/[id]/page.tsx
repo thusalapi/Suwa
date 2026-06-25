@@ -2,9 +2,13 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { getPatient } from "@/lib/patients";
+import { listReports } from "@/lib/reports";
+import { Badge } from "@/components/atoms/Badge";
 import { Button } from "@/components/atoms/Button";
 import { getT, formatDate } from "@/lib/i18n";
 import { DEFAULT_LOCALE } from "@/lib/i18n/types";
+
+const statusTone = { draft: "neutral", finalized: "neutral", verified: "success" } as const;
 
 function Detail({ label, value }: { label: string; value: string }) {
   return (
@@ -23,6 +27,8 @@ export default async function PatientDetailPage({ params }: { params: Promise<{ 
 
   const patient = await getPatient(user.clinicId, id);
   if (!patient) notFound();
+
+  const reports = await listReports(user.clinicId, patient.id);
 
   return (
     <div className="space-y-6">
@@ -51,14 +57,36 @@ export default async function PatientDetailPage({ params }: { params: Promise<{ 
         <Detail label={t("patients.registered")} value={formatDate(patient.createdAt, locale)} />
       </dl>
 
-      {/* History — wired up in later stages (bills: Stage 3, reports: Stage 2). */}
       <div className="grid gap-4 sm:grid-cols-2">
+        {/* Reports — wired to the report engine (Stage 2). */}
+        <section className="rounded-lg border border-border bg-surface-raised p-4">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-ink">{t("patients.reports")}</h2>
+            <Link href={`/reports/new?patientId=${patient.id}`}>
+              <Button variant="secondary" size="sm">
+                {t("patients.newReport")}
+              </Button>
+            </Link>
+          </div>
+          {reports.length === 0 ? (
+            <p className="text-sm text-muted">{t("patients.noReports")}</p>
+          ) : (
+            <ul className="divide-y divide-border text-sm">
+              {reports.map((r) => (
+                <li key={r.id} className="flex items-center justify-between py-2">
+                  <Link href={`/reports/${r.id}`} className="text-primary-dark hover:underline">
+                    #{r.reportNumber} · {r.templateName}
+                  </Link>
+                  <Badge tone={statusTone[r.status]}>{t(`reports.status_${r.status}`)}</Badge>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        {/* Bills — wired up in Stage 3. */}
         <section className="rounded-lg border border-border bg-surface-raised p-4">
           <h2 className="mb-2 text-sm font-semibold text-ink">{t("patients.bills")}</h2>
-          <p className="text-sm text-muted">{t("patients.historyComingSoon")}</p>
-        </section>
-        <section className="rounded-lg border border-border bg-surface-raised p-4">
-          <h2 className="mb-2 text-sm font-semibold text-ink">{t("patients.reports")}</h2>
           <p className="text-sm text-muted">{t("patients.historyComingSoon")}</p>
         </section>
       </div>
