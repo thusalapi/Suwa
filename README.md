@@ -38,6 +38,7 @@ developer involvement.
 | [docs/branding.md](docs/branding.md) | Brand identity + centralized branding & translations (English-only at launch, multi-locale pattern) |
 | [docs/design-system.md](docs/design-system.md) | Token-driven, themeable design system + Claude Design sync + SaaS extraction path |
 | [docs/roadmap.md](docs/roadmap.md) | Build sequence, stages, and what's deliberately out of scope |
+| [docs/backups.md](docs/backups.md) | Nightly encrypted backup + off-site copy, scheduling, and the restore drill |
 
 Build conventions for code generation live in the project skills under `.claude/skills/`:
 

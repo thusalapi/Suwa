@@ -5,7 +5,7 @@
 > tick items off, move "Next up" items into "Done", and note any decisions/gotchas.
 
 **Last updated:** 2026-06-25
-**Current stage:** Stage 0 — Foundation (in progress; auth + settings + team invites landed)
+**Current stage:** Stage 0 — Foundation (in progress; auth + settings + team + backups landed)
 **Build status:** ✅ `npm run typecheck` passes. `npm run build` needs `DATABASE_URL` set
 (the db client opens the connection at import) — that's a clinic-PC setup step.
 
@@ -78,6 +78,20 @@ npm run seed:owner -- --clinic "Suwa Medical Centre" \
 - [x] One-time `scripts/seed-owner.ts` (`npm run seed:owner`) — creates clinic + owner,
       refuses if an owner exists. No public sign-up.
 
+### Backups + restore (`src/lib/backup/` + `scripts/`) ✅
+- [x] `lib/backup/crypto.ts` — streaming AES-256-GCM encrypt/decrypt (scrypt KDF, per-file
+      salt; `[salt][iv][ciphertext][tag]`). Node-only, NOT `server-only` (runs under tsx).
+- [x] `lib/backup/index.ts` — `createBackup` (`pg_dump -Fc` → encrypt → delete plaintext →
+      optional `rclone copy` → prune to `BACKUP_KEEP`), `restoreBackup` (`pg_restore --clean
+      --if-exists`), `downloadFromRemote`, `resolveBackupConfig`.
+- [x] `scripts/backup.ts` (`npm run backup`) + `scripts/restore.ts` (`npm run restore --`,
+      destructive, requires `--yes`; `--file` / `--from-remote` / `--database-url`).
+- [x] `docs/backups.md` — setup (pg tools, rclone Google Drive), Windows Task Scheduler
+      `schtasks` snippet, and the throwaway-DB **restore drill**. `.env.example` expanded;
+      `backups/` gitignored.
+- [ ] **Not yet exercised** — needs Postgres + `pg_dump`/`rclone` on the clinic PC. Run the
+      restore drill in `docs/backups.md` before going live (Stage 5 non-negotiable).
+
 ### Team invites + first-login reset (`src/lib/users/` + routes) ✅
 - [x] `lib/users/index.ts` — `listClinicUsers`, `createInvitedUser` (mustReset=true; insert +
       `user.create` audit in one tx), `setUserPassword` (clears mustReset + `auth.password_reset`
@@ -133,12 +147,16 @@ npm run seed:owner -- --clinic "Suwa Medical Centre" \
 1. **Run the DB locally** — install Postgres on the dev/clinic PC, `npm run db:migrate`,
    `npm run seed:owner`, then verify login end-to-end. (See `liquibase/README.md`.)
 2. ~~Clinic settings~~ ✅ done (see above).
-3. **Backups** (`src/lib/backup/` + `scripts/`) — nightly `pg_dump` → encrypt → Google
-   Drive; tested restore script; Windows Task Scheduler note.
+3. ~~Backups~~ ✅ code done (see above); **run the restore drill** on the clinic PC.
 4. ~~First-login password reset~~ ✅ done (see above).
 5. ~~Staff/doctor invites~~ ✅ done (see above).
 
-Then Stage 1 (Patient registry — search/dedupe by phone), per `docs/roadmap.md`.
+Stage 0 code is complete. Remaining Stage 0 work is **on the clinic PC** (not codeable here):
+install Postgres, `db:migrate`, `seed:owner`, verify login end-to-end, and run the backup +
+restore drill (`docs/backups.md`).
+
+Then **Stage 1 — Patient registry** (search/dedupe by phone; NIC optional), per
+`docs/roadmap.md`. This is the next codeable stage.
 
 ## Decisions & gotchas
 
