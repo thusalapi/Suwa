@@ -4,8 +4,8 @@
 > what's next, so work continues cleanly across sessions. Keep it updated as you build —
 > tick items off, move "Next up" items into "Done", and note any decisions/gotchas.
 
-**Last updated:** 2026-06-25
-**Current stage:** Stage 0 — Foundation (in progress; auth + settings + team + backups landed)
+**Last updated:** 2026-06-26
+**Current stage:** Stage 1 — Patient registry (in progress; add/search/edit + detail landed)
 **Build status:** ✅ `npm run typecheck` passes. `npm run build` needs `DATABASE_URL` set
 (the db client opens the connection at import) — that's a clinic-PC setup step.
 
@@ -34,6 +34,19 @@ npm run seed:owner -- --clinic "Suwa Medical Centre" \
   `docs/report-engine.md`, `docs/roadmap.md`, `docs/requirements.md`
 
 ## Done
+
+### Stage 1 — Patient registry (`src/lib/patients/` + `(app)/patients`) ✅
+- [x] `lib/schema/patient.ts` — shared Zod schema (fullName + phone required; nic/gender/dob/
+      address/notes optional; gender `male|female|other`; dob `YYYY-MM-DD`).
+- [x] `lib/patients/index.ts` — `searchPatients` (phone/name `ilike`, recent when empty),
+      `getPatient`, `findByPhone` (dedupe, `excludeId` for edits), `createPatient`/`updatePatient`
+      (change + `patient.create`/`patient.update` audit in one tx). All clinic-scoped.
+- [x] Routes: list + search (`/patients`), `new`, detail (`[id]`, with bills/reports history
+      placeholders), `edit`. Server Actions dedupe by phone, redirect to the detail page.
+- [x] Components: `SearchBar` molecule (GET form, no-JS search), `PatientTable` organism,
+      shared `PatientForm` (new+edit, `useActionState`). Topbar gains a **Patients** link.
+- [x] Forms follow the existing `useActionState` + Server Action pattern (react-hook-form is
+      not installed; staying consistent with login/settings/team).
 
 ### Project scaffold
 - [x] Next.js 16 (App Router, Turbopack) + TypeScript (strict)
@@ -142,21 +155,21 @@ npm run seed:owner -- --clinic "Suwa Medical Centre" \
 - **Re-sync when components grow**: re-run `/design-sync`; authored previews + grades carry
   forward. See `.design-sync/NOTES.md` (re-sync risks).
 
-## Next up (ordered — finish Stage 0)
+## Next up (ordered)
 
-1. **Run the DB locally** — install Postgres on the dev/clinic PC, `npm run db:migrate`,
-   `npm run seed:owner`, then verify login end-to-end. (See `liquibase/README.md`.)
-2. ~~Clinic settings~~ ✅ done (see above).
-3. ~~Backups~~ ✅ code done (see above); **run the restore drill** on the clinic PC.
-4. ~~First-login password reset~~ ✅ done (see above).
-5. ~~Staff/doctor invites~~ ✅ done (see above).
+Stage 0 + Stage 1 code is complete. The next codeable stage is **Stage 2 — Report engine
+(Phase 1)**, the product differentiator (`docs/report-engine.md`, `docs/roadmap.md`):
 
-Stage 0 code is complete. Remaining Stage 0 work is **on the clinic PC** (not codeable here):
-install Postgres, `db:migrate`, `seed:owner`, verify login end-to-end, and run the backup +
-restore drill (`docs/backups.md`).
+1. JSON template schema types + Zod validators.
+2. Form renderer (auto-build a data-entry form from a template schema).
+3. `results_table` with units + reference ranges + auto-flagging of abnormal values.
+4. Template **snapshotting** into each report (frozen at creation — non-negotiable).
+5. Doctor verification / sign-off; gap-free report numbering.
+6. PDF renderer (`@react-pdf/renderer`, branded, report number / optional QR).
 
-Then **Stage 1 — Patient registry** (search/dedupe by phone; NIC optional), per
-`docs/roadmap.md`. This is the next codeable stage.
+**Clinic-PC setup still pending** (not codeable here): install Postgres, `npm run db:migrate`,
+`npm run seed:owner`, verify login end-to-end, and run the backup + restore drill
+(`docs/backups.md`). Patient CRUD needs the DB applied to exercise live.
 
 ## Decisions & gotchas
 

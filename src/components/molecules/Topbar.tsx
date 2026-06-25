@@ -27,6 +27,9 @@ export function Topbar({ locale, clinicName, userName, role }: TopbarProps) {
           <Link href="/dashboard" className="text-muted hover:text-ink">
             {t("nav.dashboard")}
           </Link>
+          <Link href="/patients" className="text-muted hover:text-ink">
+            {t("nav.patients")}
+          </Link>
           {role === "owner" ? (
             <>
               <Link href="/team" className="text-muted hover:text-ink">
