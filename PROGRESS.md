@@ -5,7 +5,7 @@
 > tick items off, move "Next up" items into "Done", and note any decisions/gotchas.
 
 **Last updated:** 2026-06-26
-**Current stage:** Stage 3 — Billing (in progress; service/price catalog landed). DB now runs in Docker (suwa-db).
+**Current stage:** Stage 3 — Billing ✅ complete (catalog + bills + payments + invoice PDF). DB runs in Docker (suwa-db). Next: Stage 4 — Dashboard & reporting.
 **Build status:** ✅ `npm run typecheck` passes. `npm run build` needs `DATABASE_URL` set
 (the db client opens the connection at import) — that's a clinic-PC setup step.
 
@@ -35,14 +35,19 @@ npm run seed:owner -- --clinic "Suwa Medical Centre" \
 
 ## Done
 
-### Stage 3 — Billing 🟡 in progress
+### Stage 3 — Billing ✅
 - [x] **Service/price catalog** — `lib/catalog/` (`listServices` w/ `activeOnly`, `getService`,
-      `createService`/`updateService`, `setServiceActive` soft toggle). Shared `serviceSchema`
-      (`lib/schema/service.ts`): price entered in rupees → stored integer minor units. Owner-only
-      `(app)/services` (list/new/edit + activate toggle). `service.*` audit per mutation;
-      **Services** nav link (owner). `formatMoney` for display.
-- [ ] **Next slices:** bill create (itemized, snapshot price+desc, gap-free `bill_number`,
-      discount/tax/totals); payments → balance; branded PDF invoice (reuse PDF pipeline).
+      `createService`/`updateService`, `setServiceActive` soft toggle). Shared `serviceSchema`:
+      price entered in rupees → integer minor units. Owner-only `(app)/services`. `service.*` audit.
+- [x] **Bills** — `lib/bills/` (`createBill` snapshots line description+unitPrice, computes
+      subtotal/discount/tax-from-clinic/total, **gap-free `bill_number`** via per-clinic advisory
+      lock; `recordPayment` updates amountPaid/balance, flips to `paid` at zero; `getBill`,
+      `listBills`). `bill.create`/`payment.create` audit in one tx. Shared `billSchema`/`paymentSchema`.
+- [x] **UI** — `(app)/bills`: list, `new` (dynamic line items w/ live totals from `BillForm`,
+      catalog or free-text), `[id]` view (items/totals/payments + `PaymentForm`). Wired into
+      patient detail (bills list + New bill); **Bills** nav link (all roles).
+- [x] **Invoice PDF** — `components/pdf/BillDocument` + Route Handler `(app)/bills/[id]/pdf`
+      (RECEIPT when paid, else INVOICE; reuses the report PDF pipeline). Render verified via tsx.
 
 ### Stage 2 — Report engine (`src/lib/report-engine/` + templates + reports + PDF) ✅
 - [x] `template.ts` — Zod template schema (block types: `static`, `patient_info`, `field`,
@@ -205,18 +210,17 @@ once the clinic-PC DB is up.
 
 ## Next up (ordered)
 
-Stages 0–2 code is complete. The next codeable stage is **Stage 3 — Billing**
-(`docs/roadmap.md`, `docs/data-model.md`) — reuses the PDF pipeline:
+Stages 0–3 code is complete. The next codeable stage is **Stage 4 — Dashboard & reporting**
+(`docs/roadmap.md`):
 
-1. Service / price catalog (`services` table — name, default_price as integer minor units).
-2. Create bill → itemized items (catalog or free text, **snapshot price + description**).
-3. Discount, tax (from clinic `tax_rate`), totals; partial payments → balance.
-4. Branded PDF invoice/receipt (mirror the report PDF pipeline).
-5. **Gap-free `bill_number`** (same per-clinic advisory-lock pattern as reports).
+1. Owner dashboard: revenue today, bills today, pending (unverified) reports, outstanding balances.
+2. Date-range revenue report; breakdown by service; outstanding payments.
+3. Export PDF / CSV.
 
-**Clinic-PC setup still pending** (not codeable here): install Postgres, `npm run db:migrate`,
-`npm run seed:owner`, verify login end-to-end, and run the backup + restore drill
-(`docs/backups.md`). All CRUD/report/PDF flows need the DB applied to exercise live.
+**Local DB is up in Docker** (`suwa-db`, schema applied via Liquibase, owner seeded), so flows
+can be exercised live in the browser. For a fresh clinic PC the setup is still: install Postgres
+(or Docker), apply the schema, `npm run seed:owner`, and run the backup + restore drill
+(`docs/backups.md`).
 
 ## Decisions & gotchas
 
