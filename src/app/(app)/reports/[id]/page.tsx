@@ -43,12 +43,17 @@ export default async function ReportDetailPage({ params }: { params: Promise<{ i
           </div>
         </div>
 
-        {canVerify ? (
-          <form action={verifyReportAction}>
-            <input type="hidden" name="id" value={report.id} />
-            <Button type="submit">{t("reports.verify")}</Button>
-          </form>
-        ) : null}
+        <div className="flex items-center gap-2">
+          <a href={`/reports/${report.id}/pdf`} target="_blank" rel="noopener noreferrer">
+            <Button variant="secondary">{t("reports.downloadPdf")}</Button>
+          </a>
+          {canVerify ? (
+            <form action={verifyReportAction}>
+              <input type="hidden" name="id" value={report.id} />
+              <Button type="submit">{t("reports.verify")}</Button>
+            </form>
+          ) : null}
+        </div>
       </div>
 
       <div className="rounded-lg border border-border bg-surface-raised p-6">

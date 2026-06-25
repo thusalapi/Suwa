@@ -5,7 +5,7 @@
 > tick items off, move "Next up" items into "Done", and note any decisions/gotchas.
 
 **Last updated:** 2026-06-26
-**Current stage:** Stage 2 — Report engine (in progress; engine + templates + entry/verify landed; PDF next)
+**Current stage:** Stage 2 — Report engine ✅ complete (engine + templates + entry/verify + PDF). Next: Stage 3 — Billing
 **Build status:** ✅ `npm run typecheck` passes. `npm run build` needs `DATABASE_URL` set
 (the db client opens the connection at import) — that's a clinic-PC setup step.
 
@@ -35,7 +35,7 @@ npm run seed:owner -- --clinic "Suwa Medical Centre" \
 
 ## Done
 
-### Stage 2 — Report engine: schema + validators (`src/lib/report-engine/`) 🟡 in progress
+### Stage 2 — Report engine (`src/lib/report-engine/` + templates + reports + PDF) ✅
 - [x] `template.ts` — Zod template schema (block types: `static`, `patient_info`, `field`,
       `results_table`, `textarea`, `signature`) + inferred TS types; `superRefine` enforces
       snake_case keys, unique field/row keys, reserved namespaces, select-needs-options,
@@ -62,9 +62,17 @@ npm run seed:owner -- --clinic "Suwa Medical Centre" \
       snapshot+data (flags read from storage, never recomputed).
 - [x] Routes `(app)/reports`: index list, `new` (pick patient → pick template → fill), `[id]`
       view + verify. Wired into patient detail (reports list + New report); **Reports** nav link.
-- [ ] **Deferred:** editing a draft report's data (create + verify cover the core flow).
-- [ ] **Next slice:** PDF renderer (`components/pdf/`, `@react-pdf/renderer`) — branded report
-      from snapshot + data; needs the dependency added.
+- [x] **PDF renderer** — `components/pdf/ReportDocument` (`@react-pdf/renderer`, branded:
+      clinic header from the `clinics` row, patient block, results tables with flags/critical
+      highlight, fields, signature, report number, DRAFT banner when unverified). Served via
+      Route Handler `(app)/reports/[id]/pdf` (tenant-scoped, 401/404, inline application/pdf).
+      `serverExternalPackages: ["@react-pdf/renderer"]` in next.config. Download link on the
+      report view. Render verified via tsx (valid %PDF buffer).
+- [ ] **Deferred:** editing a draft report's data (create + verify cover the core flow);
+      optional QR encoding of the report number on the PDF.
+
+Stage 2 is functionally complete. Heavy live verification (real templates, PDF look) happens
+once the clinic-PC DB is up.
 
 ### Stage 1 — Patient registry (`src/lib/patients/` + `(app)/patients`) ✅
 - [x] `lib/schema/patient.ts` — shared Zod schema (fullName + phone required; nic/gender/dob/
@@ -188,19 +196,18 @@ npm run seed:owner -- --clinic "Suwa Medical Centre" \
 
 ## Next up (ordered)
 
-Stage 0 + Stage 1 code is complete. The next codeable stage is **Stage 2 — Report engine
-(Phase 1)**, the product differentiator (`docs/report-engine.md`, `docs/roadmap.md`):
+Stages 0–2 code is complete. The next codeable stage is **Stage 3 — Billing**
+(`docs/roadmap.md`, `docs/data-model.md`) — reuses the PDF pipeline:
 
-1. JSON template schema types + Zod validators.
-2. Form renderer (auto-build a data-entry form from a template schema).
-3. `results_table` with units + reference ranges + auto-flagging of abnormal values.
-4. Template **snapshotting** into each report (frozen at creation — non-negotiable).
-5. Doctor verification / sign-off; gap-free report numbering.
-6. PDF renderer (`@react-pdf/renderer`, branded, report number / optional QR).
+1. Service / price catalog (`services` table — name, default_price as integer minor units).
+2. Create bill → itemized items (catalog or free text, **snapshot price + description**).
+3. Discount, tax (from clinic `tax_rate`), totals; partial payments → balance.
+4. Branded PDF invoice/receipt (mirror the report PDF pipeline).
+5. **Gap-free `bill_number`** (same per-clinic advisory-lock pattern as reports).
 
 **Clinic-PC setup still pending** (not codeable here): install Postgres, `npm run db:migrate`,
 `npm run seed:owner`, verify login end-to-end, and run the backup + restore drill
-(`docs/backups.md`). Patient CRUD needs the DB applied to exercise live.
+(`docs/backups.md`). All CRUD/report/PDF flows need the DB applied to exercise live.
 
 ## Decisions & gotchas
 
