@@ -46,9 +46,17 @@ npm run seed:owner -- --clinic "Suwa Medical Centre" \
       filled data from the snapshot), `validateReportData`, `computeResults` (entered values →
       flagged results map). `examples.ts` has the FBC fixture (`satisfies Template`).
 - [x] Sanity-checked via tsx: parse, flagging, computeResults, strict reject, dup-key reject.
-- [ ] **Next slices:** template storage/service + Liquibase already has `report_templates`;
-      form renderer (`components/forms/`); report create/draft + doctor verify + numbering;
-      PDF renderer (`components/pdf/`, `@react-pdf/renderer`).
+- [x] **Template storage + service** — `lib/report-templates/` (`listTemplates`, `getTemplate`
+      parsing the snapshot, `createTemplate` v1, `updateTemplate` version-bump, `setTemplateActive`
+      soft enable/disable). Each mutation = change + `template.*` audit in one tx, clinic-scoped.
+      `report_templates` table already exists (no migration).
+- [x] **Owner-only templates UI** (`(app)/templates`) — list, new, edit. Phase-1 JSON editor:
+      paste/edit the template JSON, validated against `templateSchema` on save (first-issue
+      detail surfaced). New starter skeleton; edit saves a new version + activate/deactivate.
+      Topbar gains an owner **Templates** link.
+- [ ] **Next slices:** form renderer (`components/forms/`, auto-build from schema + live flag);
+      report create/draft + doctor verify + gap-free numbering; PDF renderer
+      (`components/pdf/`, `@react-pdf/renderer`).
 
 ### Stage 1 — Patient registry (`src/lib/patients/` + `(app)/patients`) ✅
 - [x] `lib/schema/patient.ts` — shared Zod schema (fullName + phone required; nic/gender/dob/
