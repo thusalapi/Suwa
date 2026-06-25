@@ -38,6 +38,9 @@ export function Topbar({ locale, clinicName, userName, role }: TopbarProps) {
               <Link href="/templates" className="text-muted hover:text-ink">
                 {t("nav.templates")}
               </Link>
+              <Link href="/services" className="text-muted hover:text-ink">
+                {t("nav.services")}
+              </Link>
               <Link href="/team" className="text-muted hover:text-ink">
                 {t("nav.team")}
               </Link>
