@@ -124,6 +124,8 @@ export const en = {
     flag_critical_high: "Critical high",
     pendingVerification: "pending verification",
     verify: "Verify report",
+    downloadPdf: "Download PDF",
+    pdfDraft: "DRAFT — NOT VERIFIED",
     verifiedBy: "Verified by {name}",
     status_draft: "Draft",
     status_finalized: "Finalized",
