@@ -5,7 +5,7 @@
 > tick items off, move "Next up" items into "Done", and note any decisions/gotchas.
 
 **Last updated:** 2026-06-26
-**Current stage:** Stage 2 — Report engine (in progress; schema + validators + flagging landed)
+**Current stage:** Stage 2 — Report engine (in progress; engine + templates + entry/verify landed; PDF next)
 **Build status:** ✅ `npm run typecheck` passes. `npm run build` needs `DATABASE_URL` set
 (the db client opens the connection at import) — that's a clinic-PC setup step.
 
@@ -54,9 +54,17 @@ npm run seed:owner -- --clinic "Suwa Medical Centre" \
       paste/edit the template JSON, validated against `templateSchema` on save (first-issue
       detail surfaced). New starter skeleton; edit saves a new version + activate/deactivate.
       Topbar gains an owner **Templates** link.
-- [ ] **Next slices:** form renderer (`components/forms/`, auto-build from schema + live flag);
-      report create/draft + doctor verify + gap-free numbering; PDF renderer
-      (`components/pdf/`, `@react-pdf/renderer`).
+- [x] **Form renderer + report create/verify** — `lib/reports/` (`createReport` freezes the
+      snapshot, validates data, computes+stores flags, **gap-free `report_number`** via a
+      per-clinic `pg_advisory_xact_lock`; `verifyReport` doctor/owner sign-off; `getReport`,
+      `listReports`). `components/forms/ReportFormRenderer` auto-builds the entry form from the
+      schema with **live flagging**; `components/organisms/ReportView` renders read-only from
+      snapshot+data (flags read from storage, never recomputed).
+- [x] Routes `(app)/reports`: index list, `new` (pick patient → pick template → fill), `[id]`
+      view + verify. Wired into patient detail (reports list + New report); **Reports** nav link.
+- [ ] **Deferred:** editing a draft report's data (create + verify cover the core flow).
+- [ ] **Next slice:** PDF renderer (`components/pdf/`, `@react-pdf/renderer`) — branded report
+      from snapshot + data; needs the dependency added.
 
 ### Stage 1 — Patient registry (`src/lib/patients/` + `(app)/patients`) ✅
 - [x] `lib/schema/patient.ts` — shared Zod schema (fullName + phone required; nic/gender/dob/
