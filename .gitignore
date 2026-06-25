@@ -27,6 +27,9 @@ next-env.d.ts
 # Drizzle local
 drizzle/.cache
 
+# Local database backups (encrypted dumps + restore temp) — never commit clinical data
+backups/
+
 # Liquibase local config (holds the DB password)
 liquibase/liquibase.properties
 
