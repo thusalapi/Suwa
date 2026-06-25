@@ -5,7 +5,7 @@
 > tick items off, move "Next up" items into "Done", and note any decisions/gotchas.
 
 **Last updated:** 2026-06-26
-**Current stage:** Stage 1 — Patient registry (in progress; add/search/edit + detail landed)
+**Current stage:** Stage 2 — Report engine (in progress; schema + validators + flagging landed)
 **Build status:** ✅ `npm run typecheck` passes. `npm run build` needs `DATABASE_URL` set
 (the db client opens the connection at import) — that's a clinic-PC setup step.
 
@@ -34,6 +34,21 @@ npm run seed:owner -- --clinic "Suwa Medical Centre" \
   `docs/report-engine.md`, `docs/roadmap.md`, `docs/requirements.md`
 
 ## Done
+
+### Stage 2 — Report engine: schema + validators (`src/lib/report-engine/`) 🟡 in progress
+- [x] `template.ts` — Zod template schema (block types: `static`, `patient_info`, `field`,
+      `results_table`, `textarea`, `signature`) + inferred TS types; `superRefine` enforces
+      snake_case keys, unique field/row keys, reserved namespaces, select-needs-options,
+      `ref_low ≤ ref_high`. `parseTemplate`, `resultRows` helpers.
+- [x] `flag.ts` — `computeFlag(value, range)` (critical bounds take precedence) + `isAbnormal`
+      / `isCritical`. Flags are computed on entry and **stored** (never recomputed at render).
+- [x] `report-data.ts` — `buildReportDataSchema(template)` (derives a strict Zod schema for
+      filled data from the snapshot), `validateReportData`, `computeResults` (entered values →
+      flagged results map). `examples.ts` has the FBC fixture (`satisfies Template`).
+- [x] Sanity-checked via tsx: parse, flagging, computeResults, strict reject, dup-key reject.
+- [ ] **Next slices:** template storage/service + Liquibase already has `report_templates`;
+      form renderer (`components/forms/`); report create/draft + doctor verify + numbering;
+      PDF renderer (`components/pdf/`, `@react-pdf/renderer`).
 
 ### Stage 1 — Patient registry (`src/lib/patients/` + `(app)/patients`) ✅
 - [x] `lib/schema/patient.ts` — shared Zod schema (fullName + phone required; nic/gender/dob/
