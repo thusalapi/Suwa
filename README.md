@@ -50,9 +50,9 @@ Build conventions for code generation live in the project skills under `.claude/
 
 ## Status
 
-In development — Stage 0 (Foundation). See **[PROGRESS.md](PROGRESS.md)** for the live
-build log (what exists, what's next); it's the first thing to read when picking the work
-back up. See the [roadmap](docs/roadmap.md) for the full build sequence.
+In development. See **[PROGRESS.md](PROGRESS.md)** for the live build log (what exists,
+what's next); it's the first thing to read when picking the work back up. See the
+[roadmap](docs/roadmap.md) for the full build sequence.
 
 ### Run locally
 
@@ -60,3 +60,32 @@ back up. See the [roadmap](docs/roadmap.md) for the full build sequence.
 npm install
 npm run dev   # http://localhost:3000
 ```
+
+The app needs a PostgreSQL database. For local dev you can run one in Docker:
+
+```bash
+docker run -d --name suwa-db \
+  -e POSTGRES_USER=suwa -e POSTGRES_PASSWORD=suwa -e POSTGRES_DB=suwa \
+  -p 5432:5432 postgres:16
+```
+
+Then copy `.env.example` to `.env` (set `DATABASE_URL=postgresql://suwa:suwa@localhost:5432/suwa`
+and a random `SESSION_SECRET`), apply the schema (`npm run db:migrate`, or run the Liquibase
+changelog), and seed the first owner:
+
+```bash
+npm run seed:owner -- --clinic "Suwa Medical Centre" \
+  --name "Dr. Perera" --email owner@clinic.lk --password "suwa12345"
+```
+
+#### Local dev login
+
+> ⚠️ **Local development only** — throwaway credentials for the seeded dev database.
+> Never use these in a real deployment; create real accounts via the **Team** page.
+
+| Email | Password | Role |
+|-------|----------|------|
+| `owner@clinic.lk` | `suwa12345` | Owner |
+
+Other staff/doctor accounts are created by the owner from the **Team** page (they set their
+own password on first login).
