@@ -5,7 +5,7 @@
 > tick items off, move "Next up" items into "Done", and note any decisions/gotchas.
 
 **Last updated:** 2026-06-26
-**Current stage:** Stage 2 — Report engine ✅ complete (engine + templates + entry/verify + PDF). Next: Stage 3 — Billing
+**Current stage:** Stage 3 — Billing (in progress; service/price catalog landed). DB now runs in Docker (suwa-db).
 **Build status:** ✅ `npm run typecheck` passes. `npm run build` needs `DATABASE_URL` set
 (the db client opens the connection at import) — that's a clinic-PC setup step.
 
@@ -34,6 +34,15 @@ npm run seed:owner -- --clinic "Suwa Medical Centre" \
   `docs/report-engine.md`, `docs/roadmap.md`, `docs/requirements.md`
 
 ## Done
+
+### Stage 3 — Billing 🟡 in progress
+- [x] **Service/price catalog** — `lib/catalog/` (`listServices` w/ `activeOnly`, `getService`,
+      `createService`/`updateService`, `setServiceActive` soft toggle). Shared `serviceSchema`
+      (`lib/schema/service.ts`): price entered in rupees → stored integer minor units. Owner-only
+      `(app)/services` (list/new/edit + activate toggle). `service.*` audit per mutation;
+      **Services** nav link (owner). `formatMoney` for display.
+- [ ] **Next slices:** bill create (itemized, snapshot price+desc, gap-free `bill_number`,
+      discount/tax/totals); payments → balance; branded PDF invoice (reuse PDF pipeline).
 
 ### Stage 2 — Report engine (`src/lib/report-engine/` + templates + reports + PDF) ✅
 - [x] `template.ts` — Zod template schema (block types: `static`, `patient_info`, `field`,
