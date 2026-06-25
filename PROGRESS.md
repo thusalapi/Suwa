@@ -5,7 +5,7 @@
 > tick items off, move "Next up" items into "Done", and note any decisions/gotchas.
 
 **Last updated:** 2026-06-25
-**Current stage:** Stage 0 — Foundation (in progress; auth + clinic settings landed)
+**Current stage:** Stage 0 — Foundation (in progress; auth + settings + team invites landed)
 **Build status:** ✅ `npm run typecheck` passes. `npm run build` needs `DATABASE_URL` set
 (the db client opens the connection at import) — that's a clinic-PC setup step.
 
@@ -78,6 +78,18 @@ npm run seed:owner -- --clinic "Suwa Medical Centre" \
 - [x] One-time `scripts/seed-owner.ts` (`npm run seed:owner`) — creates clinic + owner,
       refuses if an owner exists. No public sign-up.
 
+### Team invites + first-login reset (`src/lib/users/` + routes) ✅
+- [x] `lib/users/index.ts` — `listClinicUsers`, `createInvitedUser` (mustReset=true; insert +
+      `user.create` audit in one tx), `setUserPassword` (clears mustReset + `auth.password_reset`
+      audit in one tx), `emailExists`. Shared schemas in `lib/schema/user.ts`.
+- [x] **Team page** (`(app)/team`, owner-only) — lists clinic users with Active / "Awaiting
+      first login" status; invite form (name/email/role staff|doctor/temp password). Action
+      re-checks owner role, pre-checks duplicate email, `revalidatePath`.
+- [x] **First-login reset** (`/reset-password`, OUTSIDE the (app) group to avoid a redirect
+      loop) — `(app)/layout.tsx` redirects any `mustReset` user here; page forces non-reset
+      users on to `/dashboard`. `getCurrentUser` now carries `mustReset`.
+- [x] Topbar gains an owner-only **Team** link.
+
 ### Clinic settings (`src/lib/clinic/` + `(app)/settings`) ✅
 - [x] `lib/clinic/index.ts` — `getClinic` (tenant-scoped read) + `updateClinicSettings`
       (change + audit row in one transaction; `clinic.update` audited).
@@ -123,8 +135,8 @@ npm run seed:owner -- --clinic "Suwa Medical Centre" \
 2. ~~Clinic settings~~ ✅ done (see above).
 3. **Backups** (`src/lib/backup/` + `scripts/`) — nightly `pg_dump` → encrypt → Google
    Drive; tested restore script; Windows Task Scheduler note.
-4. **First-login password reset** — `must_reset` flow for invited staff/doctor.
-5. **Staff/doctor invites** — owner creates accounts from settings (no public sign-up).
+4. ~~First-login password reset~~ ✅ done (see above).
+5. ~~Staff/doctor invites~~ ✅ done (see above).
 
 Then Stage 1 (Patient registry — search/dedupe by phone), per `docs/roadmap.md`.
 

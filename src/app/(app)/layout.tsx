@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { eq } from "drizzle-orm";
+import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { clinics } from "@/lib/db/schema";
@@ -13,6 +14,9 @@ import { DEFAULT_LOCALE } from "@/lib/i18n/types";
  */
 export default async function AppLayout({ children }: { children: ReactNode }) {
   const user = await requireUser();
+  // Invited users must set their own password before reaching any app screen. /reset-password
+  // lives outside this layout, so this redirect can't loop.
+  if (user.mustReset) redirect("/reset-password");
   const locale = DEFAULT_LOCALE; // per-user locale lands with settings.
 
   const [clinic] = await db

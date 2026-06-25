@@ -43,6 +43,8 @@ export interface CurrentUser {
   name: string;
   email: string;
   role: UserRole;
+  /** True until an invited user sets their own password on first login. */
+  mustReset: boolean;
 }
 
 /** Load the authenticated user from the DB, or null. */
@@ -56,6 +58,7 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
       name: users.name,
       email: users.email,
       role: users.role,
+      mustReset: users.mustReset,
     })
     .from(users)
     .where(eq(users.id, session.sub))
