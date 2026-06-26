@@ -43,6 +43,21 @@ npm run seed:owner -- --clinic "Suwa Medical Centre" \
 
 ## Done
 
+### Drag-and-drop template builder ✅ (replaces the Phase-1 JSON editor)
+- [x] **`TemplateBuilder`** (`(app)/templates/TemplateBuilder.tsx`, client) — a visual builder
+      replacing the raw-JSON textarea so non-technical staff (doctors/MLTs) can author report
+      types. "Add block" buttons for every block type (patient info, results table, field,
+      textarea, static text, signature); per-block editors; results-table rows with test/key/
+      unit/ref/critical inputs. **dnd-kit** drag-to-reorder for both blocks and rows.
+- [x] **Pure model** split out (`builderModel.ts`, no "use client") — `fromTemplate` /
+      `toTemplate(Json)` (de)serialise builder state ↔ the template JSON; numeric range fields
+      kept as strings while editing so blanks are omitted. The Server Action re-validates with
+      `templateSchema` (unchanged — the builder just fills the existing hidden `schema` field).
+- [x] **5 unit tests** (`test/templates/builder-model.test.ts`): FBC round-trip → schema-valid,
+      content preserved through hydrate→serialise, empty optional bounds omitted, select options
+      parsed + title trimmed, and a fresh block of every type serialises valid. `npm run build` ✅.
+- Deps added: `@dnd-kit/core` / `sortable` / `utilities`. Old `TemplateForm.tsx` (JSON) removed.
+
 ### Testing (Vitest) ✅
 - [x] **Vitest set up** for the pure-logic layer — `vitest.config.ts` aliases `server-only` to
       an empty stub (`test/stubs/`) and `@/*`→`src/*`, with a dummy `DATABASE_URL` so modules

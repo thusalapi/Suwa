@@ -2,11 +2,12 @@ import Link from "next/link";
 import { requireRole } from "@/lib/auth";
 import { getT } from "@/lib/i18n";
 import { DEFAULT_LOCALE } from "@/lib/i18n/types";
-import { TemplateForm } from "../TemplateForm";
+import type { Template } from "@/lib/report-engine";
+import { TemplateBuilder } from "../TemplateBuilder";
 import { createTemplateAction } from "../actions";
 
-/** Starter skeleton shown in the editor for a new template (version is system-managed). */
-const STARTER = {
+/** Starter skeleton the builder opens with for a new template (version is system-managed). */
+const STARTER: Template = {
   name: "New Report",
   version: 1,
   sections: [
@@ -14,7 +15,7 @@ const STARTER = {
     {
       type: "results_table",
       title: "Results",
-      rows: [{ key: "example", test: "Example analyte", unit: "", ref_low: 0, ref_high: 1 }],
+      rows: [{ key: "example", test: "Example analyte", ref_low: 0, ref_high: 1 }],
     },
     { type: "textarea", key: "comments", label: "Comments" },
     { type: "signature", label: "Verified by" },
@@ -35,10 +36,10 @@ export default async function NewTemplatePage() {
         <h1 className="text-xl font-semibold text-ink">{t("templates.addTitle")}</h1>
       </div>
 
-      <TemplateForm
+      <TemplateBuilder
         locale={locale}
         action={createTemplateAction}
-        initialJson={JSON.stringify(STARTER, null, 2)}
+        initialTemplate={STARTER}
         submitLabel={t("templates.add")}
       />
     </div>
