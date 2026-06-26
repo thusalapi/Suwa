@@ -52,10 +52,7 @@ export default async function PatientDetailPage({ params }: { params: Promise<{ 
 
       <dl className="grid grid-cols-2 gap-4 rounded-lg border border-border bg-surface-raised p-4 sm:grid-cols-3">
         <Detail label={t("patients.nic")} value={patient.nic ?? ""} />
-        <Detail
-          label={t("patients.gender")}
-          value={patient.gender ? t(`patients.gender_${patient.gender}`) : ""}
-        />
+        <Detail label={t("patients.gender")} value={patient.gender ? t(`patients.gender_${patient.gender}`) : ""} />
         <Detail label={t("patients.dob")} value={patient.dob ? formatDate(patient.dob, locale) : ""} />
         <Detail label={t("patients.address")} value={patient.address ?? ""} />
         <Detail label={t("patients.notes")} value={patient.notes ?? ""} />

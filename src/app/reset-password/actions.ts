@@ -11,10 +11,7 @@ export interface ResetState {
   fieldErrors?: { password?: string; confirm?: string };
 }
 
-export async function resetPasswordAction(
-  _prev: ResetState,
-  formData: FormData,
-): Promise<ResetState> {
+export async function resetPasswordAction(_prev: ResetState, formData: FormData): Promise<ResetState> {
   // Must be the authenticated (just-logged-in) user setting their own password.
   const user = await requireUser();
 

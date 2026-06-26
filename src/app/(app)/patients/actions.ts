@@ -32,10 +32,7 @@ function fieldErrorsFrom(parsed: ReturnType<typeof parse>): PatientFormState["fi
   };
 }
 
-export async function createPatientAction(
-  _prev: PatientFormState,
-  formData: FormData,
-): Promise<PatientFormState> {
+export async function createPatientAction(_prev: PatientFormState, formData: FormData): Promise<PatientFormState> {
   const user = await requireUser(); // any clinic role may register patients
 
   const parsed = parse(formData);
@@ -56,10 +53,7 @@ export async function createPatientAction(
   redirect(`/patients/${id}`);
 }
 
-export async function updatePatientAction(
-  _prev: PatientFormState,
-  formData: FormData,
-): Promise<PatientFormState> {
+export async function updatePatientAction(_prev: PatientFormState, formData: FormData): Promise<PatientFormState> {
   const user = await requireUser();
 
   const id = String(formData.get("id") ?? "");

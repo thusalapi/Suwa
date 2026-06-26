@@ -12,10 +12,7 @@ export interface SettingsState {
   success?: boolean;
 }
 
-export async function updateSettingsAction(
-  _prev: SettingsState,
-  formData: FormData,
-): Promise<SettingsState> {
+export async function updateSettingsAction(_prev: SettingsState, formData: FormData): Promise<SettingsState> {
   // Re-check role server-side: the middleware gate is necessary but not sufficient.
   const user = await requireRole("owner");
 

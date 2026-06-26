@@ -11,7 +11,10 @@ export const clinicSettingsSchema = z.object({
   address: z.string().trim().max(500).optional().default(""),
   phone: z.string().trim().max(40).optional().default(""),
   logoUrl: z.string().trim().max(500).optional().default(""),
-  currency: z.string().trim().regex(/^[A-Za-z]{3}$/),
+  currency: z
+    .string()
+    .trim()
+    .regex(/^[A-Za-z]{3}$/),
   taxRatePercent: z.coerce.number().min(0).max(100),
 });
 

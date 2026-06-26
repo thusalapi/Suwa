@@ -67,11 +67,7 @@ export async function getTemplate(clinicId: string, id: string): Promise<StoredT
  * Create a template. Version starts at 1; the stored schema's name/version are synced to the
  * row so the JSONB stays self-consistent (snapshots read name/version from the schema).
  */
-export async function createTemplate(
-  clinicId: string,
-  userId: string,
-  template: Template,
-): Promise<string> {
+export async function createTemplate(clinicId: string, userId: string, template: Template): Promise<string> {
   const schema: Template = { ...template, version: 1 };
   return db.transaction(async (tx) => {
     const [row] = await tx
@@ -80,7 +76,14 @@ export async function createTemplate(
       .returning({ id: reportTemplates.id });
 
     await recordAudit(
-      { clinicId, userId, action: "template.create", entityType: "template", entityId: row.id, metadata: { version: 1 } },
+      {
+        clinicId,
+        userId,
+        action: "template.create",
+        entityType: "template",
+        entityId: row.id,
+        metadata: { version: 1 },
+      },
       tx,
     );
     return row.id;
@@ -114,7 +117,14 @@ export async function updateTemplate(
       .where(and(eq(reportTemplates.id, id), eq(reportTemplates.clinicId, clinicId)));
 
     await recordAudit(
-      { clinicId, userId, action: "template.update", entityType: "template", entityId: id, metadata: { version: nextVersion } },
+      {
+        clinicId,
+        userId,
+        action: "template.update",
+        entityType: "template",
+        entityId: id,
+        metadata: { version: nextVersion },
+      },
       tx,
     );
     return nextVersion;
@@ -122,12 +132,7 @@ export async function updateTemplate(
 }
 
 /** Activate / deactivate a template (soft, never hard-delete). */
-export async function setTemplateActive(
-  clinicId: string,
-  userId: string,
-  id: string,
-  active: boolean,
-): Promise<void> {
+export async function setTemplateActive(clinicId: string, userId: string, id: string, active: boolean): Promise<void> {
   await db.transaction(async (tx) => {
     await tx
       .update(reportTemplates)

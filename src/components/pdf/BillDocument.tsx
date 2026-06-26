@@ -36,7 +36,14 @@ const styles = StyleSheet.create({
   cLine: { width: "18%", textAlign: "right" },
   totals: { marginTop: 10, marginLeft: "auto", width: "45%" },
   totalRow: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 1 },
-  totalStrong: { flexDirection: "row", justifyContent: "space-between", borderTopWidth: 1, borderTopColor: c.border, paddingTop: 3, marginTop: 3 },
+  totalStrong: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    borderTopWidth: 1,
+    borderTopColor: c.border,
+    paddingTop: 3,
+    marginTop: 3,
+  },
   bold: { fontWeight: 700 },
   sectionTitle: { fontSize: 11, fontWeight: 700, marginTop: 14, marginBottom: 4 },
   footer: {
@@ -57,8 +64,7 @@ const styles = StyleSheet.create({
 export function BillDocument({ locale, clinic, bill }: BillDocumentProps) {
   const t = getT(locale);
   const money = (v: number) => formatMoney(v, locale);
-  const showLogo =
-    !!clinic.logoUrl && (clinic.logoUrl.startsWith("http") || clinic.logoUrl.startsWith("data:"));
+  const showLogo = !!clinic.logoUrl && (clinic.logoUrl.startsWith("http") || clinic.logoUrl.startsWith("data:"));
   const title = bill.status === "paid" ? t("bills.pdfReceipt") : t("bills.pdfInvoice");
 
   return (

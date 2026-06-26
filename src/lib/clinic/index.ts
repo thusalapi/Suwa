@@ -48,11 +48,7 @@ export interface UpdateClinicInput {
  * Update clinic settings. The change and its audit row commit in one transaction — if the
  * audit can't be written, the update is rolled back (see suwa-backend "standard shape").
  */
-export async function updateClinicSettings(
-  clinicId: string,
-  userId: string,
-  input: UpdateClinicInput,
-): Promise<void> {
+export async function updateClinicSettings(clinicId: string, userId: string, input: UpdateClinicInput): Promise<void> {
   await db.transaction(async (tx) => {
     await tx
       .update(clinics)

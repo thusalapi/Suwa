@@ -52,8 +52,7 @@ const styles = StyleSheet.create({
 export function RevenueDocument({ locale, clinic, report }: RevenueDocumentProps) {
   const t = getT(locale);
   const money = (v: number) => formatMoney(v, locale);
-  const showLogo =
-    !!clinic.logoUrl && (clinic.logoUrl.startsWith("http") || clinic.logoUrl.startsWith("data:"));
+  const showLogo = !!clinic.logoUrl && (clinic.logoUrl.startsWith("http") || clinic.logoUrl.startsWith("data:"));
   const outstandingTotal = report.outstandingTotal;
 
   return (

@@ -8,11 +8,7 @@ import { Button } from "@/components/atoms/Button";
 import { getT, formatMoney, formatDate } from "@/lib/i18n";
 import { DEFAULT_LOCALE } from "@/lib/i18n/types";
 
-export default async function RevenuePage({
-  searchParams,
-}: {
-  searchParams: Promise<{ from?: string; to?: string }>;
-}) {
+export default async function RevenuePage({ searchParams }: { searchParams: Promise<{ from?: string; to?: string }> }) {
   const user = await requireRole("owner");
   const t = getT(DEFAULT_LOCALE);
   const money = (v: number) => formatMoney(v, DEFAULT_LOCALE);

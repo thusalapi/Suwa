@@ -47,14 +47,7 @@ export function InviteForm({ locale }: { locale: Locale }) {
         htmlFor="email"
         error={state.fieldErrors?.email ? t(state.fieldErrors.email) : undefined}
       >
-        <Input
-          id="email"
-          name="email"
-          type="email"
-          autoComplete="off"
-          invalid={!!state.fieldErrors?.email}
-          required
-        />
+        <Input id="email" name="email" type="email" autoComplete="off" invalid={!!state.fieldErrors?.email} required />
       </Field>
 
       <div className="grid grid-cols-2 gap-4">

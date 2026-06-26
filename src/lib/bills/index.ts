@@ -1,7 +1,7 @@
 import "server-only";
 import { and, desc, eq, sql } from "drizzle-orm";
 import { db, type Tx } from "@/lib/db";
-import { bills, billItems, payments, patients, users, type BillStatus, type PaymentMethod } from "@/lib/db/schema";
+import { bills, billItems, payments, patients, type BillStatus, type PaymentMethod } from "@/lib/db/schema";
 import { recordAudit } from "@/lib/audit";
 import { getClinic } from "@/lib/clinic";
 
@@ -142,7 +142,14 @@ export async function createBill(
     );
 
     await recordAudit(
-      { clinicId, userId, action: "bill.create", entityType: "bill", entityId: bill.id, metadata: { billNumber, total } },
+      {
+        clinicId,
+        userId,
+        action: "bill.create",
+        entityType: "bill",
+        entityId: bill.id,
+        metadata: { billNumber, total },
+      },
       tx,
     );
     return { id: bill.id, billNumber };
@@ -194,7 +201,14 @@ export async function recordPayment(
     });
 
     await recordAudit(
-      { clinicId, userId, action: "payment.create", entityType: "bill", entityId: billId, metadata: { amount: input.amount, method: input.method } },
+      {
+        clinicId,
+        userId,
+        action: "payment.create",
+        entityType: "bill",
+        entityId: billId,
+        metadata: { amount: input.amount, method: input.method },
+      },
       tx,
     );
   });

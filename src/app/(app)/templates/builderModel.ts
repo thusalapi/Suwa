@@ -118,7 +118,12 @@ const numField = (v: string, key: string): Record<string, number> => {
 };
 
 /** Serialise builder state into the plain template object the schema validates. */
-export function toTemplate(name: string, version: number, sections: BSection[], layout: TemplateLayout = "flow"): unknown {
+export function toTemplate(
+  name: string,
+  version: number,
+  sections: BSection[],
+  layout: TemplateLayout = "flow",
+): unknown {
   // In canvas layout, persist a position for every block so the PDF lays them out exactly.
   const src = layout === "canvas" ? withPositions(sections) : sections;
   const withPos = (obj: Record<string, unknown>, s: BSection) =>
@@ -135,8 +140,17 @@ export function toTemplate(name: string, version: number, sections: BSection[], 
         case "static":
           return withPos({ type: "static", text: s.text, ...(s.heading ? { heading: true } : {}) }, s);
         case "field": {
-          const base: Record<string, unknown> = { type: "field", key: s.key.trim(), label: s.label, inputType: s.inputType };
-          if (s.inputType === "select") base.options = s.options.split("\n").map((o) => o.trim()).filter(Boolean);
+          const base: Record<string, unknown> = {
+            type: "field",
+            key: s.key.trim(),
+            label: s.label,
+            inputType: s.inputType,
+          };
+          if (s.inputType === "select")
+            base.options = s.options
+              .split("\n")
+              .map((o) => o.trim())
+              .filter(Boolean);
           if (s.required) base.required = true;
           return withPos(base, s);
         }
@@ -166,5 +180,9 @@ export function toTemplate(name: string, version: number, sections: BSection[], 
   };
 }
 
-export const toTemplateJson = (name: string, version: number, sections: BSection[], layout: TemplateLayout = "flow"): string =>
-  JSON.stringify(toTemplate(name, version, sections, layout));
+export const toTemplateJson = (
+  name: string,
+  version: number,
+  sections: BSection[],
+  layout: TemplateLayout = "flow",
+): string => JSON.stringify(toTemplate(name, version, sections, layout));

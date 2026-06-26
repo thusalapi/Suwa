@@ -7,11 +7,7 @@ import { Button } from "@/components/atoms/Button";
 import { getT } from "@/lib/i18n";
 import { DEFAULT_LOCALE } from "@/lib/i18n/types";
 
-export default async function PatientsPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ q?: string }>;
-}) {
+export default async function PatientsPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
   const user = await requireUser();
   const { q = "" } = await searchParams;
   const locale = DEFAULT_LOCALE;

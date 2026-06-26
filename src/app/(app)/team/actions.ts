@@ -12,10 +12,7 @@ export interface InviteState {
   success?: boolean;
 }
 
-export async function inviteUserAction(
-  _prev: InviteState,
-  formData: FormData,
-): Promise<InviteState> {
+export async function inviteUserAction(_prev: InviteState, formData: FormData): Promise<InviteState> {
   // Only the owner can create accounts; re-checked server-side, not just in middleware.
   const owner = await requireRole("owner");
 

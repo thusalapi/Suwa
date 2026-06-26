@@ -16,9 +16,7 @@ function resolve(dict: unknown, path: string): string | undefined {
 
 function interpolate(template: string, params?: Params): string {
   if (!params) return template;
-  return template.replace(/\{(\w+)\}/g, (_, key: string) =>
-    key in params ? String(params[key]) : `{${key}}`,
-  );
+  return template.replace(/\{(\w+)\}/g, (_, key: string) => (key in params ? String(params[key]) : `{${key}}`));
 }
 
 /** Returns a translator bound to a locale, with fallback to `en` then the raw key. */

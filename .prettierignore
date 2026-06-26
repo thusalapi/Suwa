@@ -1,0 +1,20 @@
+# Build output & deps
+node_modules
+.next
+out
+dist
+build
+coverage
+*.tsbuildinfo
+next-env.d.ts
+
+# Lockfiles
+package-lock.json
+
+# Generated / vendored
+ds-bundle
+.design-sync
+.ds-sync
+
+# Prose (hand-formatted; don't reflow)
+*.md
