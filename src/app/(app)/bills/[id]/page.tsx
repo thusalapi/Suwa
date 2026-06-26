@@ -101,7 +101,7 @@ export default async function BillDetailPage({ params }: { params: Promise<{ id:
 
         {bill.status !== "paid" && bill.status !== "cancelled" ? (
           <div className="rounded-lg border border-border bg-surface-raised p-4">
-            <PaymentForm locale={locale} billId={bill.id} />
+            <PaymentForm locale={locale} billId={bill.id} maxRupees={bill.balance / 100} />
           </div>
         ) : null}
       </section>

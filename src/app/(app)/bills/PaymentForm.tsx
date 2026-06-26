@@ -29,7 +29,16 @@ function SubmitButton({ label, pendingLabel }: { label: string; pendingLabel: st
   );
 }
 
-export function PaymentForm({ locale, billId }: { locale: Locale; billId: string }) {
+export function PaymentForm({
+  locale,
+  billId,
+  maxRupees,
+}: {
+  locale: Locale;
+  billId: string;
+  /** Outstanding balance in rupees; caps the amount input as a hint (server enforces it). */
+  maxRupees?: number;
+}) {
   const t = getT(locale);
   const [state, formAction] = useActionState<PaymentFormState, FormData>(recordPaymentAction, {});
 
@@ -39,7 +48,16 @@ export function PaymentForm({ locale, billId }: { locale: Locale; billId: string
 
       <div className="space-y-1.5">
         <Label htmlFor="amountRupees">{t("bills.paymentAmount")}</Label>
-        <Input id="amountRupees" name="amountRupees" type="number" min={0.01} step="0.01" className="w-36" required />
+        <Input
+          id="amountRupees"
+          name="amountRupees"
+          type="number"
+          min={0.01}
+          max={maxRupees}
+          step="0.01"
+          className="w-36"
+          required
+        />
       </div>
 
       <div className="space-y-1.5">

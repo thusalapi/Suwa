@@ -186,6 +186,8 @@ export const en = {
     invalidItems: "Please check the bill items.",
     saveError: "Couldn’t create the bill. Please try again.",
     payInvalid: "Enter a valid payment amount.",
+    payExceedsBalance: "Payment can’t be more than the outstanding balance.",
+    paySettled: "This bill is already fully paid.",
     payError: "Couldn’t record the payment. Please try again.",
   },
   services: {
