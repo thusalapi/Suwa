@@ -73,6 +73,7 @@ npm run seed:owner -- --clinic "Suwa Medical Centre" \
       + `rclone` on the host PATH so `npm run backup` runs; configure the Google Drive
       remote; schedule the nightly Task Scheduler job (`docs/backups.md`). Then run the
       real-data trial in the browser with the clinic's actual patients/bills/reports.
+      Full step-by-step install/run/update/recovery runbook: **`docs/runbook.md`**.
 
 ### Stage 4 — Dashboard & reporting ✅
 - [x] **Dashboard stats** — `lib/dashboard/` (`getDashboardStats`): revenue collected today
