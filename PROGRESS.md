@@ -49,6 +49,12 @@ npm run seed:owner -- --clinic "Suwa Medical Centre" \
       service.create/update (+ setActive), bill.create, payment.create, patient.create/update,
       report.create/verify, template.create/update (+ setActive), user.create,
       auth.password_reset, clinic.update, auth.login/logout. No gaps.
+- [x] **Backup/restore code review** — crypto round-trip verified end-to-end via tsx (2 MiB /
+      empty / small payloads, plus wrong-key + tampered-dump rejection). Fixed a latent
+      data-loss bug: a non-numeric `BACKUP_KEEP` made `keep` NaN, so `pruneLocal` ran
+      `slice(NaN)`→`slice(0)` and deleted **every** local dump; now falls back to 14 with a
+      `Number.isFinite` guard in both `resolveBackupConfig` and `pruneLocal`. pg_dump/
+      pg_restore wiring and `docs/backups.md` drill steps reviewed and accurate.
 - [ ] **Real-data trial** — run real patients / bills / reports in the browser; fix friction.
 - [ ] **Backup + restore drill** — exercise `docs/backups.md` end-to-end (needs Postgres +
       `pg_dump`/`rclone` on the clinic PC). The last Stage-5 non-negotiable still un-run.

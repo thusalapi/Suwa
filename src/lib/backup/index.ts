@@ -34,12 +34,17 @@ export function resolveBackupConfig(env: NodeJS.ProcessEnv = process.env): Backu
     throw new Error("BACKUP_ENCRYPTION_KEY is not set (or shorter than 16 chars) — set it in .env.");
   }
 
+  // A non-numeric BACKUP_KEEP must NOT become NaN: pruneLocal would then slice(NaN)→slice(0)
+  // and delete every local dump (including the one just written). Fall back to the default.
+  const keepRaw = Number(env.BACKUP_KEEP ?? "14");
+  const keep = Number.isFinite(keepRaw) ? keepRaw : 14;
+
   return {
     databaseUrl,
     encryptionKey,
     backupDir: env.BACKUP_DIR || "backups",
     rcloneRemote: env.BACKUP_RCLONE_REMOTE || undefined,
-    keep: Number(env.BACKUP_KEEP ?? "14"),
+    keep,
   };
 }
 
@@ -101,7 +106,7 @@ export async function createBackup(config: BackupConfig = resolveBackupConfig())
 
 /** Keep only the newest `config.keep` local encrypted dumps. */
 async function pruneLocal(config: BackupConfig): Promise<void> {
-  if (config.keep <= 0) return;
+  if (!Number.isFinite(config.keep) || config.keep <= 0) return; // 0/invalid = keep all
   const dumps = (await readdir(config.backupDir))
     .filter((f) => f.endsWith(".dump.enc"))
     .sort()
