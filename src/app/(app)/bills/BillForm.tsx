@@ -103,7 +103,9 @@ export function BillForm({ locale, patientId, taxRate, services, submitLabel }: 
               <th className="px-3 py-2 font-medium">{t("bills.qty")}</th>
               <th className="px-3 py-2 font-medium">{t("bills.unitPrice")}</th>
               <th className="px-3 py-2 font-medium">{t("bills.lineTotal")}</th>
-              <th className="px-3 py-2" />
+              <th className="px-3 py-2">
+                <span className="sr-only">{t("bills.actions")}</span>
+              </th>
             </tr>
           </thead>
           <tbody>
