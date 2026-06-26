@@ -16,6 +16,19 @@ const key = z
   .trim()
   .regex(/^[a-z][a-z0-9_]*$/, "key must be snake_case (a-z, 0-9, _)");
 
+/**
+ * Optional free-form position for a block, used when the template `layout` is "canvas".
+ * x / y / w are PERCENTAGES (0–100) of the page content box (x,w of width; y of height);
+ * height flows from content. Absent ⇒ the block is laid out in normal flow order.
+ */
+const positionSchema = z
+  .object({
+    x: z.number().min(0).max(100),
+    y: z.number().min(0).max(100),
+    w: z.number().min(5).max(100),
+  })
+  .optional();
+
 /** Auto-filled patient fields a `patient_info` block can show. */
 export const PATIENT_INFO_FIELDS = ["name", "age", "gender", "ref_doctor"] as const;
 export type PatientInfoField = (typeof PATIENT_INFO_FIELDS)[number];
@@ -29,12 +42,14 @@ export const FIELD_INPUT_TYPES = ["text", "number", "date", "select"] as const;
 const patientInfoSection = z.object({
   type: z.literal("patient_info"),
   fields: z.array(z.enum(PATIENT_INFO_FIELDS)).min(1),
+  pos: positionSchema,
 });
 
 const staticSection = z.object({
   type: z.literal("static"),
   text: z.string().min(1),
   heading: z.boolean().optional(),
+  pos: positionSchema,
 });
 
 const fieldSection = z.object({
@@ -44,6 +59,7 @@ const fieldSection = z.object({
   inputType: z.enum(FIELD_INPUT_TYPES),
   options: z.array(z.string().min(1)).min(1).optional(),
   required: z.boolean().optional(),
+  pos: positionSchema,
 });
 
 const resultRow = z.object({
@@ -60,17 +76,20 @@ const resultsTableSection = z.object({
   type: z.literal("results_table"),
   title: z.string().optional(),
   rows: z.array(resultRow).min(1),
+  pos: positionSchema,
 });
 
 const textareaSection = z.object({
   type: z.literal("textarea"),
   key,
   label: z.string().min(1),
+  pos: positionSchema,
 });
 
 const signatureSection = z.object({
   type: z.literal("signature"),
   label: z.string().min(1),
+  pos: positionSchema,
 });
 
 export const sectionSchema = z.discriminatedUnion("type", [
@@ -89,6 +108,8 @@ export const templateSchema = z
   .object({
     name: z.string().trim().min(1).max(200),
     version: z.number().int().positive(),
+    /** Absent/"flow": blocks stack top-to-bottom. "canvas": blocks are placed by their `pos`. */
+    layout: z.enum(["flow", "canvas"]).optional(),
     sections: z.array(sectionSchema).min(1),
   })
   .superRefine((tpl, ctx) => {
@@ -129,6 +150,14 @@ export const templateSchema = z
 
 export type Template = z.infer<typeof templateSchema>;
 export type Section = z.infer<typeof sectionSchema>;
+export type Position = NonNullable<z.infer<typeof positionSchema>>;
+
+/**
+ * A4 content box (page size minus the PDF margins) in points — the coordinate space `pos`
+ * percentages resolve against. The builder canvas uses this aspect ratio; the PDF converts
+ * each block's percentages to points with these dimensions so editor and print match.
+ */
+export const PAGE_CONTENT = { width: 515.28, height: 757.89 } as const;
 export type ResultRow = z.infer<typeof resultRow>;
 export type FieldSection = Extract<Section, { type: "field" }>;
 export type ResultsTableSection = Extract<Section, { type: "results_table" }>;

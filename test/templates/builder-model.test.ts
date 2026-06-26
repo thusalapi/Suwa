@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { templateSchema, type Template } from "@/lib/report-engine";
 import { fbcTemplate } from "@/lib/report-engine/examples";
-import { fromTemplate, toTemplate, NEW_BLOCKS, type BSection } from "@/app/(app)/templates/builderModel";
+import { fromTemplate, toTemplate, withPositions, NEW_BLOCKS, type BSection } from "@/app/(app)/templates/builderModel";
 
 /** Serialise builder state the way the component does, then validate against the schema. */
 function serialize(name: string, sections: BSection[]) {
@@ -47,6 +47,45 @@ describe("builder serialisation", () => {
     expect(field.options).toEqual(["M", "F"]);
     expect(field.required).toBe(true);
     expect(serialize("T", sections).success).toBe(true);
+  });
+
+  it("emits layout + per-block pos in canvas mode and stays schema-valid", () => {
+    const sections: BSection[] = [
+      { _id: "a", type: "signature", label: "Verified by", pos: { x: 10, y: 80, w: 40 } },
+      { _id: "b", type: "static", text: "Lab report", heading: true }, // no pos → defaulted
+    ];
+    const out = toTemplate("Canvas T", 1, sections, "canvas") as Template;
+    expect(out.layout).toBe("canvas");
+    expect(out.sections[0].pos).toEqual({ x: 10, y: 80, w: 40 });
+    expect(out.sections[1].pos).toBeDefined(); // withPositions filled it in
+    expect(templateSchema.safeParse(out).success).toBe(true);
+  });
+
+  it("does not emit layout/pos in flow mode", () => {
+    const sections: BSection[] = [{ _id: "a", type: "signature", label: "Verified by", pos: { x: 5, y: 5, w: 30 } }];
+    const out = toTemplate("Flow T", 1, sections, "flow") as Template;
+    expect(out.layout).toBeUndefined();
+    expect(out.sections[0].pos).toBeUndefined();
+  });
+
+  it("round-trips canvas positions through hydrate → serialise", () => {
+    const tpl: Template = {
+      name: "C",
+      version: 1,
+      layout: "canvas",
+      sections: [{ type: "signature", label: "Sig", pos: { x: 12, y: 70, w: 50 } }],
+    };
+    const out = toTemplate("C", 1, fromTemplate(tpl), "canvas") as Template;
+    expect(out.sections[0].pos).toEqual({ x: 12, y: 70, w: 50 });
+  });
+
+  it("withPositions assigns a position only to blocks that lack one", () => {
+    const positioned = withPositions([
+      { _id: "a", type: "signature", label: "S", pos: { x: 1, y: 2, w: 3 } },
+      { _id: "b", type: "signature", label: "S2" },
+    ]);
+    expect(positioned[0].pos).toEqual({ x: 1, y: 2, w: 3 });
+    expect(positioned[1].pos).toBeDefined();
   });
 
   it("produces a schema-valid template from a fresh block of every type", () => {
