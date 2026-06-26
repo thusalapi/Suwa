@@ -56,10 +56,7 @@ export default async function RevenuePage({
         <StatCard label={t("revenue.billed")} value={money(report.billed)} />
         <StatCard label={t("revenue.collected")} value={money(report.collected)} />
         <StatCard label={t("revenue.billCount")} value={report.billCount} />
-        <StatCard
-          label={t("revenue.outstandingTotal")}
-          value={money(report.outstanding.reduce((s, o) => s + o.balance, 0))}
-        />
+        <StatCard label={t("revenue.outstandingTotal")} value={money(report.outstandingTotal)} />
       </div>
 
       {/* Revenue by service */}

@@ -21,7 +21,7 @@ export async function GET(req: Request) {
   const url = new URL(req.url);
   const range = resolveRange(url.searchParams.get("from") ?? undefined, url.searchParams.get("to") ?? undefined);
   const report = await getRevenueReport(user.clinicId, range);
-  const outstandingTotal = report.outstanding.reduce((s, o) => s + o.balance, 0);
+  const outstandingTotal = report.outstandingTotal;
 
   const lines: string[] = [];
   lines.push(`Revenue report,${range.from} to ${range.to}`);
