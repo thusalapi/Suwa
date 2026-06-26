@@ -79,7 +79,9 @@ export async function recordPaymentAction(
       amount: Math.round(parsed.data.amountRupees * 100),
       method: parsed.data.method,
     });
-  } catch {
+  } catch (e) {
+    if (e instanceof BillError && e.code === "exceeds_balance") return { error: "bills.payExceedsBalance" };
+    if (e instanceof BillError && e.code === "already_settled") return { error: "bills.paySettled" };
     return { error: "bills.payError" };
   }
 

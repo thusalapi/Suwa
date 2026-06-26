@@ -5,9 +5,11 @@
 > tick items off, move "Next up" items into "Done", and note any decisions/gotchas.
 
 **Last updated:** 2026-06-27
-**Current stage:** Stage 4 — Dashboard & reporting ✅ complete (owner dashboard, date-range
-revenue report, by-service breakdown, outstanding payments, PDF + CSV export). DB runs in
-Docker (suwa-db). Next: Stage 5 — Polish + real-data trial (incl. the backup/restore drill).
+**Current stage:** Stage 5 — Polish + real-data trial, **in progress**. Code-polish done
+(payment overpayment guard; audit coverage verified complete across every mutation). Still
+to do, blocked on a live DB + pg tools: real-data trial in the browser and the **backup +
+restore drill** (the one un-exercised non-negotiable). Stage 4 (dashboard + revenue) ✅.
+DB runs in Docker (suwa-db).
 **Build status:** ✅ `npm run typecheck` and `npm run build` both pass (build connects to the
 Docker DB via `.env`). RevenueDocument PDF render verified via tsx (valid %PDF buffer).
 
@@ -36,6 +38,20 @@ npm run seed:owner -- --clinic "Suwa Medical Centre" \
   `docs/report-engine.md`, `docs/roadmap.md`, `docs/requirements.md`
 
 ## Done
+
+### Stage 5 — Polish + real-data trial (in progress)
+- [x] **Payment edge cases** — `recordPayment` now rejects a payment larger than the
+      outstanding balance (`exceeds_balance`) and a payment against an already-settled bill
+      (`already_settled`); `BillError` carries a `code` so the action maps each to a specific
+      i18n message (`bills.payExceedsBalance` / `bills.paySettled`). `PaymentForm` also caps
+      the amount input at the current balance (`maxRupees`) as a client hint.
+- [x] **Audit coverage verified** — every mutation writes its audit row in the same tx:
+      service.create/update (+ setActive), bill.create, payment.create, patient.create/update,
+      report.create/verify, template.create/update (+ setActive), user.create,
+      auth.password_reset, clinic.update, auth.login/logout. No gaps.
+- [ ] **Real-data trial** — run real patients / bills / reports in the browser; fix friction.
+- [ ] **Backup + restore drill** — exercise `docs/backups.md` end-to-end (needs Postgres +
+      `pg_dump`/`rclone` on the clinic PC). The last Stage-5 non-negotiable still un-run.
 
 ### Stage 4 — Dashboard & reporting ✅
 - [x] **Dashboard stats** — `lib/dashboard/` (`getDashboardStats`): revenue collected today

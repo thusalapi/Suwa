@@ -5,7 +5,17 @@ import { bills, billItems, payments, patients, users, type BillStatus, type Paym
 import { recordAudit } from "@/lib/audit";
 import { getClinic } from "@/lib/clinic";
 
-export class BillError extends Error {}
+/** Discriminator so the action layer can map a failure to a specific i18n message. */
+export type BillErrorCode = "empty" | "not_found" | "cancelled" | "already_settled" | "exceeds_balance";
+
+export class BillError extends Error {
+  constructor(
+    message: string,
+    readonly code?: BillErrorCode,
+  ) {
+    super(message);
+  }
+}
 
 /** A line to bill. unitPrice is integer minor units (snapshotted onto the bill_item). */
 export interface BillLineInput {
@@ -81,7 +91,7 @@ export async function createBill(
   userId: string,
   input: CreateBillInput,
 ): Promise<{ id: string; billNumber: number }> {
-  if (input.items.length === 0) throw new BillError("A bill needs at least one item.");
+  if (input.items.length === 0) throw new BillError("A bill needs at least one item.", "empty");
 
   const clinic = await getClinic(clinicId);
   const taxRate = clinic?.taxRate ?? 0; // basis points
@@ -155,8 +165,14 @@ export async function recordPayment(
       .from(bills)
       .where(and(eq(bills.id, billId), eq(bills.clinicId, clinicId)))
       .limit(1);
-    if (!bill) throw new BillError("Bill not found.");
-    if (bill.status === "cancelled") throw new BillError("Bill is cancelled.");
+    if (!bill) throw new BillError("Bill not found.", "not_found");
+    if (bill.status === "cancelled") throw new BillError("Bill is cancelled.", "cancelled");
+
+    const outstanding = bill.total - bill.amountPaid;
+    if (outstanding <= 0) throw new BillError("This bill is already settled.", "already_settled");
+    if (input.amount > outstanding) {
+      throw new BillError("Payment exceeds the outstanding balance.", "exceeds_balance");
+    }
 
     const amountPaid = bill.amountPaid + input.amount;
     const balance = bill.total - amountPaid;
