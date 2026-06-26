@@ -155,6 +155,7 @@ export const en = {
     qty: "Qty",
     unitPrice: "Unit price",
     lineTotal: "Total",
+    actions: "Actions",
     addItem: "Add item",
     removeItem: "Remove item",
     subtotal: "Subtotal",
