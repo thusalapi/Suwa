@@ -9,6 +9,9 @@ out/
 dist/
 build/
 
+# Test coverage
+coverage/
+
 # Environment
 .env
 .env*.local
