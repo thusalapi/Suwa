@@ -4,10 +4,12 @@
 > what's next, so work continues cleanly across sessions. Keep it updated as you build —
 > tick items off, move "Next up" items into "Done", and note any decisions/gotchas.
 
-**Last updated:** 2026-06-26
-**Current stage:** Stage 3 — Billing ✅ complete (catalog + bills + payments + invoice PDF). DB runs in Docker (suwa-db). Next: Stage 4 — Dashboard & reporting.
-**Build status:** ✅ `npm run typecheck` passes. `npm run build` needs `DATABASE_URL` set
-(the db client opens the connection at import) — that's a clinic-PC setup step.
+**Last updated:** 2026-06-27
+**Current stage:** Stage 4 — Dashboard & reporting ✅ complete (owner dashboard, date-range
+revenue report, by-service breakdown, outstanding payments, PDF + CSV export). DB runs in
+Docker (suwa-db). Next: Stage 5 — Polish + real-data trial (incl. the backup/restore drill).
+**Build status:** ✅ `npm run typecheck` and `npm run build` both pass (build connects to the
+Docker DB via `.env`). RevenueDocument PDF render verified via tsx (valid %PDF buffer).
 
 ## How to run
 
@@ -34,6 +36,23 @@ npm run seed:owner -- --clinic "Suwa Medical Centre" \
   `docs/report-engine.md`, `docs/roadmap.md`, `docs/requirements.md`
 
 ## Done
+
+### Stage 4 — Dashboard & reporting ✅
+- [x] **Dashboard stats** — `lib/dashboard/` (`getDashboardStats`): revenue collected today
+      (payments joined to bills), bills + total billed today, pending (unverified) reports,
+      and current outstanding balance + count. Day bounds use the server's local clock
+      (the clinic PC). All clinic-scoped; money stays integer minor units.
+- [x] **Owner dashboard UI** — `(app)/dashboard` rewritten: four `StatCard`s (new molecule)
+      + quick-action links (new patient/bill/report, and owner → revenue report).
+- [x] **Revenue analytics** — `lib/analytics/` (`resolveRange` defaults to month-to-date,
+      validates/normalizes `from`/`to`; `getRevenueReport`): billed + collected + bill count
+      over a range, **by-service breakdown** (grouped on snapshotted `bill_items.description`),
+      and the current **outstanding-payments** list (balance > 0, newest-balance first).
+- [x] **Revenue report page** (`(app)/revenue`, owner-only) — date-range GET form (no-JS),
+      summary stat cards, by-service table, outstanding table (links to bills), export buttons.
+- [x] **Exports** — `(app)/revenue/csv` (UTF-8 BOM, money as decimal major units) and
+      `(app)/revenue/pdf` (`components/pdf/RevenueDocument`, branded, reuses the PDF pipeline).
+      Both owner-only Route Handlers honoring `?from=&to=`. **Revenue** nav link (owner-only).
 
 ### Stage 3 — Billing ✅
 - [x] **Service/price catalog** — `lib/catalog/` (`listServices` w/ `activeOnly`, `getService`,
@@ -210,12 +229,17 @@ once the clinic-PC DB is up.
 
 ## Next up (ordered)
 
-Stages 0–3 code is complete. The next codeable stage is **Stage 4 — Dashboard & reporting**
+Stages 0–4 code is complete. The next stage is **Stage 5 — Polish + real-data trial**
 (`docs/roadmap.md`):
 
-1. Owner dashboard: revenue today, bills today, pending (unverified) reports, outstanding balances.
-2. Date-range revenue report; breakdown by service; outstanding payments.
-3. Export PDF / CSV.
+1. Run real patients / bills / reports through the app on the clinic PC; fix friction points.
+2. Tighten audit logging and edge cases.
+3. **Verify the Google Drive backup + restore drill end-to-end** (`docs/backups.md`) — the
+   one Stage-5 non-negotiable still un-exercised.
+
+**Verify live in the browser:** dashboard stat figures and the revenue report (date-range,
+by-service totals, outstanding list, PDF + CSV exports) against real seeded data — only the
+RevenueDocument render and the build have been checked so far, not the live aggregate queries.
 
 **Local DB is up in Docker** (`suwa-db`, schema applied via Liquibase, owner seeded), so flows
 can be exercised live in the browser. For a fresh clinic PC the setup is still: install Postgres
