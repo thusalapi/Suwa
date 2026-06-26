@@ -8,6 +8,9 @@
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
     "db:status": "liquibase --defaults-file=liquibase/liquibase.properties status --verbose",
     "db:migrate": "liquibase --defaults-file=liquibase/liquibase.properties update",
     "db:rollback": "liquibase --defaults-file=liquibase/liquibase.properties rollback-count 1",
@@ -31,9 +34,11 @@
     "@types/node": "^24.0.0",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
+    "@vitest/coverage-v8": "^4.1.9",
     "drizzle-kit": "^0.31.10",
     "tailwindcss": "^4.1.0",
     "tsx": "^4.22.4",
-    "typescript": "^5.7.0"
+    "typescript": "^5.7.0",
+    "vitest": "^4.1.9"
   }
 }

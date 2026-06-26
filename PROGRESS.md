@@ -13,9 +13,9 @@ DB (rollback-tx test, all numbers correct); and the **backup + restore drill run
 DB, row counts matched). Remaining is **operational, clinic-PC only**: install pg client
 tools + rclone on the host PATH, configure the Drive remote, schedule the nightly job, and
 run the real-data trial in the browser. DB runs in Docker (suwa-db).
-**Build status:** ✅ `npm run typecheck` and `npm run build` both pass. Verified via the live
-Docker DB: dashboard/revenue aggregates (rollback tx) and a full backup→restore drill.
-RevenueDocument PDF render + backup crypto round-trip verified via tsx.
+**Build status:** ✅ `npm run typecheck` and `npm run build` pass; `npm run test` green
+(Vitest, 58 unit tests / 7 files). Verified via the live Docker DB: dashboard/revenue
+aggregates (rollback tx) and a full backup→restore drill.
 
 ## How to run
 
@@ -42,6 +42,21 @@ npm run seed:owner -- --clinic "Suwa Medical Centre" \
   `docs/report-engine.md`, `docs/roadmap.md`, `docs/requirements.md`
 
 ## Done
+
+### Testing (Vitest) ✅
+- [x] **Vitest set up** for the pure-logic layer — `vitest.config.ts` aliases `server-only` to
+      an empty stub (`test/stubs/`) and `@/*`→`src/*`, with a dummy `DATABASE_URL` so modules
+      that transitively import the lazy postgres client load without connecting. Scripts:
+      `npm run test` / `test:watch` / `test:coverage`. `coverage/` gitignored.
+- [x] **58 unit tests / 7 files**, all green: report-engine flagging (critical precedence,
+      boundary inclusivity, one-sided ranges), template schema validation (dup/reserved keys,
+      select-needs-options, ref_low≤ref_high), filled-data validation + `computeResults`,
+      analytics `resolveRange` (fake-timer deterministic), backup crypto round-trip
+      (large/empty/small + wrong-key/tamper/truncation rejection), i18n `getT`/`formatMoney`/
+      `formatDate`, and the bill/patient/service Zod schemas.
+- [ ] **Not yet covered:** DB-touching modules (bills numbering/payment locking, dashboard +
+      revenue aggregates) — those are server-only + need Postgres; verified live via rollback-tx
+      SQL for now. A future integration-test tier (Vitest against the Docker DB) could add them.
 
 ### Stage 5 — Polish + real-data trial (in progress)
 - [x] **Payment edge cases** — `recordPayment` now rejects a payment larger than the
