@@ -34,8 +34,11 @@ export interface RevenueReport extends DateRange {
   billCount: number;
   /** Per-service totals from snapshotted line items in the range. */
   byService: ServiceRevenueRow[];
-  /** Bills with an open balance (current state, not range-bound). */
+  /** Bills with an open balance (current state, not range-bound). Capped for display. */
   outstanding: OutstandingRow[];
+  /** Total open balance across ALL outstanding bills — computed in SQL, NOT capped by the
+   *  `outstanding` list limit, so it stays correct when there are more than that many bills. */
+  outstandingTotal: number;
 }
 
 const n = (v: unknown): number => Number(v ?? 0);
@@ -107,6 +110,8 @@ export async function getRevenueReport(clinicId: string, range: DateRange): Prom
     .groupBy(billItems.description)
     .orderBy(desc(sql`sum(${billItems.lineTotal})`));
 
+  const openBalance = and(eq(bills.clinicId, clinicId), gt(bills.balance, 0), ne(bills.status, "cancelled"));
+
   const outstanding = await db
     .select({
       id: bills.id,
@@ -118,9 +123,15 @@ export async function getRevenueReport(clinicId: string, range: DateRange): Prom
     })
     .from(bills)
     .innerJoin(patients, eq(bills.patientId, patients.id))
-    .where(and(eq(bills.clinicId, clinicId), gt(bills.balance, 0), ne(bills.status, "cancelled")))
+    .where(openBalance)
     .orderBy(desc(bills.balance))
     .limit(200);
+
+  // Sum over ALL open bills (not just the capped list above) so the total is always correct.
+  const [outstandingSum] = await db
+    .select({ sum: sql<string>`coalesce(sum(${bills.balance}), 0)` })
+    .from(bills)
+    .where(openBalance);
 
   return {
     ...range,
@@ -129,5 +140,6 @@ export async function getRevenueReport(clinicId: string, range: DateRange): Prom
     billCount: n(totals?.count),
     byService: byService.map((r) => ({ description: r.description, quantity: n(r.quantity), amount: n(r.amount) })),
     outstanding,
+    outstandingTotal: n(outstandingSum?.sum),
   };
 }

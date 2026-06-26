@@ -54,7 +54,7 @@ export function RevenueDocument({ locale, clinic, report }: RevenueDocumentProps
   const money = (v: number) => formatMoney(v, locale);
   const showLogo =
     !!clinic.logoUrl && (clinic.logoUrl.startsWith("http") || clinic.logoUrl.startsWith("data:"));
-  const outstandingTotal = report.outstanding.reduce((s, o) => s + o.balance, 0);
+  const outstandingTotal = report.outstandingTotal;
 
   return (
     <Document title={`${t("revenue.pdfTitle")} ${report.from}–${report.to}`}>

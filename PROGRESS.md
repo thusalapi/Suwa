@@ -53,6 +53,14 @@ npm run seed:owner -- --clinic "Suwa Medical Centre" \
       service.create/update (+ setActive), bill.create, payment.create, patient.create/update,
       report.create/verify, template.create/update (+ setActive), user.create,
       auth.password_reset, clinic.update, auth.login/logout. No gaps.
+- [x] **Pre-trial code review** (high effort) — two money-integrity bugs found and fixed:
+      (1) the revenue report's "Outstanding" total was summed from a list capped at 200 rows,
+      so it under-counted for clinics with >200 open bills (dashboard used a SQL sum and
+      disagreed); `getRevenueReport` now returns an SQL-computed `outstandingTotal` used by
+      the page, CSV, and PDF. (2) `recordPayment` had no row lock, so concurrent payments on
+      one bill could race past the overpayment guard and overwrite (not add) amountPaid,
+      losing a payment; the bill `SELECT` is now `for update`. Both verified live against the
+      Docker DB (rollback tx: capped sum 200000 vs correct 250000; FOR UPDATE valid).
 - [x] **Backup/restore code review** — crypto round-trip verified end-to-end via tsx (2 MiB /
       empty / small payloads, plus wrong-key + tampered-dump rejection). Fixed a latent
       data-loss bug: a non-numeric `BACKUP_KEEP` made `keep` NaN, so `pruneLocal` ran

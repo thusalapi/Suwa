@@ -160,11 +160,15 @@ export async function recordPayment(
   input: { amount: number; method: PaymentMethod },
 ): Promise<void> {
   await db.transaction(async (tx) => {
+    // FOR UPDATE locks the bill row so concurrent payments serialise — without it two
+    // payments can both read the same amountPaid, both pass the guard, and the second
+    // UPDATE overwrites (not adds to) the first, silently losing a payment.
     const [bill] = await tx
       .select({ total: bills.total, amountPaid: bills.amountPaid, status: bills.status })
       .from(bills)
       .where(and(eq(bills.id, billId), eq(bills.clinicId, clinicId)))
-      .limit(1);
+      .limit(1)
+      .for("update");
     if (!bill) throw new BillError("Bill not found.", "not_found");
     if (bill.status === "cancelled") throw new BillError("Bill is cancelled.", "cancelled");
 
