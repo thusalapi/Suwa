@@ -6,7 +6,7 @@ import { Badge } from "@/components/atoms/Badge";
 import { Button } from "@/components/atoms/Button";
 import { getT } from "@/lib/i18n";
 import { DEFAULT_LOCALE } from "@/lib/i18n/types";
-import { TemplateForm } from "../TemplateForm";
+import { TemplateBuilder } from "../TemplateBuilder";
 import { updateTemplateAction, toggleTemplateActiveAction } from "../actions";
 
 export default async function EditTemplatePage({ params }: { params: Promise<{ id: string }> }) {
@@ -47,11 +47,11 @@ export default async function EditTemplatePage({ params }: { params: Promise<{ i
 
       <p className="text-sm text-muted">{t("templates.editHint")}</p>
 
-      <TemplateForm
+      <TemplateBuilder
         locale={locale}
         action={updateTemplateAction}
         templateId={template.id}
-        initialJson={JSON.stringify(template.schema, null, 2)}
+        initialTemplate={template.schema}
         submitLabel={t("templates.saveNewVersion")}
       />
     </div>

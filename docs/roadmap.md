@@ -95,8 +95,10 @@ Because there is no Vercel/Clerk lock-in, migration is config + data, not a rebu
 
 ## Post-MVP (after first revenue)
 
-- **Phase 2 report editor** — form-based template creation (staff self-serve)
-- **Phase 3 report builder** — drag-and-drop canvas (`dnd-kit`)
+- ~~**Phase 2 report editor** — form-based template creation (staff self-serve)~~ — **done**
+  (pulled forward): visual `TemplateBuilder` replaced the Phase-1 JSON editor.
+- ~~**Phase 3 report builder** — drag-and-drop canvas (`dnd-kit`)~~ — **done** (pulled forward):
+  dnd-kit drag-to-reorder for blocks and results-table rows.
 - Cloud migration (see above) for multi-PC / remote access
 - SMS / email notifications
 - Appointments & scheduling
