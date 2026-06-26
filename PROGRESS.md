@@ -5,15 +5,17 @@
 > tick items off, move "Next up" items into "Done", and note any decisions/gotchas.
 
 **Last updated:** 2026-06-27
-**Current stage:** Stage 5 — Polish + real-data trial, **in progress**. Code-polish done:
-payment overpayment guard, audit coverage verified complete across every mutation, and a
-backup/restore code review (crypto verified end-to-end; fixed a `BACKUP_KEEP`-NaN prune
-wipe). Still to do, blocked on a live DB + pg tools: real-data trial in the browser and
-actually running the **backup + restore drill** (the one un-exercised non-negotiable).
-Stage 4 (dashboard + revenue) ✅. DB runs in Docker (suwa-db).
-**Build status:** ✅ `npm run typecheck` and `npm run build` both pass (build connects to the
-Docker DB via `.env`). RevenueDocument PDF render + backup crypto round-trip both verified
-via tsx.
+**Current stage:** Stage 5 — Polish + real-data trial, **code-complete**. Done: payment
+overpayment guard; audit coverage verified complete; backup/restore review (+ `BACKUP_KEEP`
+-NaN prune-wipe fix); Stage 4 dashboard/revenue aggregates verified live against the Docker
+DB (rollback-tx test, all numbers correct); and the **backup + restore drill run end-to-end**
+(real pg_dump → app encrypt/decrypt with byte-identical sha256 → pg_restore into a throwaway
+DB, row counts matched). Remaining is **operational, clinic-PC only**: install pg client
+tools + rclone on the host PATH, configure the Drive remote, schedule the nightly job, and
+run the real-data trial in the browser. DB runs in Docker (suwa-db).
+**Build status:** ✅ `npm run typecheck` and `npm run build` both pass. Verified via the live
+Docker DB: dashboard/revenue aggregates (rollback tx) and a full backup→restore drill.
+RevenueDocument PDF render + backup crypto round-trip verified via tsx.
 
 ## How to run
 
@@ -57,9 +59,20 @@ npm run seed:owner -- --clinic "Suwa Medical Centre" \
       `slice(NaN)`→`slice(0)` and deleted **every** local dump; now falls back to 14 with a
       `Number.isFinite` guard in both `resolveBackupConfig` and `pruneLocal`. pg_dump/
       pg_restore wiring and `docs/backups.md` drill steps reviewed and accurate.
-- [ ] **Real-data trial** — run real patients / bills / reports in the browser; fix friction.
-- [ ] **Backup + restore drill** — exercise `docs/backups.md` end-to-end (needs Postgres +
-      `pg_dump`/`rclone` on the clinic PC). The last Stage-5 non-negotiable still un-run.
+- [x] **Stage 4 aggregates verified live** — against the real Docker DB, with known test
+      data inserted in a `ROLLBACK` transaction (nothing persisted), every dashboard +
+      revenue query returned the expected numbers: revenueToday, billsToday/billed (cancelled
+      excluded), outstanding (paid + cancelled excluded), month billed/count, by-service
+      breakdown grouped on snapshotted description, and the outstanding list.
+- [x] **Backup + restore drill exercised end-to-end** — real `pg_dump -Fc` → app
+      `encryptFile` → `decryptFile` (byte-identical sha256 on the real dump) → `pg_restore
+      --clean --if-exists --no-owner` into a throwaway DB; restored row counts matched source,
+      pg_restore exited clean, throwaway DB dropped. Ran via the container's pg tools (the
+      host has none — see below). The crypto + dump/restore format + integrity are proven.
+- [ ] **Operational (clinic PC only, not codeable here):** install `pg_dump`/`pg_restore`
+      + `rclone` on the host PATH so `npm run backup` runs; configure the Google Drive
+      remote; schedule the nightly Task Scheduler job (`docs/backups.md`). Then run the
+      real-data trial in the browser with the clinic's actual patients/bills/reports.
 
 ### Stage 4 — Dashboard & reporting ✅
 - [x] **Dashboard stats** — `lib/dashboard/` (`getDashboardStats`): revenue collected today
