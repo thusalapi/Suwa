@@ -308,6 +308,12 @@ export const en = {
       row_critHigh: "Critical high",
       signatureLabel: "Signature label",
       staticText: "Text to display",
+      layout_flow: "Stacked",
+      layout_canvas: "Canvas",
+      canvasHint: "Drag blocks to position them on the page; drag the right edge to resize. Click a block to edit its content below.",
+      canvasSelectHint: "Select a block on the canvas to edit its content.",
+      canvasHeaderZone: "Clinic header",
+      canvasFooterZone: "Footer",
     },
   },
   patients: {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
+import { useMemo, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
 import {
@@ -27,21 +27,26 @@ import { Spinner } from "@/components/atoms/Spinner";
 import { cn } from "@/lib/utils/cn";
 import { getT } from "@/lib/i18n";
 import type { Locale } from "@/lib/i18n/types";
-import type { Template } from "@/lib/report-engine";
+import { PAGE_CONTENT, type Position, type Template } from "@/lib/report-engine";
 import type { TemplateFormState } from "./actions";
 import {
   BLOCK_ORDER,
   INPUT_TYPES,
   NEW_BLOCKS,
   PATIENT_FIELDS,
+  defaultPos,
   emptyRow,
   fromTemplate,
   toTemplateJson,
+  withPositions,
   type BRow,
   type BSection,
   type BlockType,
   type InputType,
+  type TemplateLayout,
 } from "./builderModel";
+
+const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 
 // ── Small shared UI ─────────────────────────────────────────────────────────────────────────
 const selectClass = cn(
@@ -339,6 +344,165 @@ function SubmitButton({ label, pendingLabel, disabled }: { label: string; pendin
   );
 }
 
+// ── Canvas (free-form) layout ────────────────────────────────────────────────────────────────
+function blockSummary(s: BSection, t: (k: string) => string): string {
+  switch (s.type) {
+    case "patient_info":
+      return s.fields.map((f) => t(`reports.pi_${f}`)).join(", ");
+    case "static":
+      return s.text || "—";
+    case "field":
+    case "textarea":
+      return s.label || s.key || "—";
+    case "results_table":
+      return s.title || `${s.rows.length} rows`;
+    case "signature":
+      return s.label || "—";
+  }
+}
+
+/** One positioned card on the canvas: drag to move, drag the right edge to resize width. */
+function CanvasCard({
+  section,
+  t,
+  selected,
+  canvasRef,
+  onSelect,
+  onPos,
+  onRemove,
+}: {
+  section: BSection;
+  t: (k: string) => string;
+  selected: boolean;
+  canvasRef: React.RefObject<HTMLDivElement | null>;
+  onSelect: () => void;
+  onPos: (pos: Position) => void;
+  onRemove: () => void;
+}) {
+  const pos = section.pos ?? defaultPos(0);
+
+  const startMove = (e: ReactPointerEvent) => {
+    e.preventDefault();
+    onSelect();
+    const rect = canvasRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const sx = e.clientX;
+    const sy = e.clientY;
+    const orig = { ...pos };
+    const move = (ev: PointerEvent) => {
+      const dx = ((ev.clientX - sx) / rect.width) * 100;
+      const dy = ((ev.clientY - sy) / rect.height) * 100;
+      onPos({
+        x: clamp(orig.x + dx, 0, 100 - orig.w),
+        y: clamp(orig.y + dy, 0, 99),
+        w: orig.w,
+      });
+    };
+    const up = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  };
+
+  const startResize = (e: ReactPointerEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const rect = canvasRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const sx = e.clientX;
+    const orig = { ...pos };
+    const move = (ev: PointerEvent) => {
+      const dw = ((ev.clientX - sx) / rect.width) * 100;
+      onPos({ ...orig, w: clamp(orig.w + dw, 10, 100 - orig.x) });
+    };
+    const up = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  };
+
+  return (
+    <div
+      onPointerDown={startMove}
+      style={{ left: `${pos.x}%`, top: `${pos.y}%`, width: `${pos.w}%` }}
+      className={cn(
+        "absolute cursor-move touch-none select-none rounded border bg-white shadow-sm",
+        selected ? "border-primary ring-1 ring-primary" : "border-border hover:border-primary/50",
+      )}
+    >
+      <div className="flex items-center justify-between gap-1 border-b border-border bg-surface px-2 py-1">
+        <span className="truncate text-[11px] font-semibold text-ink">{t(`templates.builder.block_${section.type}`)}</span>
+        <button
+          type="button"
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={onRemove}
+          className="shrink-0 text-xs text-danger hover:underline"
+          aria-label={t("templates.builder.removeBlock")}
+        >
+          ✕
+        </button>
+      </div>
+      <p className="truncate px-2 py-1.5 text-[11px] text-muted">{blockSummary(section, t)}</p>
+      <span
+        onPointerDown={startResize}
+        className="absolute -right-1 top-1/2 h-4 w-2 -translate-y-1/2 cursor-ew-resize rounded-sm bg-primary/60"
+        aria-hidden
+      />
+    </div>
+  );
+}
+
+function TemplateCanvas({
+  sections,
+  t,
+  selectedId,
+  onSelect,
+  onPos,
+  onRemove,
+}: {
+  sections: BSection[];
+  t: (k: string) => string;
+  selectedId: string | null;
+  onSelect: (id: string) => void;
+  onPos: (id: string, pos: Position) => void;
+  onRemove: (id: string) => void;
+}) {
+  const canvasRef = useRef<HTMLDivElement | null>(null);
+  return (
+    <div className="flex justify-center rounded-lg border border-border bg-surface p-4">
+      <div
+        ref={canvasRef}
+        className="relative mx-auto w-full max-w-[520px] overflow-hidden rounded bg-white shadow-inner ring-1 ring-border"
+        style={{ aspectRatio: `${PAGE_CONTENT.width} / ${PAGE_CONTENT.height}` }}
+      >
+        {/* Header / footer chrome zones (fixed on the printed report) */}
+        <div className="pointer-events-none absolute inset-x-0 top-0 flex h-[7%] items-center border-b border-dashed border-border px-2 text-[10px] text-muted">
+          {t("templates.builder.canvasHeaderZone")}
+        </div>
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 flex h-[4%] items-center border-t border-dashed border-border px-2 text-[10px] text-muted">
+          {t("templates.builder.canvasFooterZone")}
+        </div>
+        {sections.map((s) => (
+          <CanvasCard
+            key={s._id}
+            section={s}
+            t={t}
+            selected={selectedId === s._id}
+            canvasRef={canvasRef}
+            onSelect={() => onSelect(s._id)}
+            onPos={(pos) => onPos(s._id, pos)}
+            onRemove={() => onRemove(s._id)}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ── The builder ──────────────────────────────────────────────────────────────────────────────
 export interface TemplateBuilderProps {
   locale: Locale;
@@ -353,6 +517,8 @@ export function TemplateBuilder({ locale, action, templateId, initialTemplate, s
   const [state, formAction] = useActionState<TemplateFormState, FormData>(action, {});
   const [name, setName] = useState(initialTemplate.name);
   const [sections, setSections] = useState<BSection[]>(() => fromTemplate(initialTemplate));
+  const [layout, setLayout] = useState<TemplateLayout>(initialTemplate.layout === "canvas" ? "canvas" : "flow");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -360,9 +526,16 @@ export function TemplateBuilder({ locale, action, templateId, initialTemplate, s
   );
 
   const schemaJson = useMemo(
-    () => toTemplateJson(name, initialTemplate.version, sections),
-    [name, initialTemplate.version, sections],
+    () => toTemplateJson(name, initialTemplate.version, sections, layout),
+    [name, initialTemplate.version, sections, layout],
   );
+
+  /** Switching to canvas assigns a position to any block that lacks one. */
+  const switchLayout = (next: TemplateLayout) => {
+    if (next === "canvas") setSections((prev) => withPositions(prev));
+    setLayout(next);
+  };
+  const selected = sections.find((s) => s._id === selectedId) ?? null;
 
   const clientError =
     name.trim() === "" ? "templates.builder.emptyName" : sections.length === 0 ? "templates.builder.noSections" : null;
@@ -378,7 +551,14 @@ export function TemplateBuilder({ locale, action, templateId, initialTemplate, s
 
   const updateSection = (s: BSection) => setSections((prev) => prev.map((x) => (x._id === s._id ? s : x)));
   const removeSection = (id: string) => setSections((prev) => prev.filter((x) => x._id !== id));
-  const addSection = (type: BlockType) => setSections((prev) => [...prev, NEW_BLOCKS[type]()]);
+  const setPos = (id: string, pos: Position) =>
+    setSections((prev) => prev.map((x) => (x._id === id ? { ...x, pos } : x)));
+  const addSection = (type: BlockType) => {
+    const base = NEW_BLOCKS[type]();
+    const block: BSection = layout === "canvas" ? { ...base, pos: defaultPos(sections.length) } : base;
+    setSections((prev) => [...prev, block]);
+    setSelectedId(block._id);
+  };
 
   return (
     <form action={formAction} className="space-y-5">
@@ -397,6 +577,23 @@ export function TemplateBuilder({ locale, action, templateId, initialTemplate, s
         />
       </div>
 
+      {/* Layout mode */}
+      <div className="flex items-center gap-1 rounded-md border border-border bg-surface p-1 text-sm w-fit">
+        {(["flow", "canvas"] as const).map((mode) => (
+          <button
+            key={mode}
+            type="button"
+            onClick={() => switchLayout(mode)}
+            className={cn(
+              "rounded px-3 py-1 font-medium",
+              layout === mode ? "bg-white text-ink shadow-sm" : "text-muted hover:text-ink",
+            )}
+          >
+            {t(`templates.builder.layout_${mode}`)}
+          </button>
+        ))}
+      </div>
+
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-sm font-medium text-muted">{t("templates.builder.addBlock")}:</span>
         {BLOCK_ORDER.map((type) => (
@@ -409,6 +606,31 @@ export function TemplateBuilder({ locale, action, templateId, initialTemplate, s
       {sections.length === 0 ? (
         <div className="rounded-lg border border-dashed border-border px-4 py-8 text-center text-sm text-muted">
           {t("templates.builder.empty")}
+        </div>
+      ) : layout === "canvas" ? (
+        <div className="space-y-4">
+          <p className="text-xs text-muted">{t("templates.builder.canvasHint")}</p>
+          <TemplateCanvas
+            sections={sections}
+            t={t}
+            selectedId={selectedId}
+            onSelect={setSelectedId}
+            onPos={setPos}
+            onRemove={(id) => {
+              removeSection(id);
+              setSelectedId((cur) => (cur === id ? null : cur));
+            }}
+          />
+          {selected ? (
+            <div className="rounded-lg border border-border bg-surface-raised p-3">
+              <p className="mb-2 text-sm font-semibold text-ink">
+                {t(`templates.builder.block_${selected.type}`)}
+              </p>
+              <SectionEditor section={selected} t={t} onChange={updateSection} />
+            </div>
+          ) : (
+            <p className="text-sm text-muted">{t("templates.builder.canvasSelectHint")}</p>
+          )}
         </div>
       ) : (
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>

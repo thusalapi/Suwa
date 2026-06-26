@@ -49,6 +49,13 @@ npm run seed:owner -- --clinic "Suwa Medical Centre" \
       types. "Add block" buttons for every block type (patient info, results table, field,
       textarea, static text, signature); per-block editors; results-table rows with test/key/
       unit/ref/critical inputs. **dnd-kit** drag-to-reorder for both blocks and rows.
+- [x] **Two layout modes** (toggle in the builder): **Stacked** (flow, default) and **Canvas**
+      (free-form). On canvas you drag each block anywhere on an A4-proportioned page preview and
+      drag its right edge to resize width; click a block to edit its content below. Positions are
+      stored as **percent x/y/w** (`pos`) on each block, with `template.layout: "flow"|"canvas"`
+      (both optional → existing flow templates unchanged). The PDF renderer honours canvas
+      positions (absolute layout, % → A4 points via `PAGE_CONTENT`), clinic header/footer stay
+      fixed chrome. Canvas + flow PDF render verified via tsx; serialisation round-trip unit-tested.
 - [x] **Pure model** split out (`builderModel.ts`, no "use client") — `fromTemplate` /
       `toTemplate(Json)` (de)serialise builder state ↔ the template JSON; numeric range fields
       kept as strings while editing so blanks are omitted. The Server Action re-validates with

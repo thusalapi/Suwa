@@ -1,9 +1,10 @@
+import type { ReactNode } from "react";
 import { Document, Page, View, Text, Image, StyleSheet } from "@react-pdf/renderer";
 import { semanticLight as c } from "@/lib/design/tokens.semantic";
 import { brand } from "@/lib/branding/brand";
 import { getT, formatDate } from "@/lib/i18n";
 import type { Locale } from "@/lib/i18n/types";
-import type { Template, ResultRow } from "@/lib/report-engine/template";
+import { PAGE_CONTENT, type Template, type Section, type ResultRow } from "@/lib/report-engine/template";
 import type { ReportData, ResultValue } from "@/lib/report-engine/report-data";
 import { isAbnormal, isCritical, type Flag } from "@/lib/report-engine/flag";
 
@@ -100,133 +101,144 @@ export function ReportDocument({ locale, clinic, report }: ReportDocumentProps) 
   const showLogo =
     !!clinic.logoUrl && (clinic.logoUrl.startsWith("http") || clinic.logoUrl.startsWith("data:"));
 
+  const isCanvas = snapshot.layout === "canvas";
+
+  /** The inner content for one block — shared by flow (fragment-wrapped) and canvas (absolute). */
+  const renderInner = (section: Section): ReactNode => {
+    switch (section.type) {
+      case "static":
+        return <Text style={section.heading ? styles.sectionTitle : styles.meta}>{section.text}</Text>;
+
+      case "patient_info":
+        return (
+          <View style={styles.piGrid}>
+            {section.fields.map((f) => (
+              <View key={f} style={isCanvas ? [styles.piItem, { width: "50%" }] : styles.piItem}>
+                <Text style={styles.piLabel}>{t(`reports.pi_${f}`)}</Text>
+                <Text style={styles.piValue}>{patientInfo[f] != null ? String(patientInfo[f]) : "-"}</Text>
+              </View>
+            ))}
+          </View>
+        );
+
+      case "results_table":
+        return (
+          <View wrap={false}>
+            {section.title ? <Text style={styles.sectionTitle}>{section.title}</Text> : null}
+            <View style={styles.tHead}>
+              <Text style={[styles.th, styles.cTest]}>{t("reports.test")}</Text>
+              <Text style={[styles.th, styles.cResult]}>{t("reports.result")}</Text>
+              <Text style={[styles.th, styles.cUnit]}>{t("reports.unit")}</Text>
+              <Text style={[styles.th, styles.cRange]}>{t("reports.refRange")}</Text>
+              <Text style={[styles.th, styles.cFlag]}>{t("reports.flag")}</Text>
+            </View>
+            {section.rows.map((row) => {
+              const entry = results[row.key];
+              const flag = entry?.flag as Flag | undefined;
+              const abn = !!flag && isAbnormal(flag);
+              const cell = abn ? [styles.td, styles.abnormal] : [styles.td];
+              return (
+                <View
+                  key={row.key}
+                  style={flag && isCritical(flag) ? [styles.tRow, { backgroundColor: "#FEECEC" }] : styles.tRow}
+                >
+                  <Text style={[styles.td, styles.cTest]}>{row.test}</Text>
+                  <Text style={[...cell, styles.cResult]}>{entry ? String(entry.value) : "-"}</Text>
+                  <Text style={[styles.td, styles.cUnit]}>{row.unit || "-"}</Text>
+                  <Text style={[styles.td, styles.cRange]}>{rangeLabel(row)}</Text>
+                  <Text style={[...cell, styles.cFlag]}>{flag ? t(`reports.flag_${flag}`) : "-"}</Text>
+                </View>
+              );
+            })}
+          </View>
+        );
+
+      case "field":
+      case "textarea": {
+        const value = data[section.key];
+        return (
+          <View>
+            <Text style={styles.fieldLabel}>{section.label}</Text>
+            <Text style={styles.fieldValue}>{value != null && value !== "" ? String(value) : "-"}</Text>
+          </View>
+        );
+      }
+
+      case "signature":
+        return (
+          <Text style={isCanvas ? styles.meta : [styles.meta, { marginTop: 16 }]}>
+            {section.label}:{" "}
+            {report.status === "verified" && report.verifiedByName
+              ? report.verifiedByName
+              : t("reports.pendingVerification")}
+          </Text>
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  const clinicHeader = (
+    <>
+      <View style={styles.header}>
+        <View>
+          <Text style={styles.clinicName}>{clinic.name}</Text>
+          {clinic.address ? <Text style={styles.clinicMeta}>{clinic.address}</Text> : null}
+          {clinic.phone ? <Text style={styles.clinicMeta}>{clinic.phone}</Text> : null}
+        </View>
+        {showLogo ? <Image src={clinic.logoUrl as string} style={styles.logo} /> : null}
+      </View>
+      <View style={styles.rule} />
+    </>
+  );
+
   return (
     <Document title={`${snapshot.name} #${report.reportNumber}`}>
       <Page size="A4" style={styles.page}>
-        {/* Clinic header */}
-        <View style={styles.header}>
-          <View>
-            <Text style={styles.clinicName}>{clinic.name}</Text>
-            {clinic.address ? <Text style={styles.clinicMeta}>{clinic.address}</Text> : null}
-            {clinic.phone ? <Text style={styles.clinicMeta}>{clinic.phone}</Text> : null}
+        {isCanvas ? (
+          // ── Canvas layout: clinic header pinned at top, each block placed by its `pos`. ──
+          <View style={{ position: "relative", width: PAGE_CONTENT.width, height: PAGE_CONTENT.height }}>
+            <View style={{ position: "absolute", top: 0, left: 0, width: "100%" }}>{clinicHeader}</View>
+            {report.status !== "verified" ? (
+              <Text style={[styles.draft, { position: "absolute", top: 54, left: 0 }]}>{t("reports.pdfDraft")}</Text>
+            ) : null}
+            {snapshot.sections.map((section, i) => {
+              const p = section.pos ?? { x: 4, y: 14 + i * 12, w: 92 };
+              return (
+                <View
+                  key={i}
+                  style={{
+                    position: "absolute",
+                    left: (p.x / 100) * PAGE_CONTENT.width,
+                    top: (p.y / 100) * PAGE_CONTENT.height,
+                    width: (p.w / 100) * PAGE_CONTENT.width,
+                  }}
+                >
+                  {renderInner(section)}
+                </View>
+              );
+            })}
           </View>
-          {showLogo ? <Image src={clinic.logoUrl as string} style={styles.logo} /> : null}
-        </View>
-        <View style={styles.rule} />
-
-        {report.status !== "verified" ? <Text style={styles.draft}>{t("reports.pdfDraft")}</Text> : null}
-
-        {/* Report title + number */}
-        <View style={styles.titleRow}>
-          <Text style={styles.reportTitle}>{snapshot.name}</Text>
-          <Text style={styles.meta}>
-            {t("reports.number")} #{report.reportNumber} · {formatDate(report.createdAt, locale)}
-          </Text>
-        </View>
-        <Text style={[styles.meta, { marginBottom: 8 }]}>
-          {t("reports.patient")}: {report.patientName}
-        </Text>
-
-        {/* Sections */}
-        {snapshot.sections.map((section, i) => {
-          switch (section.type) {
-            case "static":
-              return (
-                <Text key={i} style={section.heading ? styles.sectionTitle : styles.meta}>
-                  {section.text}
-                </Text>
-              );
-
-            case "patient_info":
-              return (
-                <View key={i} style={styles.piGrid}>
-                  {section.fields.map((f) => (
-                    <View key={f} style={styles.piItem}>
-                      <Text style={styles.piLabel}>{t(`reports.pi_${f}`)}</Text>
-                      <Text style={styles.piValue}>
-                        {patientInfo[f] != null ? String(patientInfo[f]) : "-"}
-                      </Text>
-                    </View>
-                  ))}
-                </View>
-              );
-
-            case "results_table":
-              return (
-                <View key={i} wrap={false}>
-                  {section.title ? <Text style={styles.sectionTitle}>{section.title}</Text> : null}
-                  <View style={styles.tHead}>
-                    <Text style={[styles.th, styles.cTest]}>{t("reports.test")}</Text>
-                    <Text style={[styles.th, styles.cResult]}>{t("reports.result")}</Text>
-                    <Text style={[styles.th, styles.cUnit]}>{t("reports.unit")}</Text>
-                    <Text style={[styles.th, styles.cRange]}>{t("reports.refRange")}</Text>
-                    <Text style={[styles.th, styles.cFlag]}>{t("reports.flag")}</Text>
-                  </View>
-                  {section.rows.map((row) => {
-                    const entry = results[row.key];
-                    const flag = entry?.flag as Flag | undefined;
-                    const abn = !!flag && isAbnormal(flag);
-                    const cell = abn ? [styles.td, styles.abnormal] : [styles.td];
-                    return (
-                      <View
-                        key={row.key}
-                        style={
-                          flag && isCritical(flag)
-                            ? [styles.tRow, { backgroundColor: "#FEECEC" }]
-                            : styles.tRow
-                        }
-                      >
-                        <Text style={[styles.td, styles.cTest]}>{row.test}</Text>
-                        <Text style={[...cell, styles.cResult]}>{entry ? String(entry.value) : "-"}</Text>
-                        <Text style={[styles.td, styles.cUnit]}>{row.unit || "-"}</Text>
-                        <Text style={[styles.td, styles.cRange]}>{rangeLabel(row)}</Text>
-                        <Text style={[...cell, styles.cFlag]}>
-                          {flag ? t(`reports.flag_${flag}`) : "-"}
-                        </Text>
-                      </View>
-                    );
-                  })}
-                </View>
-              );
-
-            case "field": {
-              const value = data[section.key];
-              return (
-                <View key={i}>
-                  <Text style={styles.fieldLabel}>{section.label}</Text>
-                  <Text style={styles.fieldValue}>
-                    {value != null && value !== "" ? String(value) : "-"}
-                  </Text>
-                </View>
-              );
-            }
-
-            case "textarea": {
-              const value = data[section.key];
-              return (
-                <View key={i}>
-                  <Text style={styles.fieldLabel}>{section.label}</Text>
-                  <Text style={styles.fieldValue}>
-                    {value != null && value !== "" ? String(value) : "-"}
-                  </Text>
-                </View>
-              );
-            }
-
-            case "signature":
-              return (
-                <Text key={i} style={[styles.meta, { marginTop: 16 }]}>
-                  {section.label}:{" "}
-                  {report.status === "verified" && report.verifiedByName
-                    ? report.verifiedByName
-                    : t("reports.pendingVerification")}
-                </Text>
-              );
-
-            default:
-              return null;
-          }
-        })}
+        ) : (
+          // ── Flow layout (default): clinic chrome, title, patient line, then stacked blocks. ──
+          <>
+            {clinicHeader}
+            {report.status !== "verified" ? <Text style={styles.draft}>{t("reports.pdfDraft")}</Text> : null}
+            <View style={styles.titleRow}>
+              <Text style={styles.reportTitle}>{snapshot.name}</Text>
+              <Text style={styles.meta}>
+                {t("reports.number")} #{report.reportNumber} · {formatDate(report.createdAt, locale)}
+              </Text>
+            </View>
+            <Text style={[styles.meta, { marginBottom: 8 }]}>
+              {t("reports.patient")}: {report.patientName}
+            </Text>
+            {snapshot.sections.map((section, i) => (
+              <View key={i}>{renderInner(section)}</View>
+            ))}
+          </>
+        )}
 
         {/* Footer */}
         <View style={styles.footer} fixed>
