@@ -5,13 +5,15 @@
 > tick items off, move "Next up" items into "Done", and note any decisions/gotchas.
 
 **Last updated:** 2026-06-27
-**Current stage:** Stage 5 — Polish + real-data trial, **in progress**. Code-polish done
-(payment overpayment guard; audit coverage verified complete across every mutation). Still
-to do, blocked on a live DB + pg tools: real-data trial in the browser and the **backup +
-restore drill** (the one un-exercised non-negotiable). Stage 4 (dashboard + revenue) ✅.
-DB runs in Docker (suwa-db).
+**Current stage:** Stage 5 — Polish + real-data trial, **in progress**. Code-polish done:
+payment overpayment guard, audit coverage verified complete across every mutation, and a
+backup/restore code review (crypto verified end-to-end; fixed a `BACKUP_KEEP`-NaN prune
+wipe). Still to do, blocked on a live DB + pg tools: real-data trial in the browser and
+actually running the **backup + restore drill** (the one un-exercised non-negotiable).
+Stage 4 (dashboard + revenue) ✅. DB runs in Docker (suwa-db).
 **Build status:** ✅ `npm run typecheck` and `npm run build` both pass (build connects to the
-Docker DB via `.env`). RevenueDocument PDF render verified via tsx (valid %PDF buffer).
+Docker DB via `.env`). RevenueDocument PDF render + backup crypto round-trip both verified
+via tsx.
 
 ## How to run
 
