@@ -230,12 +230,13 @@ once the clinic-PC DB is up.
 - [x] App: root `layout.tsx`, `/` → redirect to `/login`, `(auth)/login` (wired form),
       `(app)/layout.tsx` (gated shell) + `(app)/dashboard`
 
-### Authentication (`src/lib/auth/` + middleware) ✅
+### Authentication (`src/lib/auth/` + `proxy.ts`) ✅
 - [x] Session: stateless HMAC-SHA256 signed token (Web Crypto, verifies in edge + node),
       HTTP-only `suwa_session` cookie, 8h expiry (`session.ts`).
 - [x] Passwords: argon2id via `@node-rs/argon2` (`password.ts`, server-only).
 - [x] Guards: `getSession` / `getCurrentUser` / `requireUser` / `requireRole` (`index.ts`).
-- [x] Middleware gates everything except `/login` + static; redirects both directions.
+- [x] `proxy.ts` (Next 16 proxy convention, formerly middleware) gates everything except
+      `/login` + static; redirects both directions.
 - [x] Login Server Action (`(auth)/login/actions.ts`) — Zod-validated, constant-ish time
       on unknown email, generic errors, sets cookie + audits `auth.login`. Client form via
       `useActionState` (`LoginForm.tsx`).
