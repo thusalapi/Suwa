@@ -23,14 +23,19 @@ describe("billItemSchema", () => {
 
 describe("billSchema", () => {
   it("accepts a bill with at least one item and defaults discount to 0", () => {
-    const res = billSchema.safeParse({ patientId: UUID, items: [{ description: "X", quantity: 1, unitPriceRupees: 10 }] });
+    const res = billSchema.safeParse({
+      patientId: UUID,
+      items: [{ description: "X", quantity: 1, unitPriceRupees: 10 }],
+    });
     expect(res.success).toBe(true);
     if (res.success) expect(res.data.discountRupees).toBe(0);
   });
 
   it("rejects an empty item list and a non-uuid patient", () => {
     expect(billSchema.safeParse({ patientId: UUID, items: [] }).success).toBe(false);
-    expect(billSchema.safeParse({ patientId: "x", items: [{ description: "X", quantity: 1, unitPriceRupees: 10 }] }).success).toBe(false);
+    expect(
+      billSchema.safeParse({ patientId: "x", items: [{ description: "X", quantity: 1, unitPriceRupees: 10 }] }).success,
+    ).toBe(false);
   });
 });
 
@@ -66,7 +71,9 @@ describe("patientSchema", () => {
   });
 
   it("accepts a valid gender and dob but rejects malformed ones", () => {
-    expect(patientSchema.safeParse({ fullName: "X", phone: "0712345678", gender: "female", dob: "1990-05-01" }).success).toBe(true);
+    expect(
+      patientSchema.safeParse({ fullName: "X", phone: "0712345678", gender: "female", dob: "1990-05-01" }).success,
+    ).toBe(true);
     expect(patientSchema.safeParse({ fullName: "X", phone: "0712345678", gender: "alien" }).success).toBe(false);
     expect(patientSchema.safeParse({ fullName: "X", phone: "0712345678", dob: "01-05-1990" }).success).toBe(false);
   });

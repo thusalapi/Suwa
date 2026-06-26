@@ -29,10 +29,7 @@ function fieldErrorsFrom(parsed: ReturnType<typeof parse>): ServiceFormState["fi
   };
 }
 
-export async function createServiceAction(
-  _prev: ServiceFormState,
-  formData: FormData,
-): Promise<ServiceFormState> {
+export async function createServiceAction(_prev: ServiceFormState, formData: FormData): Promise<ServiceFormState> {
   const user = await requireRole("owner");
 
   const parsed = parse(formData);
@@ -51,10 +48,7 @@ export async function createServiceAction(
   redirect("/services");
 }
 
-export async function updateServiceAction(
-  _prev: ServiceFormState,
-  formData: FormData,
-): Promise<ServiceFormState> {
+export async function updateServiceAction(_prev: ServiceFormState, formData: FormData): Promise<ServiceFormState> {
   const user = await requireRole("owner");
 
   const id = String(formData.get("id") ?? "");

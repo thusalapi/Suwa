@@ -68,9 +68,12 @@ export function BillForm({ locale, patientId, taxRate, services, submitLabel }: 
 
   const onService = (key: number, serviceId: string) => {
     const svc = services.find((s) => s.id === serviceId);
-    update(key, svc
-      ? { serviceId, description: svc.name, unitPriceRupees: (svc.defaultPrice / 100).toString() }
-      : { serviceId: "" });
+    update(
+      key,
+      svc
+        ? { serviceId, description: svc.name, unitPriceRupees: (svc.defaultPrice / 100).toString() }
+        : { serviceId: "" },
+    );
   };
 
   const subtotal = rows.reduce((sum, r) => sum + Number(r.quantity || 0) * toMinor(r.unitPriceRupees), 0);

@@ -105,16 +105,36 @@ function SortableRow({
         <Input value={row.unit} onChange={(e) => set({ unit: e.target.value })} className="h-9 w-20" />
       </FieldBox>
       <FieldBox label={t("templates.builder.row_refLow")}>
-        <Input type="number" value={row.ref_low} onChange={(e) => set({ ref_low: e.target.value })} className="h-9 w-20" />
+        <Input
+          type="number"
+          value={row.ref_low}
+          onChange={(e) => set({ ref_low: e.target.value })}
+          className="h-9 w-20"
+        />
       </FieldBox>
       <FieldBox label={t("templates.builder.row_refHigh")}>
-        <Input type="number" value={row.ref_high} onChange={(e) => set({ ref_high: e.target.value })} className="h-9 w-20" />
+        <Input
+          type="number"
+          value={row.ref_high}
+          onChange={(e) => set({ ref_high: e.target.value })}
+          className="h-9 w-20"
+        />
       </FieldBox>
       <FieldBox label={t("templates.builder.row_critLow")}>
-        <Input type="number" value={row.critical_low} onChange={(e) => set({ critical_low: e.target.value })} className="h-9 w-20" />
+        <Input
+          type="number"
+          value={row.critical_low}
+          onChange={(e) => set({ critical_low: e.target.value })}
+          className="h-9 w-20"
+        />
       </FieldBox>
       <FieldBox label={t("templates.builder.row_critHigh")}>
-        <Input type="number" value={row.critical_high} onChange={(e) => set({ critical_high: e.target.value })} className="h-9 w-20" />
+        <Input
+          type="number"
+          value={row.critical_high}
+          onChange={(e) => set({ critical_high: e.target.value })}
+          className="h-9 w-20"
+        />
       </FieldBox>
       <button type="button" onClick={onRemove} className="self-center px-1 text-sm text-danger hover:underline">
         {t("templates.builder.removeRow")}
@@ -185,10 +205,18 @@ function SectionEditor({
         <div className="space-y-2">
           <div className="flex flex-wrap gap-2">
             <FieldBox label={t("templates.builder.label")}>
-              <Input value={section.label} onChange={(e) => onChange({ ...section, label: e.target.value })} className="h-9 w-48" />
+              <Input
+                value={section.label}
+                onChange={(e) => onChange({ ...section, label: e.target.value })}
+                className="h-9 w-48"
+              />
             </FieldBox>
             <FieldBox label={t("templates.builder.key")}>
-              <Input value={section.key} onChange={(e) => onChange({ ...section, key: e.target.value })} className="h-9 w-36" />
+              <Input
+                value={section.key}
+                onChange={(e) => onChange({ ...section, key: e.target.value })}
+                className="h-9 w-36"
+              />
             </FieldBox>
             <FieldBox label={t("templates.builder.inputType")}>
               <select
@@ -241,7 +269,11 @@ function SectionEditor({
       return (
         <div className="space-y-2">
           <FieldBox label={t("templates.builder.title")}>
-            <Input value={section.title} onChange={(e) => onChange({ ...section, title: e.target.value })} className="h-9 w-64" />
+            <Input
+              value={section.title}
+              onChange={(e) => onChange({ ...section, title: e.target.value })}
+              className="h-9 w-64"
+            />
           </FieldBox>
           <DndContext sensors={rowSensors} collisionDetection={closestCenter} onDragEnd={onRowsEnd}>
             <SortableContext items={section.rows.map((r) => r._id)} strategy={verticalListSortingStrategy}>
@@ -251,7 +283,9 @@ function SectionEditor({
                     key={r._id}
                     row={r}
                     t={t}
-                    onChange={(nr) => onChange({ ...section, rows: section.rows.map((x) => (x._id === nr._id ? nr : x)) })}
+                    onChange={(nr) =>
+                      onChange({ ...section, rows: section.rows.map((x) => (x._id === nr._id ? nr : x)) })
+                    }
                     onRemove={() => onChange({ ...section, rows: section.rows.filter((x) => x._id !== r._id) })}
                   />
                 ))}
@@ -262,9 +296,7 @@ function SectionEditor({
             type="button"
             variant="secondary"
             size="sm"
-            onClick={() =>
-              onChange({ ...section, rows: [...section.rows, emptyRow()] })
-            }
+            onClick={() => onChange({ ...section, rows: [...section.rows, emptyRow()] })}
           >
             {t("templates.builder.addRow")}
           </Button>
@@ -276,10 +308,18 @@ function SectionEditor({
       return (
         <div className="flex flex-wrap gap-2">
           <FieldBox label={t("templates.builder.label")}>
-            <Input value={section.label} onChange={(e) => onChange({ ...section, label: e.target.value })} className="h-9 w-48" />
+            <Input
+              value={section.label}
+              onChange={(e) => onChange({ ...section, label: e.target.value })}
+              className="h-9 w-48"
+            />
           </FieldBox>
           <FieldBox label={t("templates.builder.key")}>
-            <Input value={section.key} onChange={(e) => onChange({ ...section, key: e.target.value })} className="h-9 w-36" />
+            <Input
+              value={section.key}
+              onChange={(e) => onChange({ ...section, key: e.target.value })}
+              className="h-9 w-36"
+            />
           </FieldBox>
         </div>
       );
@@ -287,7 +327,11 @@ function SectionEditor({
     case "signature":
       return (
         <FieldBox label={t("templates.builder.signatureLabel")}>
-          <Input value={section.label} onChange={(e) => onChange({ ...section, label: e.target.value })} className="h-9 w-64" />
+          <Input
+            value={section.label}
+            onChange={(e) => onChange({ ...section, label: e.target.value })}
+            className="h-9 w-64"
+          />
         </FieldBox>
       );
   }
@@ -435,7 +479,9 @@ function CanvasCard({
       )}
     >
       <div className="flex items-center justify-between gap-1 border-b border-border bg-surface px-2 py-1">
-        <span className="truncate text-[11px] font-semibold text-ink">{t(`templates.builder.block_${section.type}`)}</span>
+        <span className="truncate text-[11px] font-semibold text-ink">
+          {t(`templates.builder.block_${section.type}`)}
+        </span>
         <button
           type="button"
           onPointerDown={(e) => e.stopPropagation()}
@@ -623,9 +669,7 @@ export function TemplateBuilder({ locale, action, templateId, initialTemplate, s
           />
           {selected ? (
             <div className="rounded-lg border border-border bg-surface-raised p-3">
-              <p className="mb-2 text-sm font-semibold text-ink">
-                {t(`templates.builder.block_${selected.type}`)}
-              </p>
+              <p className="mb-2 text-sm font-semibold text-ink">{t(`templates.builder.block_${selected.type}`)}</p>
               <SectionEditor section={selected} t={t} onChange={updateSection} />
             </div>
           ) : (

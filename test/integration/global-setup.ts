@@ -12,9 +12,7 @@ import { fileURLToPath } from "node:url";
 const ADMIN_URL = "postgresql://suwa:suwa@localhost:5432/postgres";
 const TEST_DB = "suwa_test";
 
-const schemaPath = fileURLToPath(
-  new URL("../../liquibase/changelog/changes/001-initial-schema.sql", import.meta.url),
-);
+const schemaPath = fileURLToPath(new URL("../../liquibase/changelog/changes/001-initial-schema.sql", import.meta.url));
 
 /** Strip full-line `--` comments, then split the DDL into individual statements. */
 function ddlStatements(): string[] {

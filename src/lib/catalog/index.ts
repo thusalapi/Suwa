@@ -55,11 +55,7 @@ export interface UpsertServiceInput {
 }
 
 /** Create a service (insert + `service.create` audit in one transaction). Returns the id. */
-export async function createService(
-  clinicId: string,
-  userId: string,
-  input: UpsertServiceInput,
-): Promise<string> {
+export async function createService(clinicId: string, userId: string, input: UpsertServiceInput): Promise<string> {
   return db.transaction(async (tx) => {
     const [row] = await tx
       .insert(services)
@@ -71,10 +67,7 @@ export async function createService(
       })
       .returning({ id: services.id });
 
-    await recordAudit(
-      { clinicId, userId, action: "service.create", entityType: "service", entityId: row.id },
-      tx,
-    );
+    await recordAudit({ clinicId, userId, action: "service.create", entityType: "service", entityId: row.id }, tx);
     return row.id;
   });
 }
@@ -92,20 +85,12 @@ export async function updateService(
       .set({ name: input.name, defaultPrice: input.defaultPrice, category: input.category || null })
       .where(and(eq(services.id, id), eq(services.clinicId, clinicId)));
 
-    await recordAudit(
-      { clinicId, userId, action: "service.update", entityType: "service", entityId: id },
-      tx,
-    );
+    await recordAudit({ clinicId, userId, action: "service.update", entityType: "service", entityId: id }, tx);
   });
 }
 
 /** Activate / deactivate a service (soft, never hard-delete — keeps past bills' references valid). */
-export async function setServiceActive(
-  clinicId: string,
-  userId: string,
-  id: string,
-  active: boolean,
-): Promise<void> {
+export async function setServiceActive(clinicId: string, userId: string, id: string, active: boolean): Promise<void> {
   await db.transaction(async (tx) => {
     await tx
       .update(services)

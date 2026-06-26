@@ -22,7 +22,14 @@ export async function seedClinic(opts: { taxRate?: number } = {}): Promise<strin
 export async function seedUser(clinicId: string, role: UserRole = "staff"): Promise<string> {
   const [u] = await db
     .insert(users)
-    .values({ clinicId, name: "Tester", email: `t-${randomUUID()}@clinic.lk`, role, passwordHash: "x", mustReset: false })
+    .values({
+      clinicId,
+      name: "Tester",
+      email: `t-${randomUUID()}@clinic.lk`,
+      role,
+      passwordHash: "x",
+      mustReset: false,
+    })
     .returning({ id: users.id });
   return u.id;
 }

@@ -11,18 +11,7 @@
  *  - Financial/clinical rows use status, never hard-delete.
  *  - JSONB for flexible structure; real columns for queryable facts.
  */
-import {
-  pgTable,
-  uuid,
-  text,
-  integer,
-  boolean,
-  date,
-  timestamp,
-  jsonb,
-  unique,
-  index,
-} from "drizzle-orm/pg-core";
+import { pgTable, uuid, text, integer, boolean, date, timestamp, jsonb, unique, index } from "drizzle-orm/pg-core";
 
 const createdAt = timestamp("created_at", { withTimezone: true }).notNull().defaultNow();
 
@@ -78,10 +67,7 @@ export const patients = pgTable(
     notes: text("notes"),
     createdAt,
   },
-  (t) => [
-    unique("patients_clinic_phone_key").on(t.clinicId, t.phone),
-    index("patients_clinic_idx").on(t.clinicId),
-  ],
+  (t) => [unique("patients_clinic_phone_key").on(t.clinicId, t.phone), index("patients_clinic_idx").on(t.clinicId)],
 );
 
 /** Price catalog. default_price is integer minor units. */

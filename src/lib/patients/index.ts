@@ -51,9 +51,7 @@ export async function searchPatients(clinicId: string, query: string): Promise<P
   return db
     .select(cols)
     .from(patients)
-    .where(
-      and(eq(patients.clinicId, clinicId), or(ilike(patients.phone, like), ilike(patients.fullName, like))),
-    )
+    .where(and(eq(patients.clinicId, clinicId), or(ilike(patients.phone, like), ilike(patients.fullName, like))))
     .orderBy(patients.fullName)
     .limit(SEARCH_LIMIT);
 }
@@ -111,41 +109,26 @@ function normalize(input: PatientInput) {
 }
 
 /** Create a patient (insert + `patient.create` audit in one transaction). Returns the id. */
-export async function createPatient(
-  clinicId: string,
-  userId: string,
-  input: PatientInput,
-): Promise<string> {
+export async function createPatient(clinicId: string, userId: string, input: PatientInput): Promise<string> {
   return db.transaction(async (tx) => {
     const [row] = await tx
       .insert(patients)
       .values({ clinicId, ...normalize(input) })
       .returning({ id: patients.id });
 
-    await recordAudit(
-      { clinicId, userId, action: "patient.create", entityType: "patient", entityId: row.id },
-      tx,
-    );
+    await recordAudit({ clinicId, userId, action: "patient.create", entityType: "patient", entityId: row.id }, tx);
     return row.id;
   });
 }
 
 /** Update a patient (update + `patient.update` audit in one transaction). Tenant-scoped. */
-export async function updatePatient(
-  clinicId: string,
-  userId: string,
-  id: string,
-  input: PatientInput,
-): Promise<void> {
+export async function updatePatient(clinicId: string, userId: string, id: string, input: PatientInput): Promise<void> {
   await db.transaction(async (tx) => {
     await tx
       .update(patients)
       .set(normalize(input))
       .where(and(eq(patients.id, id), eq(patients.clinicId, clinicId)));
 
-    await recordAudit(
-      { clinicId, userId, action: "patient.update", entityType: "patient", entityId: id },
-      tx,
-    );
+    await recordAudit({ clinicId, userId, action: "patient.update", entityType: "patient", entityId: id }, tx);
   });
 }

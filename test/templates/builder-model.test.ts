@@ -29,7 +29,16 @@ describe("builder serialisation", () => {
         type: "results_table",
         title: "",
         rows: [
-          { _id: "r", key: "hb", test: "Hb", unit: "", ref_low: "13", ref_high: "", critical_low: "", critical_high: "" },
+          {
+            _id: "r",
+            key: "hb",
+            test: "Hb",
+            unit: "",
+            ref_low: "13",
+            ref_high: "",
+            critical_low: "",
+            critical_high: "",
+          },
         ],
       },
     ];
@@ -40,7 +49,15 @@ describe("builder serialisation", () => {
 
   it("emits a select field's options as an array and trims the title", () => {
     const sections: BSection[] = [
-      { _id: "f", type: "field", key: "sex", label: "Sex", inputType: "select", options: " M \n F \n\n", required: true },
+      {
+        _id: "f",
+        type: "field",
+        key: "sex",
+        label: "Sex",
+        inputType: "select",
+        options: " M \n F \n\n",
+        required: true,
+      },
     ];
     const out = toTemplate("T", 1, sections) as Template;
     const field = out.sections[0] as Extract<Template["sections"][number], { type: "field" }>;
@@ -97,7 +114,18 @@ describe("builder serialisation", () => {
       NEW_BLOCKS.signature(),
       {
         ...NEW_BLOCKS.results_table(),
-        rows: [{ _id: "r", key: "hb", test: "Hb", unit: "g/dL", ref_low: "13", ref_high: "17", critical_low: "", critical_high: "" }],
+        rows: [
+          {
+            _id: "r",
+            key: "hb",
+            test: "Hb",
+            unit: "g/dL",
+            ref_low: "13",
+            ref_high: "17",
+            critical_low: "",
+            critical_high: "",
+          },
+        ],
       } as BSection,
     ];
     expect(serialize("Everything", sections).success).toBe(true);

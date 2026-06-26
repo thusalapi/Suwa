@@ -41,13 +41,10 @@ function b64urlDecode(str: string): Uint8Array<ArrayBuffer> {
 }
 
 async function hmacKey(): Promise<CryptoKey> {
-  return crypto.subtle.importKey(
-    "raw",
-    encoder.encode(getSecret()),
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["sign", "verify"],
-  );
+  return crypto.subtle.importKey("raw", encoder.encode(getSecret()), { name: "HMAC", hash: "SHA-256" }, false, [
+    "sign",
+    "verify",
+  ]);
 }
 
 /** Build a signed token for a freshly authenticated user. */

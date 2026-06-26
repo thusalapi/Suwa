@@ -122,25 +122,37 @@ export const templateSchema = z
           ctx.addIssue({ code: "custom", message: "select fields need options", path: ["sections", i, "options"] });
         }
         if (RESERVED_KEYS.includes(s.key) || topKeys.has(s.key)) {
-          ctx.addIssue({ code: "custom", message: `duplicate or reserved key "${s.key}"`, path: ["sections", i, "key"] });
+          ctx.addIssue({
+            code: "custom",
+            message: `duplicate or reserved key "${s.key}"`,
+            path: ["sections", i, "key"],
+          });
         }
         topKeys.add(s.key);
       } else if (s.type === "textarea") {
         if (RESERVED_KEYS.includes(s.key) || topKeys.has(s.key)) {
-          ctx.addIssue({ code: "custom", message: `duplicate or reserved key "${s.key}"`, path: ["sections", i, "key"] });
+          ctx.addIssue({
+            code: "custom",
+            message: `duplicate or reserved key "${s.key}"`,
+            path: ["sections", i, "key"],
+          });
         }
         topKeys.add(s.key);
       } else if (s.type === "results_table") {
         s.rows.forEach((r, j) => {
-          if (
-            r.ref_low != null &&
-            r.ref_high != null &&
-            r.ref_low > r.ref_high
-          ) {
-            ctx.addIssue({ code: "custom", message: "ref_low must be <= ref_high", path: ["sections", i, "rows", j, "ref_low"] });
+          if (r.ref_low != null && r.ref_high != null && r.ref_low > r.ref_high) {
+            ctx.addIssue({
+              code: "custom",
+              message: "ref_low must be <= ref_high",
+              path: ["sections", i, "rows", j, "ref_low"],
+            });
           }
           if (rowKeys.has(r.key)) {
-            ctx.addIssue({ code: "custom", message: `duplicate result key "${r.key}"`, path: ["sections", i, "rows", j, "key"] });
+            ctx.addIssue({
+              code: "custom",
+              message: `duplicate result key "${r.key}"`,
+              path: ["sections", i, "rows", j, "key"],
+            });
           }
           rowKeys.add(r.key);
         });

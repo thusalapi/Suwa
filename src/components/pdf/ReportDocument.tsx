@@ -98,8 +98,7 @@ export function ReportDocument({ locale, clinic, report }: ReportDocumentProps) 
   const { snapshot, data } = report;
   const results = (data.results ?? {}) as Record<string, ResultValue>;
   const patientInfo = (data.patient_info ?? {}) as Record<string, string | number>;
-  const showLogo =
-    !!clinic.logoUrl && (clinic.logoUrl.startsWith("http") || clinic.logoUrl.startsWith("data:"));
+  const showLogo = !!clinic.logoUrl && (clinic.logoUrl.startsWith("http") || clinic.logoUrl.startsWith("data:"));
 
   const isCanvas = snapshot.layout === "canvas";
 

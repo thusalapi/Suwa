@@ -125,9 +125,7 @@ export function ReportFormRenderer({
           case "results_table":
             return (
               <section key={i} className="space-y-2">
-                {section.title ? (
-                  <h3 className="text-sm font-semibold text-ink">{section.title}</h3>
-                ) : null}
+                {section.title ? <h3 className="text-sm font-semibold text-ink">{section.title}</h3> : null}
                 <div className="overflow-hidden rounded-lg border border-border bg-surface-raised">
                   <table className="w-full text-sm">
                     <thead>
@@ -153,9 +151,7 @@ export function ReportFormRenderer({
                                 inputMode="decimal"
                                 aria-label={`${row.test} ${t("reports.result")}`}
                                 value={resultValues[row.key] ?? ""}
-                                onChange={(e) =>
-                                  setResultValues((prev) => ({ ...prev, [row.key]: e.target.value }))
-                                }
+                                onChange={(e) => setResultValues((prev) => ({ ...prev, [row.key]: e.target.value }))}
                                 className="h-9 max-w-[8rem]"
                               />
                             </td>

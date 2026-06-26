@@ -4,12 +4,7 @@ import { db, type Tx } from "@/lib/db";
 import { reports, patients, users, type ReportStatus } from "@/lib/db/schema";
 import { recordAudit } from "@/lib/audit";
 import { getTemplate } from "@/lib/report-templates";
-import {
-  computeResults,
-  validateReportData,
-  type Template,
-  type ReportData,
-} from "@/lib/report-engine";
+import { computeResults, validateReportData, type Template, type ReportData } from "@/lib/report-engine";
 
 /** Raw, stringy entry from the form. The service coerces it against the template snapshot. */
 export interface CreateReportInput {
@@ -164,10 +159,7 @@ export async function verifyReport(clinicId: string, userId: string, id: string)
       .set({ status: "verified", verifiedBy: userId, verifiedAt: new Date() })
       .where(and(eq(reports.id, id), eq(reports.clinicId, clinicId)));
 
-    await recordAudit(
-      { clinicId, userId, action: "report.verify", entityType: "report", entityId: id },
-      tx,
-    );
+    await recordAudit({ clinicId, userId, action: "report.verify", entityType: "report", entityId: id }, tx);
   });
 }
 

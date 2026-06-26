@@ -13,9 +13,15 @@ DB (rollback-tx test, all numbers correct); and the **backup + restore drill run
 DB, row counts matched). Remaining is **operational, clinic-PC only**: install pg client
 tools + rclone on the host PATH, configure the Drive remote, schedule the nightly job, and
 run the real-data trial in the browser. DB runs in Docker (suwa-db).
-**Build status:** ✅ `npm run typecheck` and `npm run build` pass; tests green — `npm run test`
-(58 unit) and `npm run test:integration` (17 against a throwaway `suwa_test` DB). Also verified
-via the live Docker DB: a full backup→restore drill.
+**Build status:** ✅ `npm run typecheck`, `npm run lint` (ESLint, clean), and `npm run build`
+pass; tests green — `npm run test` (unit) and `npm run test:integration` (against a throwaway
+`suwa_test` DB). Code formatted via `npm run format` (Prettier). Backup→restore drill verified
+live on the Docker DB.
+
+**Tooling:** ESLint (flat config, `eslint-config-next` native + `eslint-config-prettier`) and
+Prettier (`printWidth 120`, matching the existing style). Scripts: `lint` / `lint:fix` /
+`format` / `format:check`. `jsx-a11y/alt-text` is disabled for `src/components/pdf/**` (react-pdf
+`<Image>` has no `alt`). Prose (`*.md`) is excluded from formatting.
 
 ## How to run
 

@@ -73,8 +73,16 @@ export function PaymentForm({
 
       <SubmitButton label={t("bills.recordPayment")} pendingLabel={t("common.saving")} />
 
-      {state.error ? <p role="alert" className="w-full text-sm text-danger">{t(state.error)}</p> : null}
-      {state.success ? <p role="status" className="w-full text-sm text-success">{t("bills.paymentRecorded")}</p> : null}
+      {state.error ? (
+        <p role="alert" className="w-full text-sm text-danger">
+          {t(state.error)}
+        </p>
+      ) : null}
+      {state.success ? (
+        <p role="status" className="w-full text-sm text-success">
+          {t("bills.paymentRecorded")}
+        </p>
+      ) : null}
     </form>
   );
 }

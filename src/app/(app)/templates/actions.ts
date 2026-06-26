@@ -4,12 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { requireRole } from "@/lib/auth";
 import { templateSchema, type Template } from "@/lib/report-engine";
-import {
-  createTemplate,
-  updateTemplate,
-  getTemplate,
-  setTemplateActive,
-} from "@/lib/report-templates";
+import { createTemplate, updateTemplate, getTemplate, setTemplateActive } from "@/lib/report-templates";
 
 /** Result surfaced back to the template editor. `error` is an i18n key; `detail` is raw. */
 export interface TemplateFormState {
@@ -18,9 +13,7 @@ export interface TemplateFormState {
   detail?: string;
 }
 
-type ParseResult =
-  | { ok: true; template: Template }
-  | { ok: false; state: TemplateFormState };
+type ParseResult = { ok: true; template: Template } | { ok: false; state: TemplateFormState };
 
 /** Parse the pasted JSON and validate it against the template schema. */
 function parseTemplateJson(raw: FormDataEntryValue | null): ParseResult {
@@ -45,10 +38,7 @@ function parseTemplateJson(raw: FormDataEntryValue | null): ParseResult {
   return { ok: true, template: parsed.data };
 }
 
-export async function createTemplateAction(
-  _prev: TemplateFormState,
-  formData: FormData,
-): Promise<TemplateFormState> {
+export async function createTemplateAction(_prev: TemplateFormState, formData: FormData): Promise<TemplateFormState> {
   const user = await requireRole("owner");
 
   const res = parseTemplateJson(formData.get("schema"));
@@ -64,10 +54,7 @@ export async function createTemplateAction(
   redirect(`/templates/${id}`);
 }
 
-export async function updateTemplateAction(
-  _prev: TemplateFormState,
-  formData: FormData,
-): Promise<TemplateFormState> {
+export async function updateTemplateAction(_prev: TemplateFormState, formData: FormData): Promise<TemplateFormState> {
   const user = await requireRole("owner");
 
   const id = String(formData.get("id") ?? "");

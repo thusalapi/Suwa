@@ -12,7 +12,9 @@ const statusTone = { draft: "neutral", finalized: "neutral", paid: "success", ca
 
 function TotalRow({ label, value, strong }: { label: string; value: string; strong?: boolean }) {
   return (
-    <div className={`flex w-64 items-center justify-between ${strong ? "border-t border-border pt-1 font-semibold" : ""}`}>
+    <div
+      className={`flex w-64 items-center justify-between ${strong ? "border-t border-border pt-1 font-semibold" : ""}`}
+    >
       <span className={strong ? "text-ink" : "text-muted"}>{label}</span>
       <span className="text-ink">{value}</span>
     </div>

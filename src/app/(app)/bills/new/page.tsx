@@ -8,11 +8,7 @@ import { getT } from "@/lib/i18n";
 import { DEFAULT_LOCALE } from "@/lib/i18n/types";
 import { BillForm } from "../BillForm";
 
-export default async function NewBillPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ patientId?: string }>;
-}) {
+export default async function NewBillPage({ searchParams }: { searchParams: Promise<{ patientId?: string }> }) {
   const user = await requireUser();
   const { patientId } = await searchParams;
   const locale = DEFAULT_LOCALE;
@@ -23,10 +19,7 @@ export default async function NewBillPage({
   const patient = await getPatient(user.clinicId, patientId);
   if (!patient) notFound();
 
-  const [services, clinic] = await Promise.all([
-    listServices(user.clinicId, true),
-    getClinic(user.clinicId),
-  ]);
+  const [services, clinic] = await Promise.all([listServices(user.clinicId, true), getClinic(user.clinicId)]);
 
   return (
     <div className="space-y-6">

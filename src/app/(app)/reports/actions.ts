@@ -17,10 +17,7 @@ function collectPrefixed(formData: FormData, prefix: string): Record<string, str
   return out;
 }
 
-export async function createReportAction(
-  _prev: ReportFormState,
-  formData: FormData,
-): Promise<ReportFormState> {
+export async function createReportAction(_prev: ReportFormState, formData: FormData): Promise<ReportFormState> {
   const user = await requireUser(); // any clinic role may enter reports
 
   const patientId = String(formData.get("patientId") ?? "");

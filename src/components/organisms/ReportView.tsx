@@ -47,9 +47,7 @@ export function ReportView({ locale, snapshot, data }: ReportViewProps) {
               <dl key={i} className="grid grid-cols-2 gap-4 sm:grid-cols-4">
                 {section.fields.map((f) => (
                   <div key={f} className="space-y-0.5">
-                    <dt className="text-xs font-medium uppercase tracking-wide text-muted">
-                      {t(`reports.pi_${f}`)}
-                    </dt>
+                    <dt className="text-xs font-medium uppercase tracking-wide text-muted">{t(`reports.pi_${f}`)}</dt>
                     <dd className="text-sm text-ink">{patientInfo[f] != null ? String(patientInfo[f]) : "—"}</dd>
                   </div>
                 ))}
@@ -95,9 +93,7 @@ export function ReportView({ locale, snapshot, data }: ReportViewProps) {
                                   {t(`reports.flag_${flag}`)}
                                 </Badge>
                               ) : (
-                                <span className="text-xs text-muted">
-                                  {flag ? t(`reports.flag_${flag}`) : "—"}
-                                </span>
+                                <span className="text-xs text-muted">{flag ? t(`reports.flag_${flag}`) : "—"}</span>
                               )}
                             </td>
                           </tr>

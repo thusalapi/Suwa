@@ -40,13 +40,7 @@ export function SettingsForm({ locale, initial }: { locale: Locale; initial: Set
         htmlFor="name"
         error={state.fieldErrors?.name ? t(state.fieldErrors.name) : undefined}
       >
-        <Input
-          id="name"
-          name="name"
-          defaultValue={initial.name}
-          invalid={!!state.fieldErrors?.name}
-          required
-        />
+        <Input id="name" name="name" defaultValue={initial.name} invalid={!!state.fieldErrors?.name} required />
       </Field>
 
       <Field label={t("settings.address")} htmlFor="address">

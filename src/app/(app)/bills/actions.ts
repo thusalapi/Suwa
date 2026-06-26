@@ -11,10 +11,7 @@ export interface BillFormState {
   detail?: string;
 }
 
-export async function createBillAction(
-  _prev: BillFormState,
-  formData: FormData,
-): Promise<BillFormState> {
+export async function createBillAction(_prev: BillFormState, formData: FormData): Promise<BillFormState> {
   const user = await requireUser();
 
   let items: unknown;
@@ -59,10 +56,7 @@ export interface PaymentFormState {
   success?: boolean;
 }
 
-export async function recordPaymentAction(
-  _prev: PaymentFormState,
-  formData: FormData,
-): Promise<PaymentFormState> {
+export async function recordPaymentAction(_prev: PaymentFormState, formData: FormData): Promise<PaymentFormState> {
   const user = await requireUser();
 
   const billId = String(formData.get("billId") ?? "");

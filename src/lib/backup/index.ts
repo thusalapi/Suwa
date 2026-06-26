@@ -55,9 +55,7 @@ function run(cmd: string, args: string[]): Promise<void> {
     child.on("error", (err) =>
       reject(new Error(`Failed to run "${cmd}": ${err.message}. Is it installed and on PATH?`)),
     );
-    child.on("close", (code) =>
-      code === 0 ? resolve() : reject(new Error(`"${cmd}" exited with code ${code}.`)),
-    );
+    child.on("close", (code) => (code === 0 ? resolve() : reject(new Error(`"${cmd}" exited with code ${code}.`))));
   });
 }
 
@@ -139,10 +137,7 @@ export interface RestoreOptions {
  * Restore an encrypted dump into the target database. DESTRUCTIVE: `--clean --if-exists`
  * drops and recreates objects. Decrypts to a temp file, restores, then removes the temp.
  */
-export async function restoreBackup(
-  opts: RestoreOptions,
-  config: BackupConfig = resolveBackupConfig(),
-): Promise<void> {
+export async function restoreBackup(opts: RestoreOptions, config: BackupConfig = resolveBackupConfig()): Promise<void> {
   const target = opts.databaseUrl ?? config.databaseUrl;
   const tmp = `${opts.encryptedPath.replace(/\.enc$/, "")}.restore-${Date.now()}`;
 

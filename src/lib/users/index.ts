@@ -31,11 +31,7 @@ export async function listClinicUsers(clinicId: string): Promise<ClinicUser[]> {
 
 /** True if the email is already taken (emails are globally unique in `users`). */
 export async function emailExists(email: string): Promise<boolean> {
-  const [row] = await db
-    .select({ id: users.id })
-    .from(users)
-    .where(eq(users.email, email))
-    .limit(1);
+  const [row] = await db.select({ id: users.id }).from(users).where(eq(users.email, email)).limit(1);
   return !!row;
 }
 
@@ -88,11 +84,7 @@ export async function createInvitedUser(
  * Set a user's password and clear the must-reset flag (first-login reset). Scoped by clinic
  * for tenant isolation. The update + audit row commit together.
  */
-export async function setUserPassword(
-  clinicId: string,
-  userId: string,
-  passwordHash: string,
-): Promise<void> {
+export async function setUserPassword(clinicId: string, userId: string, passwordHash: string): Promise<void> {
   await db.transaction(async (tx) => {
     await tx
       .update(users)
