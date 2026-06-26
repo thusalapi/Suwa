@@ -13,9 +13,9 @@ DB (rollback-tx test, all numbers correct); and the **backup + restore drill run
 DB, row counts matched). Remaining is **operational, clinic-PC only**: install pg client
 tools + rclone on the host PATH, configure the Drive remote, schedule the nightly job, and
 run the real-data trial in the browser. DB runs in Docker (suwa-db).
-**Build status:** ✅ `npm run typecheck` and `npm run build` pass; `npm run test` green
-(Vitest, 58 unit tests / 7 files). Verified via the live Docker DB: dashboard/revenue
-aggregates (rollback tx) and a full backup→restore drill.
+**Build status:** ✅ `npm run typecheck` and `npm run build` pass; tests green — `npm run test`
+(58 unit) and `npm run test:integration` (17 against a throwaway `suwa_test` DB). Also verified
+via the live Docker DB: a full backup→restore drill.
 
 ## How to run
 
@@ -54,9 +54,14 @@ npm run seed:owner -- --clinic "Suwa Medical Centre" \
       analytics `resolveRange` (fake-timer deterministic), backup crypto round-trip
       (large/empty/small + wrong-key/tamper/truncation rejection), i18n `getT`/`formatMoney`/
       `formatDate`, and the bill/patient/service Zod schemas.
-- [ ] **Not yet covered:** DB-touching modules (bills numbering/payment locking, dashboard +
-      revenue aggregates) — those are server-only + need Postgres; verified live via rollback-tx
-      SQL for now. A future integration-test tier (Vitest against the Docker DB) could add them.
+- [x] **Integration tier** (`npm run test:integration`, `vitest.integration.config.ts`) — 17
+      tests against a throwaway `suwa_test` DB (a `global-setup` builds it from the Liquibase
+      DDL over TCP and drops it after; fully isolated from the dev `suwa` DB). Covers the
+      server-only modules: `createBill` (gap-free numbering, tax/discount totals, line snapshot,
+      audit row), `recordPayment` (partial→paid, overpayment + already-settled rejection,
+      **concurrent payments sum correctly via the row lock**, audit row), `getDashboardStats`,
+      and `getRevenueReport` (billed/collected/by-service/outstanding **+ a 201-bill regression
+      test proving `outstandingTotal` isn't capped at the 200-row list**). Needs the Docker DB up.
 
 ### Stage 5 — Polish + real-data trial (in progress)
 - [x] **Payment edge cases** — `recordPayment` now rejects a payment larger than the

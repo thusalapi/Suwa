@@ -60,7 +60,8 @@ what's next); it's the first thing to read when picking the work back up. See th
 ```bash
 npm install
 npm run dev    # http://localhost:3000
-npm run test   # unit tests (Vitest) — pure logic, no DB needed
+npm run test              # unit tests (Vitest) — pure logic, no DB needed
+npm run test:integration  # DB-backed tests — needs the Docker Postgres running
 ```
 
 The app needs a PostgreSQL database. For local dev you can run one in Docker:

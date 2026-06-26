@@ -20,6 +20,7 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["test/**/*.test.ts"],
+    exclude: ["test/integration/**", "node_modules/**"],
     env: {
       DATABASE_URL: "postgresql://test:test@localhost:5432/test",
     },
