@@ -56,9 +56,13 @@ export const en = {
     outstandingHint: "{count} unpaid bills",
     quickLinks: "Quick actions",
     newPatient: "New patient",
+    newPatientHint: "Register by phone number",
     newBill: "New bill",
+    newBillHint: "Create an itemized bill",
     newReport: "New report",
+    newReportHint: "Enter & verify a lab report",
     viewRevenue: "Revenue report",
+    viewRevenueHint: "Income & outstanding",
   },
   revenue: {
     title: "Revenue report",
