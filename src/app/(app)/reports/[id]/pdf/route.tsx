@@ -1,4 +1,5 @@
 import { renderToBuffer } from "@react-pdf/renderer";
+import QRCode from "qrcode";
 import { getCurrentUser } from "@/lib/auth";
 import { getReport } from "@/lib/reports";
 import { getClinic } from "@/lib/clinic";
@@ -20,6 +21,13 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 
   const clinic = await getClinic(user.clinicId);
 
+  // QR encodes the report number so a printed report can be looked up by scan. Owner-toggleable
+  // per clinic. Pure-JS PNG data URL (no headless browser), matching the self-hosted PDF pipeline.
+  const qrDataUrl =
+    clinic?.showReportQr === false
+      ? null
+      : await QRCode.toDataURL(String(report.reportNumber), { margin: 0, width: 120 });
+
   const buffer = await renderToBuffer(
     <ReportDocument
       locale={DEFAULT_LOCALE}
@@ -29,6 +37,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
         phone: clinic?.phone ?? null,
         logoUrl: clinic?.logoUrl ?? null,
       }}
+      qrDataUrl={qrDataUrl}
       report={report}
     />,
   );

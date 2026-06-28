@@ -28,6 +28,7 @@ phone           text
 logo_url        text
 currency        text          -- e.g. "LKR"
 tax_rate        integer       -- basis points, e.g. 800 = 8.00%
+show_report_qr  boolean       -- QR (report number) on report PDFs; default true
 created_at      timestamptz
 ```
 

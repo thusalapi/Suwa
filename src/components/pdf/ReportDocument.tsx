@@ -23,6 +23,8 @@ export interface ReportClinic {
 export interface ReportDocumentProps {
   locale: Locale;
   clinic: ReportClinic;
+  /** Optional QR (PNG data URL) encoding the report number, shown in the header. */
+  qrDataUrl?: string | null;
   report: {
     reportNumber: number;
     status: "draft" | "finalized" | "verified";
@@ -41,6 +43,9 @@ const styles = StyleSheet.create({
   clinicName: { fontSize: 16, fontWeight: 700, color: c.primaryDark },
   clinicMeta: { fontSize: 9, color: c.muted, marginTop: 2 },
   logo: { width: 96, height: 40, objectFit: "contain" },
+  headerRight: { alignItems: "flex-end" },
+  qr: { width: 50, height: 50, marginTop: 4 },
+  qrCaption: { fontSize: 7, color: c.muted, marginTop: 1 },
   rule: { borderBottomWidth: 1, borderBottomColor: c.border, marginVertical: 8 },
   draft: {
     marginBottom: 8,
@@ -93,7 +98,7 @@ function rangeLabel(row: ResultRow): string {
   return "-";
 }
 
-export function ReportDocument({ locale, clinic, report }: ReportDocumentProps) {
+export function ReportDocument({ locale, clinic, qrDataUrl, report }: ReportDocumentProps) {
   const t = getT(locale);
   const { snapshot, data } = report;
   const results = (data.results ?? {}) as Record<string, ResultValue>;
@@ -186,7 +191,17 @@ export function ReportDocument({ locale, clinic, report }: ReportDocumentProps) 
           {clinic.address ? <Text style={styles.clinicMeta}>{clinic.address}</Text> : null}
           {clinic.phone ? <Text style={styles.clinicMeta}>{clinic.phone}</Text> : null}
         </View>
-        {showLogo ? <Image src={clinic.logoUrl as string} style={styles.logo} /> : null}
+        <View style={styles.headerRight}>
+          {showLogo ? <Image src={clinic.logoUrl as string} style={styles.logo} /> : null}
+          {qrDataUrl ? (
+            <>
+              <Image src={qrDataUrl} style={styles.qr} />
+              <Text style={styles.qrCaption}>
+                {t("reports.number")} #{report.reportNumber}
+              </Text>
+            </>
+          ) : null}
+        </View>
       </View>
       <View style={styles.rule} />
     </>

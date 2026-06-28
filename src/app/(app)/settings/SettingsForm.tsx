@@ -17,6 +17,7 @@ export interface SettingsInitial {
   logoUrl: string;
   currency: string;
   taxRatePercent: number;
+  showReportQr: boolean;
 }
 
 function SubmitButton({ label, pendingLabel }: { label: string; pendingLabel: string }) {
@@ -89,6 +90,20 @@ export function SettingsForm({ locale, initial }: { locale: Locale; initial: Set
             invalid={!!state.fieldErrors?.taxRatePercent}
           />
         </Field>
+      </div>
+
+      <div className="space-y-1.5">
+        <label htmlFor="showReportQr" className="flex items-start gap-2.5">
+          <input
+            id="showReportQr"
+            name="showReportQr"
+            type="checkbox"
+            defaultChecked={initial.showReportQr}
+            className="mt-0.5 h-4 w-4 accent-primary focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-primary"
+          />
+          <span className="text-sm text-ink">{t("settings.showReportQr")}</span>
+        </label>
+        <p className="text-xs text-muted">{t("settings.showReportQrHint")}</p>
       </div>
 
       {state.error ? (

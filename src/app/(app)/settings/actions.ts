@@ -23,6 +23,7 @@ export async function updateSettingsAction(_prev: SettingsState, formData: FormD
     logoUrl: formData.get("logoUrl"),
     currency: formData.get("currency"),
     taxRatePercent: formData.get("taxRatePercent"),
+    showReportQr: formData.get("showReportQr"),
   });
 
   if (!parsed.success) {
@@ -45,6 +46,7 @@ export async function updateSettingsAction(_prev: SettingsState, formData: FormD
       logoUrl: d.logoUrl,
       currency: d.currency.toUpperCase(),
       taxRate: Math.round(d.taxRatePercent * 100), // percentage → basis points
+      showReportQr: d.showReportQr,
     });
   } catch {
     return { error: "settings.saveError" };

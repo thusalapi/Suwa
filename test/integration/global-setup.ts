@@ -1,24 +1,31 @@
 import postgres from "postgres";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 /**
- * Integration-test database lifecycle. Creates a throwaway `suwa_test` database from the
- * Liquibase initial-schema DDL (the `--` lines are comment directives Postgres ignores), runs
- * every integration test against it, then drops it. Fully isolated from the dev `suwa` DB.
+ * Integration-test database lifecycle. Creates a throwaway `suwa_test` database from every
+ * Liquibase changeset DDL in order (the `--` lines are comment directives Postgres ignores),
+ * runs every integration test against it, then drops it. Fully isolated from the dev `suwa` DB.
  *
  * Connects over TCP (Docker publishes 5432), so no host-side pg client tools are needed.
  */
 const ADMIN_URL = "postgresql://suwa:suwa@localhost:5432/postgres";
 const TEST_DB = "suwa_test";
 
-const schemaPath = fileURLToPath(new URL("../../liquibase/changelog/changes/001-initial-schema.sql", import.meta.url));
+const changesDir = fileURLToPath(new URL("../../liquibase/changelog/changes", import.meta.url));
 
-/** Strip full-line `--` comments, then split the DDL into individual statements. */
+/** Apply every `changes/*.sql` changeset in filename order, stripping `--` comment lines. */
 function ddlStatements(): string[] {
-  const sql = readFileSync(schemaPath, "utf8")
-    .split("\n")
-    .filter((line) => !line.trim().startsWith("--"))
+  const files = readdirSync(changesDir)
+    .filter((f) => f.endsWith(".sql"))
+    .sort();
+  const sql = files
+    .map((f) =>
+      readFileSync(`${changesDir}/${f}`, "utf8")
+        .split("\n")
+        .filter((line) => !line.trim().startsWith("--"))
+        .join("\n"),
+    )
     .join("\n");
   return sql
     .split(";")

@@ -16,6 +16,8 @@ export const clinicSettingsSchema = z.object({
     .trim()
     .regex(/^[A-Za-z]{3}$/),
   taxRatePercent: z.coerce.number().min(0).max(100),
+  // HTML checkbox: present as "on"/"true" when checked, absent (null) when unchecked.
+  showReportQr: z.preprocess((v) => v === "on" || v === "true" || v === true, z.boolean()),
 });
 
 export type ClinicSettingsInput = z.infer<typeof clinicSettingsSchema>;

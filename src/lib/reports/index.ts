@@ -141,6 +141,44 @@ export async function createReport(
 }
 
 /**
+ * Update a draft report's entered data. The frozen `template_snapshot` is NEVER touched, so the
+ * report stays reproducible — the new data is re-validated and re-flagged against the original
+ * snapshot. A verified report is the released artifact and is immutable (refuses the edit).
+ * Change + `report.update` audit commit in one transaction.
+ */
+export async function updateReport(
+  clinicId: string,
+  userId: string,
+  id: string,
+  input: CreateReportInput,
+): Promise<void> {
+  await db.transaction(async (tx) => {
+    const [existing] = await tx
+      .select({ status: reports.status, snapshot: reports.templateSnapshot })
+      .from(reports)
+      .where(and(eq(reports.id, id), eq(reports.clinicId, clinicId)))
+      .limit(1);
+    if (!existing) throw new ReportValidationError("Report not found.");
+    if (existing.status === "verified") throw new ReportValidationError("A verified report can’t be edited.");
+
+    const snapshot = existing.snapshot as Template;
+    const data = buildData(snapshot, input);
+
+    const parsed = validateReportData(snapshot, data);
+    if (!parsed.success) {
+      throw new ReportValidationError(parsed.error.issues[0]?.message ?? "Invalid report data.");
+    }
+
+    await tx
+      .update(reports)
+      .set({ data: parsed.data })
+      .where(and(eq(reports.id, id), eq(reports.clinicId, clinicId)));
+
+    await recordAudit({ clinicId, userId, action: "report.update", entityType: "report", entityId: id }, tx);
+  });
+}
+
+/**
  * Doctor/owner sign-off: mark a report verified (idempotent). A verified report is the
  * released artifact — only after this should its PDF be issued (docs/roadmap.md non-negotiable).
  */
