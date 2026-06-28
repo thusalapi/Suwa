@@ -77,9 +77,30 @@ Matches the design-partner clinic's real report layout so Suwa is a drop-in repl
       (empty list-headers omitted), so a builder edit-save preserves advanced templates losslessly.
 - [x] **8 new unit tests**: `house-style.test.ts` (templates parse, dual-unit value2, qualitative
       text, factor2-needs-unit2 rejection, list-style accept) + a builder round-trip asserting both
-      seeded templates survive hydrate→serialise byte-for-byte. Total now **79 unit / 10 files**;
-      integration 17/17 still green. Live: migrations 002+003 applied to the Docker DB and both
-      templates seeded for the dev clinic.
+      seeded templates survive hydrate→serialise byte-for-byte. Live: migrations 002+003 applied to
+      the Docker DB and both templates seeded for the dev clinic.
+
+### Service-layer test coverage ✅ (every server-only service exercised)
+- [x] **Session token unit tests** (`test/auth/session.test.ts`) — sign/verify round-trip, missing/
+      malformed → null, tampered-payload rejection, expiry rejection, wrong-secret rejection.
+- [x] **Patients integration** — create (+audit, empty→NULL), `unique(clinic,phone)` enforced (and
+      allowed cross-clinic), `getPatient`/`findByPhone` dedupe + `excludeId` + tenant scope, update
+      (+audit, can't cross clinics), search by phone/name/empty + isolation.
+- [x] **Services (catalog) integration** — create/update (+audit), soft activate/deactivate (+matching
+      audit), `listServices` name-order / `activeOnly` / tenant scope.
+- [x] **Clinic integration** — defaults read (showReportQr on, fax/email null), `updateClinicSettings`
+      persists every field incl. fax/email/showReportQr/taxRate + `clinic.update` audit with metadata.
+- [x] **Users integration** — `createInvitedUser` (mustReset + audit), duplicate-email rejection,
+      `setUserPassword` clears mustReset (+audit, tenant-scoped no-op across clinics), `emailExists`,
+      `listClinicUsers` name-order/scope.
+- [x] **Report-templates integration** — create v1 (+audit, forces version 1), `updateTemplate` bumps
+      version (+audit), soft activate/deactivate, get/list, tenant scope.
+- [x] **Reports integration** — gap-free numbering, **frozen snapshot** + stored computed flags +
+      audit, invalid-data rejection, `verifyReport` (verifier+timestamp, idempotent, single audit),
+      `updateReport` re-flags a draft + refuses a verified report, **snapshot isolation** (template
+      rename doesn't touch issued reports), `listReports` order/filter/scope.
+- [x] **Totals: 85 unit / 11 files + 52 integration / 9 files — all green.** `npm run test` +
+      `npm run test:integration` (Docker DB up). typecheck + lint clean.
 
 ### Drag-and-drop template builder ✅ (replaces the Phase-1 JSON editor)
 - [x] **`TemplateBuilder`** (`(app)/templates/TemplateBuilder.tsx`, client) — a visual builder
@@ -108,21 +129,23 @@ Matches the design-partner clinic's real report layout so Suwa is a drop-in repl
       an empty stub (`test/stubs/`) and `@/*`→`src/*`, with a dummy `DATABASE_URL` so modules
       that transitively import the lazy postgres client load without connecting. Scripts:
       `npm run test` / `test:watch` / `test:coverage`. `coverage/` gitignored.
-- [x] **79 unit tests / 10 files**, all green: report-engine flagging (critical precedence,
+- [x] **85 unit tests / 11 files**, all green: report-engine flagging (critical precedence,
       boundary inclusivity, one-sided ranges), template schema validation (dup/reserved keys,
       select-needs-options, ref_low≤ref_high), filled-data validation + `computeResults`,
       analytics `resolveRange` (fake-timer deterministic), backup crypto round-trip
       (large/empty/small + wrong-key/tamper/truncation rejection), i18n `getT`/`formatMoney`/
       `formatDate`, the bill/patient/service Zod schemas, and the report
       data→form-input round-trip (`reportDataToFormInputs`, draft-edit prefill).
-- [x] **Integration tier** (`npm run test:integration`, `vitest.integration.config.ts`) — 17
-      tests against a throwaway `suwa_test` DB (a `global-setup` builds it from the Liquibase
-      DDL over TCP and drops it after; fully isolated from the dev `suwa` DB). Covers the
-      server-only modules: `createBill` (gap-free numbering, tax/discount totals, line snapshot,
-      audit row), `recordPayment` (partial→paid, overpayment + already-settled rejection,
+- [x] **Integration tier** (`npm run test:integration`, `vitest.integration.config.ts`) — **52
+      tests / 9 files** against a throwaway `suwa_test` DB (a `global-setup` builds it from **all**
+      Liquibase changesets over TCP and drops it after; fully isolated from the dev `suwa` DB).
+      Covers every server-only service: `createBill` (gap-free numbering, tax/discount totals, line
+      snapshot, audit row), `recordPayment` (partial→paid, overpayment + already-settled rejection,
       **concurrent payments sum correctly via the row lock**, audit row), `getDashboardStats`,
-      and `getRevenueReport` (billed/collected/by-service/outstanding **+ a 201-bill regression
-      test proving `outstandingTotal` isn't capped at the 200-row list**). Needs the Docker DB up.
+      `getRevenueReport` (billed/collected/by-service/outstanding **+ a 201-bill regression test
+      proving `outstandingTotal` isn't capped at the 200-row list**), plus **patients, services,
+      clinic settings, users, report-templates, and the full reports lifecycle** (snapshot freeze,
+      flag storage, verify, draft edit, snapshot isolation) — see that section above. Needs the Docker DB up.
 
 ### Stage 5 — Polish + real-data trial (in progress)
 - [x] **Payment edge cases** — `recordPayment` now rejects a payment larger than the
