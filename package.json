@@ -21,6 +21,7 @@
     "db:rollback": "liquibase --defaults-file=liquibase/liquibase.properties rollback-count 1",
     "db:studio": "drizzle-kit studio",
     "seed:owner": "tsx scripts/seed-owner.ts",
+    "seed:templates": "tsx scripts/seed-templates.ts",
     "backup": "tsx scripts/backup.ts",
     "restore": "tsx scripts/restore.ts"
   },

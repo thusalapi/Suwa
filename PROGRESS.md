@@ -4,7 +4,7 @@
 > what's next, so work continues cleanly across sessions. Keep it updated as you build —
 > tick items off, move "Next up" items into "Done", and note any decisions/gotchas.
 
-**Last updated:** 2026-06-28
+**Last updated:** 2026-06-29
 **Current stage:** Stage 5 — Polish + real-data trial, **code-complete**. Done: payment
 overpayment guard; audit coverage verified complete; backup/restore review (+ `BACKUP_KEEP`
 -NaN prune-wipe fix); Stage 4 dashboard/revenue aggregates verified live against the Docker
@@ -49,6 +49,38 @@ npm run seed:owner -- --clinic "Suwa Medical Centre" \
 
 ## Done
 
+### Lab house-style reports ✅ (Unawatuna Medical Centre format)
+Matches the design-partner clinic's real report layout so Suwa is a drop-in replacement.
+- [x] **House-style PDF header** — clinic name + address on the left; **Tel / Fax / Email**
+      right-aligned; **(CONFIDENTIAL)** marker. Clinic gained `fax` + `email` (**migration
+      `003-clinic-contact.sql`**), editable in owner **Settings**. Logo + report-number QR still
+      render under the contact block.
+- [x] **Two-column patient/specimen block** — `patient_info` now also carries manual fields
+      `referred_by` / `requested_by` / `specimen_no` / `datetime` (datetime-local) / `source`
+      (name/age/gender stay patient-derived + read-only), rendered as aligned "Label : Value"
+      rows. New-report form prefills `source: "Blood"`.
+- [x] **Descriptive result style** — `results_table` gained `style: "list"` (compact Test —
+      Result list with optional `listHeader`, e.g. CHEMISTRY/RESULT) plus per-row `unit2`+`factor2`
+      (dual units — e.g. `121 mg/dl  6.7 mmol/l`, value2 computed+stored on entry) and
+      `value_type: "text"` (qualitative results like "B Positive", no flag). `ResultValue.value`
+      is now `number | string`, `flag`/`value2` optional. Existing numeric 5-col table unchanged.
+      `signature` gained an optional `subtitle` (e.g. "Medical Laboratory Technologist · SLMC Reg.").
+- [x] **Two templates seeded** — `Fasting Blood Sugar` (dual-unit + EXPECTED VALUES & lab notes
+      as static blocks) and `Blood Grouping & Rh` (qualitative). Defined in `report-engine/examples.ts`
+      (`satisfies Template`); seeded via **`npm run seed:templates`** (idempotent, standalone conn
+      like `seed:owner`). Both render verified via tsx (valid `%PDF`).
+- [x] **Visual builder support** — `TemplateBuilder` now edits every new option: patient_info shows
+      all nine fields (manual ones included); the results-table editor has a **Layout** toggle
+      (table/list) + list column-header inputs; each row has a **Value** type (Number/Text) that
+      hides the numeric fields for qualitative rows, plus **2nd unit** + **× factor** inputs; and the
+      signature editor has a **Subtitle** field. `builderModel` carries them through hydrate→serialise
+      (empty list-headers omitted), so a builder edit-save preserves advanced templates losslessly.
+- [x] **8 new unit tests**: `house-style.test.ts` (templates parse, dual-unit value2, qualitative
+      text, factor2-needs-unit2 rejection, list-style accept) + a builder round-trip asserting both
+      seeded templates survive hydrate→serialise byte-for-byte. Total now **79 unit / 10 files**;
+      integration 17/17 still green. Live: migrations 002+003 applied to the Docker DB and both
+      templates seeded for the dev clinic.
+
 ### Drag-and-drop template builder ✅ (replaces the Phase-1 JSON editor)
 - [x] **`TemplateBuilder`** (`(app)/templates/TemplateBuilder.tsx`, client) — a visual builder
       replacing the raw-JSON textarea so non-technical staff (doctors/MLTs) can author report
@@ -76,7 +108,7 @@ npm run seed:owner -- --clinic "Suwa Medical Centre" \
       an empty stub (`test/stubs/`) and `@/*`→`src/*`, with a dummy `DATABASE_URL` so modules
       that transitively import the lazy postgres client load without connecting. Scripts:
       `npm run test` / `test:watch` / `test:coverage`. `coverage/` gitignored.
-- [x] **71 unit tests / 9 files**, all green: report-engine flagging (critical precedence,
+- [x] **79 unit tests / 10 files**, all green: report-engine flagging (critical precedence,
       boundary inclusivity, one-sided ranges), template schema validation (dup/reserved keys,
       select-needs-options, ref_low≤ref_high), filled-data validation + `computeResults`,
       analytics `resolveRange` (fake-timer deterministic), backup crypto round-trip

@@ -82,6 +82,7 @@ export default async function NewReportPage({
     gender: patient.gender ?? "",
     age: ageFromDob(patient.dob),
     ref_doctor: "",
+    source: "Blood", // sensible default for the lab house-style templates; ignored if unused
   };
 
   return (

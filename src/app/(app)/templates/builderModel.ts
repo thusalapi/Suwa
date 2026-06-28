@@ -3,12 +3,13 @@
  * React component (no "use client") so the serialisation — the contract that must always emit
  * schema-valid template JSON — is unit-testable. The Server Action re-validates authoritatively.
  */
-import type { Position, Template } from "@/lib/report-engine";
+import { PATIENT_INFO_FIELDS, type PatientInfoField, type Position, type Template } from "@/lib/report-engine";
 
 export type TemplateLayout = "flow" | "canvas";
 
-export const PATIENT_FIELDS = ["name", "age", "gender", "ref_doctor"] as const;
-export type PatientField = (typeof PATIENT_FIELDS)[number];
+/** Every selectable patient_info field (patient-derived + manual), shared with the engine. */
+export const PATIENT_FIELDS = PATIENT_INFO_FIELDS;
+export type PatientField = PatientInfoField;
 
 export const INPUT_TYPES = ["text", "number", "date", "select"] as const;
 export type InputType = (typeof INPUT_TYPES)[number];
@@ -23,15 +24,27 @@ export interface BRow {
   ref_high: string;
   critical_low: string;
   critical_high: string;
+  /** Advanced fields (dual-unit / qualitative). Carried opaquely — no editor UI yet. */
+  unit2?: string;
+  factor2?: string;
+  valueType?: "number" | "text";
 }
 
 type BSectionBase =
   | { _id: string; type: "patient_info"; fields: PatientField[] }
   | { _id: string; type: "static"; text: string; heading: boolean }
   | { _id: string; type: "field"; key: string; label: string; inputType: InputType; options: string; required: boolean }
-  | { _id: string; type: "results_table"; title: string; rows: BRow[] }
+  | {
+      _id: string;
+      type: "results_table";
+      title: string;
+      rows: BRow[];
+      // Advanced layout (list style + header). Carried opaquely so an edit-save preserves it.
+      style?: "table" | "list";
+      listHeader?: { left: string; right: string };
+    }
   | { _id: string; type: "textarea"; key: string; label: string }
-  | { _id: string; type: "signature"; label: string };
+  | { _id: string; type: "signature"; label: string; subtitle?: string };
 
 /** Each block also carries an optional free-form position (percent x/y/w) for canvas layout. */
 export type BSection = BSectionBase & { pos?: Position };
@@ -81,6 +94,8 @@ export function fromTemplate(tpl: Template): BSection[] {
           _id: uid(),
           type: "results_table",
           title: s.title ?? "",
+          style: s.style,
+          listHeader: s.listHeader,
           rows: s.rows.map((r) => ({
             _id: uid(),
             key: r.key,
@@ -90,13 +105,16 @@ export function fromTemplate(tpl: Template): BSection[] {
             ref_high: r.ref_high?.toString() ?? "",
             critical_low: r.critical_low?.toString() ?? "",
             critical_high: r.critical_high?.toString() ?? "",
+            unit2: r.unit2 ?? "",
+            factor2: r.factor2?.toString() ?? "",
+            valueType: r.value_type,
           })),
           pos,
         };
       case "textarea":
         return { _id: uid(), type: "textarea", key: s.key, label: s.label, pos };
       case "signature":
-        return { _id: uid(), type: "signature", label: s.label, pos };
+        return { _id: uid(), type: "signature", label: s.label, subtitle: s.subtitle, pos };
     }
   });
 }
@@ -159,10 +177,17 @@ export function toTemplate(
             {
               type: "results_table",
               ...(s.title.trim() ? { title: s.title.trim() } : {}),
+              ...(s.style ? { style: s.style } : {}),
+              ...(s.listHeader && s.listHeader.left.trim() && s.listHeader.right.trim()
+                ? { listHeader: { left: s.listHeader.left.trim(), right: s.listHeader.right.trim() } }
+                : {}),
               rows: s.rows.map((r) => ({
                 key: r.key.trim(),
                 test: r.test,
                 ...(r.unit.trim() ? { unit: r.unit.trim() } : {}),
+                ...(r.unit2?.trim() ? { unit2: r.unit2.trim() } : {}),
+                ...numField(r.factor2 ?? "", "factor2"),
+                ...(r.valueType ? { value_type: r.valueType } : {}),
                 ...numField(r.ref_low, "ref_low"),
                 ...numField(r.ref_high, "ref_high"),
                 ...numField(r.critical_low, "critical_low"),
@@ -174,7 +199,7 @@ export function toTemplate(
         case "textarea":
           return withPos({ type: "textarea", key: s.key.trim(), label: s.label }, s);
         case "signature":
-          return withPos({ type: "signature", label: s.label }, s);
+          return withPos({ type: "signature", label: s.label, ...(s.subtitle ? { subtitle: s.subtitle } : {}) }, s);
       }
     }),
   };
