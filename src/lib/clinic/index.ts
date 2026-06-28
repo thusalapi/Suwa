@@ -14,6 +14,8 @@ export interface Clinic {
   currency: string;
   /** Basis points, e.g. 800 = 8.00%. */
   taxRate: number;
+  /** Show a QR (encoding the report number) on report PDFs. */
+  showReportQr: boolean;
 }
 
 /** Load one clinic by id. Tenant-scoped reads always pass the caller's clinicId. */
@@ -27,6 +29,7 @@ export async function getClinic(clinicId: string): Promise<Clinic | null> {
       logoUrl: clinics.logoUrl,
       currency: clinics.currency,
       taxRate: clinics.taxRate,
+      showReportQr: clinics.showReportQr,
     })
     .from(clinics)
     .where(eq(clinics.id, clinicId))
@@ -42,6 +45,7 @@ export interface UpdateClinicInput {
   currency: string;
   /** Basis points (already converted from the UI percentage). */
   taxRate: number;
+  showReportQr: boolean;
 }
 
 /**
@@ -59,6 +63,7 @@ export async function updateClinicSettings(clinicId: string, userId: string, inp
         logoUrl: input.logoUrl || null,
         currency: input.currency,
         taxRate: input.taxRate,
+        showReportQr: input.showReportQr,
       })
       .where(eq(clinics.id, clinicId));
 

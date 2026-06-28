@@ -21,6 +21,7 @@ export default async function ReportDetailPage({ params }: { params: Promise<{ i
   if (!report) notFound();
 
   const canVerify = (user.role === "doctor" || user.role === "owner") && report.status !== "verified";
+  const canEdit = report.status !== "verified"; // any clinic role may edit a draft
 
   return (
     <div className="space-y-6">
@@ -47,6 +48,11 @@ export default async function ReportDetailPage({ params }: { params: Promise<{ i
           <a href={`/reports/${report.id}/pdf`} target="_blank" rel="noopener noreferrer">
             <Button variant="secondary">{t("reports.downloadPdf")}</Button>
           </a>
+          {canEdit ? (
+            <Link href={`/reports/${report.id}/edit`}>
+              <Button variant="secondary">{t("reports.edit")}</Button>
+            </Link>
+          ) : null}
           {canVerify ? (
             <form action={verifyReportAction}>
               <input type="hidden" name="id" value={report.id} />

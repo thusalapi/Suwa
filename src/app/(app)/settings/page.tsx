@@ -26,6 +26,7 @@ export default async function SettingsPage() {
           logoUrl: clinic?.logoUrl ?? "",
           currency: clinic?.currency ?? "LKR",
           taxRatePercent: clinic ? clinic.taxRate / 100 : 0,
+          showReportQr: clinic?.showReportQr ?? true,
         }}
       />
     </div>

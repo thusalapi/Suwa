@@ -29,6 +29,7 @@ export const clinics = pgTable("clinics", {
   logoUrl: text("logo_url"),
   currency: text("currency").notNull().default("LKR"),
   taxRate: integer("tax_rate").notNull().default(0), // basis points, e.g. 800 = 8.00%
+  showReportQr: boolean("show_report_qr").notNull().default(true), // QR (report no.) on report PDFs
   createdAt,
 });
 

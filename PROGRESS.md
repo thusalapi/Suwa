@@ -4,7 +4,7 @@
 > what's next, so work continues cleanly across sessions. Keep it updated as you build —
 > tick items off, move "Next up" items into "Done", and note any decisions/gotchas.
 
-**Last updated:** 2026-06-27
+**Last updated:** 2026-06-28
 **Current stage:** Stage 5 — Polish + real-data trial, **code-complete**. Done: payment
 overpayment guard; audit coverage verified complete; backup/restore review (+ `BACKUP_KEEP`
 -NaN prune-wipe fix); Stage 4 dashboard/revenue aggregates verified live against the Docker
@@ -76,12 +76,13 @@ npm run seed:owner -- --clinic "Suwa Medical Centre" \
       an empty stub (`test/stubs/`) and `@/*`→`src/*`, with a dummy `DATABASE_URL` so modules
       that transitively import the lazy postgres client load without connecting. Scripts:
       `npm run test` / `test:watch` / `test:coverage`. `coverage/` gitignored.
-- [x] **58 unit tests / 7 files**, all green: report-engine flagging (critical precedence,
+- [x] **71 unit tests / 9 files**, all green: report-engine flagging (critical precedence,
       boundary inclusivity, one-sided ranges), template schema validation (dup/reserved keys,
       select-needs-options, ref_low≤ref_high), filled-data validation + `computeResults`,
       analytics `resolveRange` (fake-timer deterministic), backup crypto round-trip
       (large/empty/small + wrong-key/tamper/truncation rejection), i18n `getT`/`formatMoney`/
-      `formatDate`, and the bill/patient/service Zod schemas.
+      `formatDate`, the bill/patient/service Zod schemas, and the report
+      data→form-input round-trip (`reportDataToFormInputs`, draft-edit prefill).
 - [x] **Integration tier** (`npm run test:integration`, `vitest.integration.config.ts`) — 17
       tests against a throwaway `suwa_test` DB (a `global-setup` builds it from the Liquibase
       DDL over TCP and drops it after; fully isolated from the dev `suwa` DB). Covers the
@@ -195,8 +196,20 @@ npm run seed:owner -- --clinic "Suwa Medical Centre" \
       Route Handler `(app)/reports/[id]/pdf` (tenant-scoped, 401/404, inline application/pdf).
       `serverExternalPackages: ["@react-pdf/renderer"]` in next.config. Download link on the
       report view. Render verified via tsx (valid %PDF buffer).
-- [ ] **Deferred:** editing a draft report's data (create + verify cover the core flow);
-      optional QR encoding of the report number on the PDF.
+- [x] **Edit a draft report's data** — `(app)/reports/[id]/edit` renders the same
+      `ReportFormRenderer`, prefilled via the new pure `reportDataToFormInputs`
+      (`lib/reports/form.ts`, unit-tested). `updateReport` (`lib/reports`) re-validates +
+      re-flags against the **frozen snapshot** (never the live template, so reproducibility
+      holds), writes `data` + a `report.update` audit in one tx, and **refuses a verified
+      report** (immutable). An **Edit** button shows on the report view for non-verified reports.
+- [x] **QR on the report PDF (owner-toggleable)** — `ReportDocument` shows a QR (header, under
+      the logo) encoding the report number; generated pure-JS via `qrcode` `toDataURL` in the PDF
+      route handler (no headless browser). Gated on the new `clinics.show_report_qr` flag
+      (**migration `002-clinic-show-report-qr.sql`**, default on) exposed as a checkbox in owner
+      **Settings**. Render verified via tsx (valid `%PDF` with embedded QR). Dep added: `qrcode`.
+      The integration `global-setup` now applies **all** `changes/*.sql` changesets (not just 001),
+      so the throwaway test DB stays current as migrations are added. **To go live, run
+      `npm run db:migrate`** so the dev/clinic DB picks up changeset 002 (Docker DB only had 001).
 
 Stage 2 is functionally complete. Heavy live verification (real templates, PDF look) happens
 once the clinic-PC DB is up.

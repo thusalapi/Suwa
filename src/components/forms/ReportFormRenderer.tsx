@@ -26,8 +26,12 @@ export interface ReportFormRendererProps {
   snapshot: Template;
   patientId: string;
   templateId: string;
-  /** Prefill for patient_info (name/age/gender derived from the patient record). */
+  /** Prefill for patient_info (name/age/gender derived from the patient record, or stored data). */
   patientInfo: Record<string, string>;
+  /** Prefill for results_table rows (row key → value string). Empty for a fresh report. */
+  initialResults?: Record<string, string>;
+  /** Prefill for field/textarea blocks (key → value string). Empty for a fresh report. */
+  initialValues?: Record<string, string>;
   action: (prev: ReportFormState, formData: FormData) => Promise<ReportFormState>;
   submitLabel: string;
 }
@@ -69,13 +73,16 @@ export function ReportFormRenderer({
   patientId,
   templateId,
   patientInfo,
+  initialResults,
+  initialValues,
   action,
   submitLabel,
 }: ReportFormRendererProps) {
   const t = getT(locale);
   const [state, formAction] = useActionState<ReportFormState, FormData>(action, {});
-  // Live result values keyed by row key, so flags update as staff type.
-  const [resultValues, setResultValues] = useState<Record<string, string>>({});
+  // Live result values keyed by row key, so flags update as staff type. Seeded from any
+  // existing data when editing a draft.
+  const [resultValues, setResultValues] = useState<Record<string, string>>(() => initialResults ?? {});
 
   const flagFor = (row: ResultRow): Flag | null => {
     const raw = resultValues[row.key]?.trim();
@@ -173,7 +180,12 @@ export function ReportFormRenderer({
             return (
               <Field key={i} label={section.label} htmlFor={`fld_${section.key}`}>
                 {section.inputType === "select" ? (
-                  <select id={`fld_${section.key}`} name={`fld.${section.key}`} className={selectClass} defaultValue="">
+                  <select
+                    id={`fld_${section.key}`}
+                    name={`fld.${section.key}`}
+                    className={selectClass}
+                    defaultValue={initialValues?.[section.key] ?? ""}
+                  >
                     <option value="">—</option>
                     {(section.options ?? []).map((o) => (
                       <option key={o} value={o}>
@@ -188,6 +200,7 @@ export function ReportFormRenderer({
                     type={section.inputType === "number" ? "number" : section.inputType === "date" ? "date" : "text"}
                     step={section.inputType === "number" ? "any" : undefined}
                     required={section.required}
+                    defaultValue={initialValues?.[section.key] ?? ""}
                   />
                 )}
               </Field>
@@ -201,6 +214,7 @@ export function ReportFormRenderer({
                   id={`txt_${section.key}`}
                   name={`txt.${section.key}`}
                   rows={3}
+                  defaultValue={initialValues?.[section.key] ?? ""}
                   className={cn(
                     "w-full rounded-md border border-border bg-white px-3 py-2 text-sm text-ink",
                     "focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-primary",
