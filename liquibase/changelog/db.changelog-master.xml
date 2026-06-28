@@ -9,5 +9,6 @@
        Liquibase owns DDL; the Drizzle schema (src/lib/db/schema.ts) mirrors it for types. -->
   <include file="changes/001-initial-schema.sql" relativeToChangelogFile="true"/>
   <include file="changes/002-clinic-show-report-qr.sql" relativeToChangelogFile="true"/>
+  <include file="changes/003-clinic-contact.sql" relativeToChangelogFile="true"/>
 
 </databaseChangeLog>

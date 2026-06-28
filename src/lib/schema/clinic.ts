@@ -10,6 +10,8 @@ export const clinicSettingsSchema = z.object({
   name: z.string().trim().min(1).max(200),
   address: z.string().trim().max(500).optional().default(""),
   phone: z.string().trim().max(40).optional().default(""),
+  fax: z.string().trim().max(40).optional().default(""),
+  email: z.string().trim().max(160).optional().default(""),
   logoUrl: z.string().trim().max(500).optional().default(""),
   currency: z
     .string()
