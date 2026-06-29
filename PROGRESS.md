@@ -49,6 +49,18 @@ npm run seed:owner -- --clinic "Suwa Medical Centre" \
 
 ## Done
 
+### End-to-end UI journeys ✅ (Playwright — watchable user flows)
+- [x] **10 browser journeys / 6 specs** in `e2e/`, all green: auth (reject + sign in/out), patient
+      registration via the finder shortcut, the full **report lifecycle** (find→template→enter→create→
+      edit→verify→PDF), the full **billing lifecycle** (find→catalog line→create→pay→Paid→receipt PDF),
+      owner admin (service, settings, templates, team invite, revenue), and dashboard/nav.
+- [x] **Isolated test tenant** — `npm run seed:e2e` (idempotent) creates a separate `E2E Test Clinic`
+      + owner (`e2e.owner@suwa.test` / `Passw0rd!`) + templates + a service, so tests never touch real
+      data. `playwright.config.ts` reuses the running dev server, records traces/screenshots, and
+      auto-slows in headed mode.
+- [x] **Watch them:** `npm run e2e:headed` (plays each flow), `npm run e2e:ui` (time-travel),
+      `npm run e2e:report` (traces). Full guide in **`e2e/README.md`**. Deps: `@playwright/test`.
+
 ### Fast counter UX ✅ (fewer clicks for the rush queue)
 - [x] **Dashboard redesign** — `StatCard` gained a tinted icon chip + tone + optional link; the four
       KPIs are now clickable (→ revenue/bills/reports). Quick actions became `ActionCard` tiles
