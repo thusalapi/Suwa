@@ -49,6 +49,21 @@ npm run seed:owner -- --clinic "Suwa Medical Centre" \
 
 ## Done
 
+### Fast counter UX ✅ (fewer clicks for the rush queue)
+- [x] **Dashboard redesign** — `StatCard` gained a tinted icon chip + tone + optional link; the four
+      KPIs are now clickable (→ revenue/bills/reports). Quick actions became `ActionCard` tiles
+      (icon + title + subtitle + hover arrow). New dependency-free inline-SVG icon set
+      (`components/atoms/icons.tsx`). Header shows today's date.
+- [x] **Live `PatientFinder`** (`components/organisms/PatientFinder.tsx`, client) — autofocused
+      phone/name search, **debounced live results** via a `searchPatientsAction` server action,
+      each row with inline **Bill / Report / Open** actions, and a "register “{q}” as new" shortcut
+      that carries the typed phone to `/patients/new?phone=`. SSR'd initial results + a no-JS GET
+      fallback to `/patients?q=`. `mode=all|bill|report` emphasises the relevant action.
+- [x] **Reused as the entry point** on `/patients`, and on `/bills/new` + `/reports/new` when no
+      patient is chosen yet (instead of bouncing to the patient list). Cuts the from-scratch journey
+      from ~5–6 clicks to **type-phone → tap Bill/Report (2)**. `/reports/new` also **auto-skips the
+      template picker when only one report type is active**, and `/patients/new` prefills phone/name.
+
 ### Lab house-style reports ✅ (Unawatuna Medical Centre format)
 Matches the design-partner clinic's real report layout so Suwa is a drop-in replacement.
 - [x] **House-style PDF header** — clinic name + address on the left; **Tel / Fax / Email**

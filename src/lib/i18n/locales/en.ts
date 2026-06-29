@@ -154,6 +154,7 @@ export const en = {
   bills: {
     title: "Bills",
     newTitle: "New bill",
+    pickPatient: "Find the patient to bill — then tap Bill.",
     create: "Create bill",
     empty: "No bills yet.",
     number: "No.",
@@ -222,6 +223,7 @@ export const en = {
   reports: {
     title: "Reports",
     newTitle: "New report",
+    pickPatient: "Find the patient — then tap Report.",
     create: "Create report",
     empty: "No reports yet.",
     number: "No.",
@@ -361,6 +363,8 @@ export const en = {
     editTitle: "Edit patient",
     searchLabel: "Search patients",
     searchPlaceholder: "Search by phone or name…",
+    findHint: "Type a phone number or name — then bill or report in one tap.",
+    registerNew: "Register “{q}” as a new patient",
     empty: "No patients yet. Add the first one to get started.",
     noResults: "No patients match your search.",
     name: "Full name",
