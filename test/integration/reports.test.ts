@@ -73,6 +73,54 @@ describe("createReport", () => {
   });
 });
 
+describe("mistyped numeric results are refused, not dropped", () => {
+  it("refuses a comma decimal and names the analyte", async () => {
+    const { clinicId, userId, patientId, templateId } = await ctx();
+    // Previously this saved a report with hb absent entirely, rendering "-" with no warning.
+    await expect(createReport(clinicId, userId, { patientId, templateId, ...entry({ hb: "12,1" }) })).rejects.toThrow(
+      /Hemoglobin/,
+    );
+  });
+
+  it("refuses Infinity, which the old NaN check let through", async () => {
+    const { clinicId, userId, patientId, templateId } = await ctx();
+    await expect(
+      createReport(clinicId, userId, { patientId, templateId, ...entry({ hb: "1e999" }) }),
+    ).rejects.toBeInstanceOf(ReportValidationError);
+  });
+
+  it("nothing is written when a value is rejected", async () => {
+    const { clinicId, userId, patientId, templateId } = await ctx();
+    await expect(
+      createReport(clinicId, userId, { patientId, templateId, ...entry({ hb: "14", wbc: "abc" }) }),
+    ).rejects.toBeInstanceOf(ReportValidationError);
+    expect(await listReports(clinicId)).toHaveLength(0);
+  });
+
+  it("still accepts a partially filled report — blanks are not errors", async () => {
+    const { clinicId, userId, patientId, templateId } = await ctx();
+    const { id } = await createReport(clinicId, userId, {
+      patientId,
+      templateId,
+      ...entry({ hb: "14", wbc: "", plt: "   " }),
+    });
+    const report = await getReport(clinicId, id);
+    expect(report?.data.results).toEqual({ hb: { value: 14, flag: "normal" } });
+  });
+
+  it("refuses a bad value on a draft edit too, leaving the stored data intact", async () => {
+    const { clinicId, userId, patientId, templateId } = await ctx();
+    const { id } = await createReport(clinicId, userId, { patientId, templateId, ...entry({ hb: "14" }) });
+
+    await expect(
+      updateReport(clinicId, userId, id, { patientId, templateId, ...entry({ hb: "12,1" }) }),
+    ).rejects.toThrow(/Hemoglobin/);
+
+    const report = await getReport(clinicId, id);
+    expect(report?.data.results).toEqual({ hb: { value: 14, flag: "normal" } });
+  });
+});
+
 describe("verifyReport", () => {
   it("marks verified with verifier + timestamp, audits it, and is idempotent", async () => {
     const { clinicId, userId, patientId, templateId } = await ctx();

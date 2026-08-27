@@ -95,11 +95,47 @@ export function validateReportData(template: Template, data: unknown) {
   return buildReportDataSchema(template).safeParse(data);
 }
 
+/** A blank entry means "not filled yet"; whitespace counts as blank. */
+function isBlank(v: number | string | null | undefined): boolean {
+  return v == null || (typeof v === "string" && v.trim() === "");
+}
+
+/**
+ * Analyte rows whose entered value is present but is not a finite number, returned as the
+ * human-readable test names.
+ *
+ * `computeResults` cannot store these — a NaN or an Infinity must never reach the record — so
+ * without this check they were silently dropped and the report rendered "-" for that analyte
+ * with no warning to anyone. A silently missing lab result is worse than a rejected submission,
+ * so callers use this to refuse the write instead. See `buildData` in lib/reports.
+ */
+export function invalidNumericResults(
+  template: Template,
+  values: Record<string, number | string | null | undefined>,
+): string[] {
+  const invalid: string[] = [];
+  for (const row of resultRows(template)) {
+    if (row.formula != null) continue; // calculated, never taken from input
+    if (row.value_type === "text") continue; // qualitative rows take any string
+    const v = values[row.key];
+    if (isBlank(v)) continue;
+    if (!Number.isFinite(typeof v === "number" ? v : Number(String(v).trim()))) {
+      invalid.push(row.test);
+    }
+  }
+  return invalid;
+}
+
 /**
  * Compute the stored results map from raw entered values. Numeric rows are classified against
  * their reference range (and given a second-unit `value2` when the row defines `factor2`); text
- * rows (`value_type: "text"`) store the trimmed string verbatim with no flag. Blank entries — and
- * non-numeric entries in numeric rows — are skipped (not yet filled).
+ * rows (`value_type: "text"`) store the trimmed string verbatim with no flag. Blank entries are
+ * skipped (not yet filled).
+ *
+ * Non-finite entries in a numeric row are also skipped, because neither NaN nor Infinity can be
+ * represented in JSON — `JSON.stringify(Infinity)` is `null`, so storing one would put a null
+ * value next to a computed flag. Callers must reject those inputs up front via
+ * `invalidNumericResults` rather than relying on this to swallow them.
  */
 export function computeResults(
   template: Template,
@@ -112,15 +148,15 @@ export function computeResults(
   for (const row of rows) {
     if (row.formula != null) continue; // calculated below, never taken from input
     const v = values[row.key];
-    if (v == null || v === "") continue;
+    if (isBlank(v)) continue;
 
     if (row.value_type === "text") {
       out[row.key] = { value: String(v).trim() };
       continue;
     }
 
-    const n = typeof v === "number" ? v : Number(v);
-    if (Number.isNaN(n)) continue;
+    const n = typeof v === "number" ? v : Number(String(v).trim());
+    if (!Number.isFinite(n)) continue;
     const entry: ResultValue = { value: n, flag: computeFlag(n, row) };
     // Truncated (not rounded) to 1 dp, as the lab prints it: 111 mg/dl → 6.1605 → 6.1 mmol/l.
     // The epsilon keeps float noise (e.g. 5.6 * 10 = 55.99999…) from dropping a digit.
