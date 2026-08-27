@@ -16,11 +16,17 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:integration": "vitest run --config vitest.integration.config.ts",
+    "seed:e2e": "tsx scripts/seed-e2e.ts",
+    "e2e": "playwright test",
+    "e2e:headed": "playwright test --headed",
+    "e2e:ui": "playwright test --ui",
+    "e2e:report": "playwright show-report",
     "db:status": "liquibase --defaults-file=liquibase/liquibase.properties status --verbose",
     "db:migrate": "liquibase --defaults-file=liquibase/liquibase.properties update",
     "db:rollback": "liquibase --defaults-file=liquibase/liquibase.properties rollback-count 1",
     "db:studio": "drizzle-kit studio",
     "seed:owner": "tsx scripts/seed-owner.ts",
+    "seed:templates": "tsx scripts/seed-templates.ts",
     "backup": "tsx scripts/backup.ts",
     "restore": "tsx scripts/restore.ts"
   },
@@ -39,6 +45,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.1",
     "@tailwindcss/postcss": "^4.1.0",
     "@types/node": "^24.0.0",
     "@types/qrcode": "^1.5.6",

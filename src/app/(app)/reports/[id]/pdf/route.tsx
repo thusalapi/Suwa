@@ -35,6 +35,8 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
         name: clinic?.name ?? "",
         address: clinic?.address ?? null,
         phone: clinic?.phone ?? null,
+        fax: clinic?.fax ?? null,
+        email: clinic?.email ?? null,
         logoUrl: clinic?.logoUrl ?? null,
       }}
       qrDataUrl={qrDataUrl}

@@ -10,6 +10,8 @@ export interface Clinic {
   name: string;
   address: string | null;
   phone: string | null;
+  fax: string | null;
+  email: string | null;
   logoUrl: string | null;
   currency: string;
   /** Basis points, e.g. 800 = 8.00%. */
@@ -26,6 +28,8 @@ export async function getClinic(clinicId: string): Promise<Clinic | null> {
       name: clinics.name,
       address: clinics.address,
       phone: clinics.phone,
+      fax: clinics.fax,
+      email: clinics.email,
       logoUrl: clinics.logoUrl,
       currency: clinics.currency,
       taxRate: clinics.taxRate,
@@ -41,6 +45,8 @@ export interface UpdateClinicInput {
   name: string;
   address: string;
   phone: string;
+  fax: string;
+  email: string;
   logoUrl: string;
   currency: string;
   /** Basis points (already converted from the UI percentage). */
@@ -60,6 +66,8 @@ export async function updateClinicSettings(clinicId: string, userId: string, inp
         name: input.name,
         address: input.address || null,
         phone: input.phone || null,
+        fax: input.fax || null,
+        email: input.email || null,
         logoUrl: input.logoUrl || null,
         currency: input.currency,
         taxRate: input.taxRate,

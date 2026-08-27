@@ -73,10 +73,11 @@ function buildData(snapshot: Template, input: CreateReportInput): ReportData {
     if (Object.keys(pi).length) data.patient_info = pi;
   }
 
-  const resultValues: Record<string, number> = {};
+  // Pass raw strings — computeResults coerces per row (numeric vs text/qualitative).
+  const resultValues: Record<string, string> = {};
   for (const [key, raw] of Object.entries(input.results)) {
     const trimmed = raw?.trim();
-    if (trimmed) resultValues[key] = Number(trimmed);
+    if (trimmed) resultValues[key] = trimmed;
   }
   const results = computeResults(snapshot, resultValues);
   if (Object.keys(results).length) data.results = results;

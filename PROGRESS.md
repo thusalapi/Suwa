@@ -4,7 +4,7 @@
 > what's next, so work continues cleanly across sessions. Keep it updated as you build —
 > tick items off, move "Next up" items into "Done", and note any decisions/gotchas.
 
-**Last updated:** 2026-06-28
+**Last updated:** 2026-06-29
 **Current stage:** Stage 5 — Polish + real-data trial, **code-complete**. Done: payment
 overpayment guard; audit coverage verified complete; backup/restore review (+ `BACKUP_KEEP`
 -NaN prune-wipe fix); Stage 4 dashboard/revenue aggregates verified live against the Docker
@@ -49,6 +49,86 @@ npm run seed:owner -- --clinic "Suwa Medical Centre" \
 
 ## Done
 
+### End-to-end UI journeys ✅ (Playwright — watchable user flows)
+- [x] **10 browser journeys / 6 specs** in `e2e/`, all green: auth (reject + sign in/out), patient
+      registration via the finder shortcut, the full **report lifecycle** (find→template→enter→create→
+      edit→verify→PDF), the full **billing lifecycle** (find→catalog line→create→pay→Paid→receipt PDF),
+      owner admin (service, settings, templates, team invite, revenue), and dashboard/nav.
+- [x] **Isolated test tenant** — `npm run seed:e2e` (idempotent) creates a separate `E2E Test Clinic`
+      + owner (`e2e.owner@suwa.test` / `Passw0rd!`) + templates + a service, so tests never touch real
+      data. `playwright.config.ts` reuses the running dev server, records traces/screenshots, and
+      auto-slows in headed mode.
+- [x] **Watch them:** `npm run e2e:headed` (plays each flow), `npm run e2e:ui` (time-travel),
+      `npm run e2e:report` (traces). Full guide in **`e2e/README.md`**. Deps: `@playwright/test`.
+
+### Fast counter UX ✅ (fewer clicks for the rush queue)
+- [x] **Dashboard redesign** — `StatCard` gained a tinted icon chip + tone + optional link; the four
+      KPIs are now clickable (→ revenue/bills/reports). Quick actions became `ActionCard` tiles
+      (icon + title + subtitle + hover arrow). New dependency-free inline-SVG icon set
+      (`components/atoms/icons.tsx`). Header shows today's date.
+- [x] **Live `PatientFinder`** (`components/organisms/PatientFinder.tsx`, client) — autofocused
+      phone/name search, **debounced live results** via a `searchPatientsAction` server action,
+      each row with inline **Bill / Report / Open** actions, and a "register “{q}” as new" shortcut
+      that carries the typed phone to `/patients/new?phone=`. SSR'd initial results + a no-JS GET
+      fallback to `/patients?q=`. `mode=all|bill|report` emphasises the relevant action.
+- [x] **Reused as the entry point** on `/patients`, and on `/bills/new` + `/reports/new` when no
+      patient is chosen yet (instead of bouncing to the patient list). Cuts the from-scratch journey
+      from ~5–6 clicks to **type-phone → tap Bill/Report (2)**. `/reports/new` also **auto-skips the
+      template picker when only one report type is active**, and `/patients/new` prefills phone/name.
+
+### Lab house-style reports ✅ (Unawatuna Medical Centre format)
+Matches the design-partner clinic's real report layout so Suwa is a drop-in replacement.
+- [x] **House-style PDF header** — clinic name + address on the left; **Tel / Fax / Email**
+      right-aligned; **(CONFIDENTIAL)** marker. Clinic gained `fax` + `email` (**migration
+      `003-clinic-contact.sql`**), editable in owner **Settings**. Logo + report-number QR still
+      render under the contact block.
+- [x] **Two-column patient/specimen block** — `patient_info` now also carries manual fields
+      `referred_by` / `requested_by` / `specimen_no` / `datetime` (datetime-local) / `source`
+      (name/age/gender stay patient-derived + read-only), rendered as aligned "Label : Value"
+      rows. New-report form prefills `source: "Blood"`.
+- [x] **Descriptive result style** — `results_table` gained `style: "list"` (compact Test —
+      Result list with optional `listHeader`, e.g. CHEMISTRY/RESULT) plus per-row `unit2`+`factor2`
+      (dual units — e.g. `121 mg/dl  6.7 mmol/l`, value2 computed+stored on entry) and
+      `value_type: "text"` (qualitative results like "B Positive", no flag). `ResultValue.value`
+      is now `number | string`, `flag`/`value2` optional. Existing numeric 5-col table unchanged.
+      `signature` gained an optional `subtitle` (e.g. "Medical Laboratory Technologist · SLMC Reg.").
+- [x] **Two templates seeded** — `Fasting Blood Sugar` (dual-unit + EXPECTED VALUES & lab notes
+      as static blocks) and `Blood Grouping & Rh` (qualitative). Defined in `report-engine/examples.ts`
+      (`satisfies Template`); seeded via **`npm run seed:templates`** (idempotent, standalone conn
+      like `seed:owner`). Both render verified via tsx (valid `%PDF`).
+- [x] **Visual builder support** — `TemplateBuilder` now edits every new option: patient_info shows
+      all nine fields (manual ones included); the results-table editor has a **Layout** toggle
+      (table/list) + list column-header inputs; each row has a **Value** type (Number/Text) that
+      hides the numeric fields for qualitative rows, plus **2nd unit** + **× factor** inputs; and the
+      signature editor has a **Subtitle** field. `builderModel` carries them through hydrate→serialise
+      (empty list-headers omitted), so a builder edit-save preserves advanced templates losslessly.
+- [x] **8 new unit tests**: `house-style.test.ts` (templates parse, dual-unit value2, qualitative
+      text, factor2-needs-unit2 rejection, list-style accept) + a builder round-trip asserting both
+      seeded templates survive hydrate→serialise byte-for-byte. Live: migrations 002+003 applied to
+      the Docker DB and both templates seeded for the dev clinic.
+
+### Service-layer test coverage ✅ (every server-only service exercised)
+- [x] **Session token unit tests** (`test/auth/session.test.ts`) — sign/verify round-trip, missing/
+      malformed → null, tampered-payload rejection, expiry rejection, wrong-secret rejection.
+- [x] **Patients integration** — create (+audit, empty→NULL), `unique(clinic,phone)` enforced (and
+      allowed cross-clinic), `getPatient`/`findByPhone` dedupe + `excludeId` + tenant scope, update
+      (+audit, can't cross clinics), search by phone/name/empty + isolation.
+- [x] **Services (catalog) integration** — create/update (+audit), soft activate/deactivate (+matching
+      audit), `listServices` name-order / `activeOnly` / tenant scope.
+- [x] **Clinic integration** — defaults read (showReportQr on, fax/email null), `updateClinicSettings`
+      persists every field incl. fax/email/showReportQr/taxRate + `clinic.update` audit with metadata.
+- [x] **Users integration** — `createInvitedUser` (mustReset + audit), duplicate-email rejection,
+      `setUserPassword` clears mustReset (+audit, tenant-scoped no-op across clinics), `emailExists`,
+      `listClinicUsers` name-order/scope.
+- [x] **Report-templates integration** — create v1 (+audit, forces version 1), `updateTemplate` bumps
+      version (+audit), soft activate/deactivate, get/list, tenant scope.
+- [x] **Reports integration** — gap-free numbering, **frozen snapshot** + stored computed flags +
+      audit, invalid-data rejection, `verifyReport` (verifier+timestamp, idempotent, single audit),
+      `updateReport` re-flags a draft + refuses a verified report, **snapshot isolation** (template
+      rename doesn't touch issued reports), `listReports` order/filter/scope.
+- [x] **Totals: 85 unit / 11 files + 52 integration / 9 files — all green.** `npm run test` +
+      `npm run test:integration` (Docker DB up). typecheck + lint clean.
+
 ### Drag-and-drop template builder ✅ (replaces the Phase-1 JSON editor)
 - [x] **`TemplateBuilder`** (`(app)/templates/TemplateBuilder.tsx`, client) — a visual builder
       replacing the raw-JSON textarea so non-technical staff (doctors/MLTs) can author report
@@ -76,21 +156,23 @@ npm run seed:owner -- --clinic "Suwa Medical Centre" \
       an empty stub (`test/stubs/`) and `@/*`→`src/*`, with a dummy `DATABASE_URL` so modules
       that transitively import the lazy postgres client load without connecting. Scripts:
       `npm run test` / `test:watch` / `test:coverage`. `coverage/` gitignored.
-- [x] **71 unit tests / 9 files**, all green: report-engine flagging (critical precedence,
+- [x] **85 unit tests / 11 files**, all green: report-engine flagging (critical precedence,
       boundary inclusivity, one-sided ranges), template schema validation (dup/reserved keys,
       select-needs-options, ref_low≤ref_high), filled-data validation + `computeResults`,
       analytics `resolveRange` (fake-timer deterministic), backup crypto round-trip
       (large/empty/small + wrong-key/tamper/truncation rejection), i18n `getT`/`formatMoney`/
       `formatDate`, the bill/patient/service Zod schemas, and the report
       data→form-input round-trip (`reportDataToFormInputs`, draft-edit prefill).
-- [x] **Integration tier** (`npm run test:integration`, `vitest.integration.config.ts`) — 17
-      tests against a throwaway `suwa_test` DB (a `global-setup` builds it from the Liquibase
-      DDL over TCP and drops it after; fully isolated from the dev `suwa` DB). Covers the
-      server-only modules: `createBill` (gap-free numbering, tax/discount totals, line snapshot,
-      audit row), `recordPayment` (partial→paid, overpayment + already-settled rejection,
+- [x] **Integration tier** (`npm run test:integration`, `vitest.integration.config.ts`) — **52
+      tests / 9 files** against a throwaway `suwa_test` DB (a `global-setup` builds it from **all**
+      Liquibase changesets over TCP and drops it after; fully isolated from the dev `suwa` DB).
+      Covers every server-only service: `createBill` (gap-free numbering, tax/discount totals, line
+      snapshot, audit row), `recordPayment` (partial→paid, overpayment + already-settled rejection,
       **concurrent payments sum correctly via the row lock**, audit row), `getDashboardStats`,
-      and `getRevenueReport` (billed/collected/by-service/outstanding **+ a 201-bill regression
-      test proving `outstandingTotal` isn't capped at the 200-row list**). Needs the Docker DB up.
+      `getRevenueReport` (billed/collected/by-service/outstanding **+ a 201-bill regression test
+      proving `outstandingTotal` isn't capped at the 200-row list**), plus **patients, services,
+      clinic settings, users, report-templates, and the full reports lifecycle** (snapshot freeze,
+      flag storage, verify, draft edit, snapshot isolation) — see that section above. Needs the Docker DB up.
 
 ### Stage 5 — Polish + real-data trial (in progress)
 - [x] **Payment edge cases** — `recordPayment` now rejects a payment larger than the

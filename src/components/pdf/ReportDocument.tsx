@@ -17,6 +17,9 @@ export interface ReportClinic {
   name: string;
   address: string | null;
   phone: string | null;
+  /** Optional — only the report header shows these; bill/revenue PDFs omit them. */
+  fax?: string | null;
+  email?: string | null;
   logoUrl: string | null;
 }
 
@@ -42,6 +45,8 @@ const styles = StyleSheet.create({
   header: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 },
   clinicName: { fontSize: 16, fontWeight: 700, color: c.primaryDark },
   clinicMeta: { fontSize: 9, color: c.muted, marginTop: 2 },
+  contact: { fontSize: 9, color: c.muted, textAlign: "right" },
+  confidential: { fontSize: 9, fontWeight: 700, color: c.ink, marginTop: 2, textAlign: "right" },
   logo: { width: 96, height: 40, objectFit: "contain" },
   headerRight: { alignItems: "flex-end" },
   qr: { width: 50, height: 50, marginTop: 4 },
@@ -63,6 +68,18 @@ const styles = StyleSheet.create({
   piItem: { width: "25%", marginBottom: 4 },
   piLabel: { fontSize: 7, color: c.muted, textTransform: "uppercase" },
   piValue: { fontSize: 10 },
+  // Inline "Label : Value" rows in two columns (the lab house style).
+  piRow: { width: "50%", flexDirection: "row", marginBottom: 4, paddingRight: 12 },
+  piRowLabel: { width: 102, fontSize: 9, color: c.muted },
+  piRowValue: { flex: 1, fontSize: 10, fontWeight: 700, color: c.ink },
+  // Compact Test — Result list.
+  listTitle: { fontSize: 11, fontWeight: 700, color: c.primaryDark, marginTop: 10, marginBottom: 4 },
+  listHeadRow: { flexDirection: "row", borderBottomWidth: 1, borderBottomColor: c.border, paddingBottom: 3, marginBottom: 2 },
+  listHeadCell: { fontSize: 8, color: c.muted, textTransform: "uppercase", fontWeight: 700 },
+  listRow: { flexDirection: "row", paddingVertical: 3 },
+  listTest: { width: "50%", fontSize: 10 },
+  listResult: { width: "50%", fontSize: 10, fontWeight: 700 },
+  sigSubtitle: { fontSize: 8, color: c.muted, marginTop: 1 },
   sectionTitle: { fontSize: 11, fontWeight: 700, marginTop: 10, marginBottom: 4 },
   tHead: { flexDirection: "row", borderBottomWidth: 1, borderBottomColor: c.border, paddingBottom: 3 },
   tRow: { flexDirection: "row", borderBottomWidth: 0.5, borderBottomColor: c.border, paddingVertical: 3 },
@@ -117,15 +134,42 @@ export function ReportDocument({ locale, clinic, qrDataUrl, report }: ReportDocu
         return (
           <View style={styles.piGrid}>
             {section.fields.map((f) => (
-              <View key={f} style={isCanvas ? [styles.piItem, { width: "50%" }] : styles.piItem}>
-                <Text style={styles.piLabel}>{t(`reports.pi_${f}`)}</Text>
-                <Text style={styles.piValue}>{patientInfo[f] != null ? String(patientInfo[f]) : "-"}</Text>
+              <View key={f} style={styles.piRow}>
+                <Text style={styles.piRowLabel}>{t(`reports.pi_${f}`)}</Text>
+                <Text style={styles.piRowValue}>{patientInfo[f] != null ? String(patientInfo[f]) : "-"}</Text>
               </View>
             ))}
           </View>
         );
 
       case "results_table":
+        if (section.style === "list") {
+          return (
+            <View wrap={false}>
+              {section.title ? <Text style={styles.listTitle}>{section.title}</Text> : null}
+              {section.listHeader ? (
+                <View style={styles.listHeadRow}>
+                  <Text style={[styles.listHeadCell, { width: "50%" }]}>{section.listHeader.left}</Text>
+                  <Text style={[styles.listHeadCell, { width: "50%" }]}>{section.listHeader.right}</Text>
+                </View>
+              ) : null}
+              {section.rows.map((row) => {
+                const entry = results[row.key];
+                const result =
+                  entry != null
+                    ? `${entry.value}${row.unit ? ` ${row.unit}` : ""}` +
+                      (entry.value2 != null && row.unit2 ? `    ${entry.value2} ${row.unit2}` : "")
+                    : "-";
+                return (
+                  <View key={row.key} style={styles.listRow}>
+                    <Text style={styles.listTest}>{row.test}</Text>
+                    <Text style={styles.listResult}>{result}</Text>
+                  </View>
+                );
+              })}
+            </View>
+          );
+        }
         return (
           <View wrap={false}>
             {section.title ? <Text style={styles.sectionTitle}>{section.title}</Text> : null}
@@ -170,12 +214,15 @@ export function ReportDocument({ locale, clinic, qrDataUrl, report }: ReportDocu
 
       case "signature":
         return (
-          <Text style={isCanvas ? styles.meta : [styles.meta, { marginTop: 16 }]}>
-            {section.label}:{" "}
-            {report.status === "verified" && report.verifiedByName
-              ? report.verifiedByName
-              : t("reports.pendingVerification")}
-          </Text>
+          <View style={isCanvas ? undefined : { marginTop: 16 }}>
+            <Text style={styles.meta}>
+              {section.label}:{" "}
+              {report.status === "verified" && report.verifiedByName
+                ? report.verifiedByName
+                : t("reports.pendingVerification")}
+            </Text>
+            {section.subtitle ? <Text style={styles.sigSubtitle}>{section.subtitle}</Text> : null}
+          </View>
         );
 
       default:
@@ -186,12 +233,27 @@ export function ReportDocument({ locale, clinic, qrDataUrl, report }: ReportDocu
   const clinicHeader = (
     <>
       <View style={styles.header}>
-        <View>
+        <View style={{ flex: 1, paddingRight: 12 }}>
           <Text style={styles.clinicName}>{clinic.name}</Text>
           {clinic.address ? <Text style={styles.clinicMeta}>{clinic.address}</Text> : null}
-          {clinic.phone ? <Text style={styles.clinicMeta}>{clinic.phone}</Text> : null}
         </View>
         <View style={styles.headerRight}>
+          {clinic.phone ? (
+            <Text style={styles.contact}>
+              {t("reports.tel")}: {clinic.phone}
+            </Text>
+          ) : null}
+          {clinic.fax ? (
+            <Text style={styles.contact}>
+              {t("reports.fax")}: {clinic.fax}
+            </Text>
+          ) : null}
+          {clinic.email ? (
+            <Text style={styles.contact}>
+              {t("reports.email")}: {clinic.email}
+            </Text>
+          ) : null}
+          <Text style={styles.confidential}>{t("reports.confidential")}</Text>
           {showLogo ? <Image src={clinic.logoUrl as string} style={styles.logo} /> : null}
           {qrDataUrl ? (
             <>

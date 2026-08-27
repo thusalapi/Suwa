@@ -23,3 +23,54 @@ export const fbcTemplate = {
     { type: "signature", label: "Verified by" },
   ],
 } satisfies Template;
+
+/**
+ * Fasting Blood Sugar — modelled on Unawatuna Medical Centre's house format: a two-column
+ * patient/specimen block, a compact "list" result with dual units (mg/dl + auto-derived mmol/l),
+ * an Expected-values block + lab notes as static text, and a technologist signature line.
+ */
+export const fastingBloodSugarTemplate = {
+  name: "Fasting Blood Sugar",
+  version: 1,
+  sections: [
+    { type: "patient_info", fields: ["name", "age", "gender", "referred_by", "specimen_no", "datetime", "source"] },
+    {
+      type: "results_table",
+      style: "list",
+      title: "Fasting Blood Sugar",
+      listHeader: { left: "Chemistry", right: "Result" },
+      rows: [{ key: "fbs", test: "Fasting Blood Sugar", unit: "mg/dl", unit2: "mmol/l", factor2: 0.0555 }],
+    },
+    { type: "static", heading: true, text: "EXPECTED VALUES" },
+    { type: "static", text: "70 - 100 mg/dl  :  Normal" },
+    { type: "static", text: "101 - 125 mg/dl  :  Impaired" },
+    { type: "static", text: ">= 126 mg/dl  :  High" },
+    {
+      type: "static",
+      text:
+        "Note:  1. The values will vary from one laboratory to another.\n" +
+        "          2. Laboratory values depend on the age, sex and time of collecting the samples, and may vary accordingly.\n" +
+        "          3. Laboratory reports should not be interpreted in isolation. They should always be correlated with clinical findings and other medical reports.",
+    },
+    { type: "signature", label: "Verified by", subtitle: "Medical Laboratory Technologist · SLMC Reg." },
+  ],
+} satisfies Template;
+
+/**
+ * Blood Grouping & Rh — a qualitative report: a single "list" result whose value is text
+ * (e.g. "B Positive"), no reference range or flag.
+ */
+export const bloodGroupingTemplate = {
+  name: "Blood Grouping & Rh",
+  version: 1,
+  sections: [
+    { type: "patient_info", fields: ["name", "age", "gender", "requested_by", "datetime"] },
+    { type: "static", heading: true, text: "Blood" },
+    {
+      type: "results_table",
+      style: "list",
+      rows: [{ key: "blood_group", test: "Blood Grouping & Rh", value_type: "text" }],
+    },
+    { type: "signature", label: "Verified by", subtitle: "Medical Laboratory Technologist · SLMC Reg." },
+  ],
+} satisfies Template;
