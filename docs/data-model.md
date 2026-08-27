@@ -25,6 +25,8 @@ id              uuid pk
 name            text
 address         text
 phone           text
+fax             text          -- shown in the report PDF header (Tel/Fax/Email)
+email           text          -- shown in the report PDF header
 logo_url        text
 currency        text          -- e.g. "LKR"
 tax_rate        integer       -- basis points, e.g. 800 = 8.00%

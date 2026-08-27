@@ -3,7 +3,13 @@
 import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { patientSchema } from "@/lib/schema/patient";
-import { createPatient, updatePatient, findByPhone, getPatient } from "@/lib/patients";
+import { createPatient, updatePatient, findByPhone, getPatient, searchPatients, type PatientListItem } from "@/lib/patients";
+
+/** Live patient search for the client-side finder (tenant-scoped). Returns up to 50 matches. */
+export async function searchPatientsAction(query: string): Promise<PatientListItem[]> {
+  const user = await requireUser();
+  return searchPatients(user.clinicId, query);
+}
 
 /** Result surfaced back to the patient form via `useActionState`. Messages are i18n keys. */
 export interface PatientFormState {

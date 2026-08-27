@@ -11,8 +11,16 @@ import { Spinner } from "@/components/atoms/Spinner";
 import { cn } from "@/lib/utils/cn";
 import { getT } from "@/lib/i18n";
 import type { Locale } from "@/lib/i18n/types";
-import type { Template, ResultRow } from "@/lib/report-engine/template";
+import {
+  PATIENT_DERIVED_FIELDS,
+  PATIENT_DATETIME_FIELDS,
+  type Template,
+  type ResultRow,
+} from "@/lib/report-engine/template";
 import { computeFlag, isAbnormal, isCritical, type Flag } from "@/lib/report-engine/flag";
+
+const DERIVED = new Set<string>(PATIENT_DERIVED_FIELDS);
+const DATETIME = new Set<string>(PATIENT_DATETIME_FIELDS);
 
 /** Minimal state the report form reports back via `useActionState`. */
 export interface ReportFormState {
@@ -113,12 +121,13 @@ export function ReportFormRenderer({
             return (
               <section key={i} className="grid grid-cols-2 gap-4 sm:grid-cols-4">
                 {section.fields.map((f) => {
-                  const editable = f === "ref_doctor";
+                  const editable = !DERIVED.has(f);
                   return (
                     <Field key={f} label={t(`reports.pi_${f}`)} htmlFor={`pi_${f}`}>
                       <Input
                         id={`pi_${f}`}
                         name={`pi.${f}`}
+                        type={DATETIME.has(f) ? "datetime-local" : f === "age" ? "number" : "text"}
                         defaultValue={patientInfo[f] ?? ""}
                         readOnly={!editable}
                         className={editable ? undefined : "bg-surface text-muted"}
@@ -130,6 +139,44 @@ export function ReportFormRenderer({
             );
 
           case "results_table":
+            if (section.style === "list") {
+              return (
+                <section key={i} className="space-y-2">
+                  {section.title ? <h3 className="text-sm font-semibold text-primary-dark">{section.title}</h3> : null}
+                  <div className="overflow-hidden rounded-lg border border-border bg-surface-raised">
+                    {section.listHeader ? (
+                      <div className="flex border-b border-border px-3 py-2 text-xs font-semibold uppercase tracking-wide text-muted">
+                        <span className="flex-1">{section.listHeader.left}</span>
+                        <span className="w-1/2">{section.listHeader.right}</span>
+                      </div>
+                    ) : null}
+                    {section.rows.map((row) => (
+                      <div key={row.key} className="flex items-center gap-3 border-b border-border px-3 py-2 last:border-0">
+                        <span className="flex-1 text-ink">{row.test}</span>
+                        <div className="flex w-1/2 items-center gap-2">
+                          <Input
+                            name={`res.${row.key}`}
+                            type={row.value_type === "text" ? "text" : "number"}
+                            step={row.value_type === "text" ? undefined : "any"}
+                            inputMode={row.value_type === "text" ? undefined : "decimal"}
+                            aria-label={`${row.test} ${t("reports.result")}`}
+                            value={resultValues[row.key] ?? ""}
+                            onChange={(e) => setResultValues((prev) => ({ ...prev, [row.key]: e.target.value }))}
+                            className="h-9 max-w-[12rem]"
+                          />
+                          {row.unit ? (
+                            <span className="text-xs text-muted">
+                              {row.unit}
+                              {row.unit2 ? ` · ${row.unit2}` : ""}
+                            </span>
+                          ) : null}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              );
+            }
             return (
               <section key={i} className="space-y-2">
                 {section.title ? <h3 className="text-sm font-semibold text-ink">{section.title}</h3> : null}

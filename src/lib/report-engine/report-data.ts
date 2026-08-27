@@ -8,8 +8,12 @@ import { resultRows, type Template } from "./template";
  * re-render. See docs/report-engine.md "Filled report data".
  */
 export interface ResultValue {
-  value: number;
-  flag: Flag;
+  /** Numeric for flagged analytes; string for qualitative rows (`value_type: "text"`). */
+  value: number | string;
+  /** Present only for numeric rows (computed against the reference range). */
+  flag?: Flag;
+  /** Optional second-unit value (value × `factor2`), e.g. mmol/l beside mg/dl. */
+  value2?: number;
 }
 
 export interface ReportData {
@@ -20,7 +24,8 @@ export interface ReportData {
 }
 
 const flagSchema = z.enum(FLAGS);
-const resultValueSchema = z.object({ value: z.number(), flag: flagSchema });
+const numericResultSchema = z.object({ value: z.number(), flag: flagSchema, value2: z.number().optional() });
+const textResultSchema = z.object({ value: z.string() });
 
 /** The Zod schema for a single field block's value, by input type. */
 function fieldValueSchema(field: Extract<Template["sections"][number], { type: "field" }>): z.ZodTypeAny {
@@ -58,7 +63,9 @@ export function buildReportDataSchema(template: Template): z.ZodTypeAny {
   const rows = resultRows(template);
   if (rows.length > 0) {
     const resultsShape: Record<string, z.ZodTypeAny> = {};
-    for (const r of rows) resultsShape[r.key] = resultValueSchema.optional();
+    for (const r of rows) {
+      resultsShape[r.key] = (r.value_type === "text" ? textResultSchema : numericResultSchema).optional();
+    }
     shape.results = z.object(resultsShape).partial().optional();
   }
 
@@ -80,18 +87,30 @@ export function validateReportData(template: Template, data: unknown) {
 }
 
 /**
- * Compute the stored results map from raw entered values: classify each numeric value against
- * its row's reference range. Blank / non-numeric entries are skipped (not yet filled).
+ * Compute the stored results map from raw entered values. Numeric rows are classified against
+ * their reference range (and given a second-unit `value2` when the row defines `factor2`); text
+ * rows (`value_type: "text"`) store the trimmed string verbatim with no flag. Blank entries — and
+ * non-numeric entries in numeric rows — are skipped (not yet filled).
  */
 export function computeResults(
   template: Template,
-  values: Record<string, number | null | undefined>,
+  values: Record<string, number | string | null | undefined>,
 ): Record<string, ResultValue> {
   const out: Record<string, ResultValue> = {};
   for (const row of resultRows(template)) {
     const v = values[row.key];
-    if (v == null || Number.isNaN(v)) continue;
-    out[row.key] = { value: v, flag: computeFlag(v, row) };
+    if (v == null || v === "") continue;
+
+    if (row.value_type === "text") {
+      out[row.key] = { value: String(v).trim() };
+      continue;
+    }
+
+    const n = typeof v === "number" ? v : Number(v);
+    if (Number.isNaN(n)) continue;
+    const entry: ResultValue = { value: n, flag: computeFlag(n, row) };
+    if (row.factor2 != null && row.unit2) entry.value2 = Math.round(n * row.factor2 * 10) / 10;
+    out[row.key] = entry;
   }
   return out;
 }

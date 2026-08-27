@@ -77,6 +77,7 @@ function SortableRow({
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: row._id });
   const set = (patch: Partial<BRow>) => onChange({ ...row, ...patch });
+  const isText = row.valueType === "text";
   return (
     <div
       ref={setNodeRef}
@@ -101,41 +102,66 @@ function SortableRow({
       <FieldBox label={t("templates.builder.key")}>
         <Input value={row.key} onChange={(e) => set({ key: e.target.value })} className="h-9 w-28" />
       </FieldBox>
+      <FieldBox label={t("templates.builder.row_valueType")}>
+        <select
+          value={isText ? "text" : "number"}
+          onChange={(e) => set({ valueType: e.target.value === "text" ? "text" : undefined })}
+          className={selectClass}
+        >
+          <option value="number">{t("templates.builder.valueType_number")}</option>
+          <option value="text">{t("templates.builder.valueType_text")}</option>
+        </select>
+      </FieldBox>
       <FieldBox label={t("templates.builder.row_unit")}>
         <Input value={row.unit} onChange={(e) => set({ unit: e.target.value })} className="h-9 w-20" />
       </FieldBox>
-      <FieldBox label={t("templates.builder.row_refLow")}>
-        <Input
-          type="number"
-          value={row.ref_low}
-          onChange={(e) => set({ ref_low: e.target.value })}
-          className="h-9 w-20"
-        />
-      </FieldBox>
-      <FieldBox label={t("templates.builder.row_refHigh")}>
-        <Input
-          type="number"
-          value={row.ref_high}
-          onChange={(e) => set({ ref_high: e.target.value })}
-          className="h-9 w-20"
-        />
-      </FieldBox>
-      <FieldBox label={t("templates.builder.row_critLow")}>
-        <Input
-          type="number"
-          value={row.critical_low}
-          onChange={(e) => set({ critical_low: e.target.value })}
-          className="h-9 w-20"
-        />
-      </FieldBox>
-      <FieldBox label={t("templates.builder.row_critHigh")}>
-        <Input
-          type="number"
-          value={row.critical_high}
-          onChange={(e) => set({ critical_high: e.target.value })}
-          className="h-9 w-20"
-        />
-      </FieldBox>
+      {isText ? null : (
+        <>
+          <FieldBox label={t("templates.builder.row_unit2")}>
+            <Input value={row.unit2 ?? ""} onChange={(e) => set({ unit2: e.target.value })} className="h-9 w-20" />
+          </FieldBox>
+          <FieldBox label={t("templates.builder.row_factor2")}>
+            <Input
+              type="number"
+              value={row.factor2 ?? ""}
+              onChange={(e) => set({ factor2: e.target.value })}
+              className="h-9 w-24"
+            />
+          </FieldBox>
+          <FieldBox label={t("templates.builder.row_refLow")}>
+            <Input
+              type="number"
+              value={row.ref_low}
+              onChange={(e) => set({ ref_low: e.target.value })}
+              className="h-9 w-20"
+            />
+          </FieldBox>
+          <FieldBox label={t("templates.builder.row_refHigh")}>
+            <Input
+              type="number"
+              value={row.ref_high}
+              onChange={(e) => set({ ref_high: e.target.value })}
+              className="h-9 w-20"
+            />
+          </FieldBox>
+          <FieldBox label={t("templates.builder.row_critLow")}>
+            <Input
+              type="number"
+              value={row.critical_low}
+              onChange={(e) => set({ critical_low: e.target.value })}
+              className="h-9 w-20"
+            />
+          </FieldBox>
+          <FieldBox label={t("templates.builder.row_critHigh")}>
+            <Input
+              type="number"
+              value={row.critical_high}
+              onChange={(e) => set({ critical_high: e.target.value })}
+              className="h-9 w-20"
+            />
+          </FieldBox>
+        </>
+      )}
       <button type="button" onClick={onRemove} className="self-center px-1 text-sm text-danger hover:underline">
         {t("templates.builder.removeRow")}
       </button>
@@ -268,13 +294,47 @@ function SectionEditor({
       };
       return (
         <div className="space-y-2">
-          <FieldBox label={t("templates.builder.title")}>
-            <Input
-              value={section.title}
-              onChange={(e) => onChange({ ...section, title: e.target.value })}
-              className="h-9 w-64"
-            />
-          </FieldBox>
+          <div className="flex flex-wrap items-end gap-2">
+            <FieldBox label={t("templates.builder.title")}>
+              <Input
+                value={section.title}
+                onChange={(e) => onChange({ ...section, title: e.target.value })}
+                className="h-9 w-64"
+              />
+            </FieldBox>
+            <FieldBox label={t("templates.builder.style")}>
+              <select
+                value={section.style ?? "table"}
+                onChange={(e) => onChange({ ...section, style: e.target.value === "list" ? "list" : undefined })}
+                className={selectClass}
+              >
+                <option value="table">{t("templates.builder.style_table")}</option>
+                <option value="list">{t("templates.builder.style_list")}</option>
+              </select>
+            </FieldBox>
+            {section.style === "list" ? (
+              <>
+                <FieldBox label={t("templates.builder.listHeaderLeft")}>
+                  <Input
+                    value={section.listHeader?.left ?? ""}
+                    onChange={(e) =>
+                      onChange({ ...section, listHeader: { left: e.target.value, right: section.listHeader?.right ?? "" } })
+                    }
+                    className="h-9 w-32"
+                  />
+                </FieldBox>
+                <FieldBox label={t("templates.builder.listHeaderRight")}>
+                  <Input
+                    value={section.listHeader?.right ?? ""}
+                    onChange={(e) =>
+                      onChange({ ...section, listHeader: { left: section.listHeader?.left ?? "", right: e.target.value } })
+                    }
+                    className="h-9 w-32"
+                  />
+                </FieldBox>
+              </>
+            ) : null}
+          </div>
           <DndContext sensors={rowSensors} collisionDetection={closestCenter} onDragEnd={onRowsEnd}>
             <SortableContext items={section.rows.map((r) => r._id)} strategy={verticalListSortingStrategy}>
               <div className="space-y-2">
@@ -326,13 +386,22 @@ function SectionEditor({
 
     case "signature":
       return (
-        <FieldBox label={t("templates.builder.signatureLabel")}>
-          <Input
-            value={section.label}
-            onChange={(e) => onChange({ ...section, label: e.target.value })}
-            className="h-9 w-64"
-          />
-        </FieldBox>
+        <div className="flex flex-wrap gap-2">
+          <FieldBox label={t("templates.builder.signatureLabel")}>
+            <Input
+              value={section.label}
+              onChange={(e) => onChange({ ...section, label: e.target.value })}
+              className="h-9 w-64"
+            />
+          </FieldBox>
+          <FieldBox label={t("templates.builder.signatureSubtitle")}>
+            <Input
+              value={section.subtitle ?? ""}
+              onChange={(e) => onChange({ ...section, subtitle: e.target.value })}
+              className="h-9 w-64"
+            />
+          </FieldBox>
+        </div>
       );
   }
 }

@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
-import { getPatient } from "@/lib/patients";
+import { getPatient, searchPatients } from "@/lib/patients";
 import { listTemplates, getTemplate } from "@/lib/report-templates";
 import { ReportFormRenderer } from "@/components/forms/ReportFormRenderer";
+import { PatientFinder } from "@/components/organisms/PatientFinder";
 import { getT } from "@/lib/i18n";
 import { DEFAULT_LOCALE } from "@/lib/i18n/types";
 import { createReportAction } from "../actions";
@@ -30,12 +31,30 @@ export default async function NewReportPage({
   const locale = DEFAULT_LOCALE;
   const t = getT(locale);
 
-  if (!patientId) redirect("/patients");
+  // No patient yet → show the fast finder (pick → report in one click) instead of bouncing away.
+  if (!patientId) {
+    const recent = await searchPatients(user.clinicId, "");
+    return (
+      <div className="space-y-6">
+        <div className="space-y-1">
+          <h1 className="text-xl font-semibold text-ink">{t("reports.newTitle")}</h1>
+          <p className="text-sm text-muted">{t("reports.pickPatient")}</p>
+        </div>
+        <PatientFinder locale={locale} initialQuery="" initialResults={recent} mode="report" />
+      </div>
+    );
+  }
 
   const patient = await getPatient(user.clinicId, patientId);
   if (!patient) notFound();
 
   const templates = (await listTemplates(user.clinicId)).filter((tpl) => tpl.active);
+
+  // One report type → skip the picker entirely and go straight to the form.
+  if (!templateId && templates.length === 1) {
+    redirect(`/reports/new?patientId=${patient.id}&templateId=${templates[0].id}`);
+  }
+
   const selected = templateId ? await getTemplate(user.clinicId, templateId) : null;
 
   const header = (
@@ -82,6 +101,7 @@ export default async function NewReportPage({
     gender: patient.gender ?? "",
     age: ageFromDob(patient.dob),
     ref_doctor: "",
+    source: "Blood", // sensible default for the lab house-style templates; ignored if unused
   };
 
   return (

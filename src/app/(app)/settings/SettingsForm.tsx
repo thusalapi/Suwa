@@ -14,6 +14,8 @@ export interface SettingsInitial {
   name: string;
   address: string;
   phone: string;
+  fax: string;
+  email: string;
   logoUrl: string;
   currency: string;
   taxRatePercent: number;
@@ -48,8 +50,18 @@ export function SettingsForm({ locale, initial }: { locale: Locale; initial: Set
         <Input id="address" name="address" defaultValue={initial.address} />
       </Field>
 
-      <Field label={t("settings.phone")} htmlFor="phone">
-        <Input id="phone" name="phone" type="tel" defaultValue={initial.phone} />
+      <div className="grid grid-cols-2 gap-4">
+        <Field label={t("settings.phone")} htmlFor="phone">
+          <Input id="phone" name="phone" type="tel" defaultValue={initial.phone} />
+        </Field>
+
+        <Field label={t("settings.fax")} htmlFor="fax">
+          <Input id="fax" name="fax" type="tel" defaultValue={initial.fax} />
+        </Field>
+      </div>
+
+      <Field label={t("settings.email")} htmlFor="email" hint={t("settings.emailHint")}>
+        <Input id="email" name="email" type="email" defaultValue={initial.email} />
       </Field>
 
       <Field label={t("settings.logoUrl")} htmlFor="logoUrl" hint={t("settings.logoUrlHint")}>

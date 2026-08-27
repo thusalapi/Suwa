@@ -12,6 +12,12 @@ build/
 # Test coverage
 coverage/
 
+# Playwright (E2E) — reports, traces, browser binaries
+playwright-report/
+test-results/
+blob-report/
+.playwright/
+
 # Environment
 .env
 .env*.local

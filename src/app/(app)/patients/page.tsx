@@ -1,8 +1,7 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { searchPatients } from "@/lib/patients";
-import { SearchBar } from "@/components/molecules/SearchBar";
-import { PatientTable } from "@/components/organisms/PatientTable";
+import { PatientFinder } from "@/components/organisms/PatientFinder";
 import { Button } from "@/components/atoms/Button";
 import { getT } from "@/lib/i18n";
 import { DEFAULT_LOCALE } from "@/lib/i18n/types";
@@ -18,25 +17,16 @@ export default async function PatientsPage({ searchParams }: { searchParams: Pro
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-ink">{t("patients.title")}</h1>
+        <div className="space-y-1">
+          <h1 className="text-xl font-semibold text-ink">{t("patients.title")}</h1>
+          <p className="text-sm text-muted">{t("patients.findHint")}</p>
+        </div>
         <Link href="/patients/new">
           <Button>{t("patients.add")}</Button>
         </Link>
       </div>
 
-      <SearchBar
-        action="/patients"
-        defaultValue={q}
-        label={t("patients.searchLabel")}
-        placeholder={t("patients.searchPlaceholder")}
-        submitLabel={t("common.search")}
-      />
-
-      <PatientTable
-        patients={patients}
-        locale={locale}
-        emptyMessage={q ? t("patients.noResults") : t("patients.empty")}
-      />
+      <PatientFinder locale={locale} initialQuery={q} initialResults={patients} mode="all" />
     </div>
   );
 }

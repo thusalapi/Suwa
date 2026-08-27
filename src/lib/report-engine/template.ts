@@ -29,9 +29,30 @@ const positionSchema = z
   })
   .optional();
 
-/** Auto-filled patient fields a `patient_info` block can show. */
-export const PATIENT_INFO_FIELDS = ["name", "age", "gender", "ref_doctor"] as const;
+/**
+ * Fields a `patient_info` block can show. `name`/`age`/`gender` are auto-filled from the patient
+ * record (read-only on the form); the rest are manual per-report entries (referring/requesting
+ * doctor, specimen number, date & time, specimen source). All are stored on the report so the
+ * issued document is reproducible.
+ */
+export const PATIENT_INFO_FIELDS = [
+  "name",
+  "age",
+  "gender",
+  "ref_doctor",
+  "referred_by",
+  "requested_by",
+  "specimen_no",
+  "datetime",
+  "source",
+] as const;
 export type PatientInfoField = (typeof PATIENT_INFO_FIELDS)[number];
+
+/** Patient-derived fields (prefilled + read-only). Everything else in a block is manual entry. */
+export const PATIENT_DERIVED_FIELDS = ["name", "age", "gender"] as const;
+
+/** Manual `patient_info` fields whose input is a datetime rather than free text. */
+export const PATIENT_DATETIME_FIELDS = ["datetime"] as const;
 
 export const FIELD_INPUT_TYPES = ["text", "number", "date", "select"] as const;
 
@@ -66,6 +87,12 @@ const resultRow = z.object({
   key,
   test: z.string().min(1),
   unit: z.string().optional(),
+  /** Optional second unit shown alongside the first, derived from `factor2` (e.g. mg/dl→mmol/l). */
+  unit2: z.string().optional(),
+  /** value2 = value × factor2 (computed + stored on entry). Requires `unit2`. */
+  factor2: z.number().optional(),
+  /** "number" (default) flags against the range; "text" stores a qualitative value (e.g. "B Positive"). */
+  value_type: z.enum(["number", "text"]).optional(),
   ref_low: z.number().optional(),
   ref_high: z.number().optional(),
   critical_low: z.number().optional(),
@@ -75,6 +102,11 @@ const resultRow = z.object({
 const resultsTableSection = z.object({
   type: z.literal("results_table"),
   title: z.string().optional(),
+  /** "table" (default): the 5-column Test/Result/Unit/Range/Flag grid. "list": a compact
+   *  Test — Result two-column list (the lab house style); ranges live in a separate static block. */
+  style: z.enum(["table", "list"]).optional(),
+  /** Column labels for the "list" style header (e.g. CHEMISTRY / RESULT). Omit to hide the header. */
+  listHeader: z.object({ left: z.string().min(1), right: z.string().min(1) }).optional(),
   rows: z.array(resultRow).min(1),
   pos: positionSchema,
 });
@@ -89,6 +121,8 @@ const textareaSection = z.object({
 const signatureSection = z.object({
   type: z.literal("signature"),
   label: z.string().min(1),
+  /** Optional line under the verifier's name, e.g. "Medical Laboratory Technologist · SLMC Reg.". */
+  subtitle: z.string().optional(),
   pos: positionSchema,
 });
 
@@ -145,6 +179,13 @@ export const templateSchema = z
               code: "custom",
               message: "ref_low must be <= ref_high",
               path: ["sections", i, "rows", j, "ref_low"],
+            });
+          }
+          if (r.factor2 != null && !r.unit2) {
+            ctx.addIssue({
+              code: "custom",
+              message: "factor2 requires unit2",
+              path: ["sections", i, "rows", j, "factor2"],
             });
           }
           if (rowKeys.has(r.key)) {
