@@ -7,6 +7,7 @@ import { Button } from "@/components/atoms/Button";
 import { getT, formatMoney, formatDateTime } from "@/lib/i18n";
 import { DEFAULT_LOCALE } from "@/lib/i18n/types";
 import { PaymentForm } from "../PaymentForm";
+import { CancelBillForm } from "../CancelBillForm";
 import { PageTitle, SectionTitle } from "@/components/atoms/Heading";
 
 const statusTone = { draft: "neutral", finalized: "neutral", paid: "success", cancelled: "danger" } as const;
@@ -110,6 +111,14 @@ export default async function BillDetailPage({ params }: { params: Promise<{ id:
         {bill.status !== "paid" && bill.status !== "cancelled" ? (
           <div className="rounded-lg border border-border bg-surface-raised p-4">
             <PaymentForm locale={locale} billId={bill.id} maxRupees={bill.balance / 100} />
+          </div>
+        ) : null}
+
+        {/* Owner-only, and only while nothing has been paid — cancelBill refuses otherwise.
+            The action re-checks the role server-side; this only decides what to render. */}
+        {user.role === "owner" && bill.status !== "cancelled" && bill.amountPaid === 0 ? (
+          <div className="rounded-lg border border-danger/30 bg-danger/5 p-4">
+            <CancelBillForm locale={locale} billId={bill.id} />
           </div>
         ) : null}
       </section>

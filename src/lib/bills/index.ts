@@ -6,7 +6,13 @@ import { recordAudit } from "@/lib/audit";
 import { getClinic } from "@/lib/clinic";
 
 /** Discriminator so the action layer can map a failure to a specific i18n message. */
-export type BillErrorCode = "empty" | "not_found" | "cancelled" | "already_settled" | "exceeds_balance";
+export type BillErrorCode =
+  | "empty"
+  | "not_found"
+  | "cancelled"
+  | "already_settled"
+  | "exceeds_balance"
+  | "has_payments";
 
 export class BillError extends Error {
   constructor(
@@ -225,6 +231,50 @@ export async function recordPayment(
         entityType: "bill",
         entityId: billId,
         metadata: { amount: input.amount, method: input.method },
+      },
+      tx,
+    );
+  });
+}
+
+/**
+ * Void a bill. Financial rows are never hard-deleted (see docs/data-model.md) — cancellation is a
+ * state, so the bill number stays allocated and the audit trail stays intact. Idempotent.
+ *
+ * Refuses a bill that has money against it: reversing a received payment is a refund or credit
+ * note, which is a different document with its own trail, not a status flip. The row is locked
+ * FOR UPDATE so a cancellation cannot race a concurrent payment past that guard — without the
+ * lock both could read amount_paid = 0 and commit.
+ *
+ * Change + `bill.cancel` audit commit together.
+ */
+export async function cancelBill(clinicId: string, userId: string, billId: string, reason?: string): Promise<void> {
+  await db.transaction(async (tx) => {
+    const [bill] = await tx
+      .select({ status: bills.status, amountPaid: bills.amountPaid, billNumber: bills.billNumber })
+      .from(bills)
+      .where(and(eq(bills.id, billId), eq(bills.clinicId, clinicId)))
+      .limit(1)
+      .for("update");
+    if (!bill) throw new BillError("Bill not found.", "not_found");
+    if (bill.status === "cancelled") return; // already voided — nothing to do
+    if (bill.amountPaid > 0) {
+      throw new BillError("This bill has payments recorded and can't be cancelled.", "has_payments");
+    }
+
+    await tx
+      .update(bills)
+      .set({ status: "cancelled" })
+      .where(and(eq(bills.id, billId), eq(bills.clinicId, clinicId)));
+
+    await recordAudit(
+      {
+        clinicId,
+        userId,
+        action: "bill.cancel",
+        entityType: "bill",
+        entityId: billId,
+        metadata: { billNumber: bill.billNumber, ...(reason ? { reason } : {}) },
       },
       tx,
     );
