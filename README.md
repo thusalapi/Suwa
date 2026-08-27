@@ -83,9 +83,6 @@ npm run seed:owner -- --clinic "Suwa Medical Centre" \
 
 #### Local dev login
 
-> ⚠️ **Local development only** — throwaway credentials for the seeded dev database.
-> Never use these in a real deployment; create real accounts via the **Team** page.
-
 | Email | Password | Role |
 |-------|----------|------|
 | `owner@clinic.lk` | `suwa12345` | Owner |
