@@ -28,20 +28,20 @@ export function StatCard({ label, value, hint, icon, tone = "primary", href }: S
   const inner = (
     <div
       className={cn(
-        "h-full rounded-xl border border-border bg-surface-raised p-4 transition-shadow",
+        "h-full rounded-xl border border-border bg-surface-raised p-5 transition-shadow",
         href && "hover:border-primary/40 hover:shadow-sm",
       )}
     >
       <div className="flex items-start justify-between gap-3">
-        <p className="text-xs font-medium uppercase tracking-wide text-muted">{label}</p>
+        <p className="text-sm font-medium uppercase tracking-wide text-muted">{label}</p>
         {icon ? (
-          <span className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-lg", toneChip[tone])}>
+          <span className={cn("flex h-11 w-11 shrink-0 items-center justify-center rounded-lg", toneChip[tone])}>
             {icon}
           </span>
         ) : null}
       </div>
-      <p className="mt-2 text-2xl font-semibold text-ink">{value}</p>
-      {hint ? <p className="mt-1 text-xs text-muted">{hint}</p> : null}
+      <p className="mt-3 text-3xl font-semibold text-ink">{value}</p>
+      {hint ? <p className="mt-1.5 text-sm text-muted">{hint}</p> : null}
     </div>
   );
 

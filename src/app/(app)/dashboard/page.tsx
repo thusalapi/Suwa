@@ -71,7 +71,7 @@ export default async function DashboardPage() {
 
       <section className="space-y-3">
         <SectionTitle>{t("dashboard.quickLinks")}</SectionTitle>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <ActionCard
             href="/patients/new"
             icon={<UserPlusIcon className="h-5 w-5" />}
