@@ -57,14 +57,8 @@ what's next); it's the first thing to read when picking the work back up. See th
 
 ### Run locally
 
-```bash
-npm install
-npm run dev    # http://localhost:3000
-npm run test              # unit tests (Vitest) — pure logic, no DB needed
-npm run test:integration  # DB-backed tests — needs the Docker Postgres running
-```
-
-The app needs a PostgreSQL database. For local dev you can run one in Docker:
+Requires **Node.js 20.12+** (the scripts use `process.loadEnvFile`) and a **PostgreSQL**
+database. For local dev you can run one in Docker:
 
 ```bash
 docker run -d --name suwa-db \
@@ -72,14 +66,52 @@ docker run -d --name suwa-db \
   -p 5432:5432 postgres:16
 ```
 
-Then copy `.env.example` to `.env` (set `DATABASE_URL=postgresql://suwa:suwa@localhost:5432/suwa`
-and a random `SESSION_SECRET`), apply the schema (`npm run db:migrate`, or run the Liquibase
-changelog), and seed the first owner:
+Then:
 
 ```bash
+npm install
+cp .env.example .env     # set DATABASE_URL + a random SESSION_SECRET
+npm run db:deploy        # apply the schema
 npm run seed:owner -- --clinic "Suwa Medical Centre" \
   --name "Dr. Perera" --email owner@clinic.lk --password "suwa12345"
+npm run dev              # http://localhost:3000
 ```
+
+Optionally, `npm run seed:demo` loads a ready-to-demo dataset — services, patients, bills in
+mixed payment states, and reports (verified plus one awaiting sign-off). It **resets** the
+clinic's demo rows each run, so it is safe to re-run between demos.
+
+> **Applying the schema:** `npm run db:deploy` runs the changesets with plain Node and is the
+> command to use on any machine. Liquibase remains the source of truth for *authoring*
+> migrations (`npm run db:migrate`), but it needs a JVM and — contrary to its own docs — its
+> Windows installer ships no PostgreSQL JDBC driver, so it fails on a fresh machine until a
+> jar is added to its classpath. See [`liquibase/README.md`](liquibase/README.md).
+
+### Commands
+
+| Command | What |
+|---------|------|
+| `npm run dev` / `npm run build` / `npm run start` | Dev server · production build · serve the build |
+| `npm run typecheck` · `npm run lint` · `npm run format` | TypeScript · ESLint · Prettier |
+| `npm test` · `npm run test:integration` | Unit tests (no DB) · DB-backed tests (needs Postgres) |
+| `npm run e2e` (`:headed`, `:ui`, `:report`) | Playwright end-to-end — seed first with `npm run seed:e2e` |
+| `npm run db:deploy` (`-- --status`) | Apply pending changesets · list them |
+| `npm run seed:owner` · `seed:templates` · `seed:demo` | First owner · sample report templates · full demo dataset |
+| `npm run backup` · `npm run restore` | Encrypted `pg_dump` · restore from one |
+
+### Deploying to a clinic PC
+
+The target deployment is a single Windows PC running the app and PostgreSQL locally.
+`scripts/install.ps1` does it in one pass — installs Node + PostgreSQL, creates the database,
+generates real secrets, migrates, seeds the owner, builds, and registers the startup and
+nightly-backup scheduled tasks:
+
+```powershell
+.\scripts\install.ps1 -ClinicName "Clinic Name" -OwnerName "Owner" -OwnerEmail owner@clinic.lk
+```
+
+Full operational detail — updates, backups, and recovery — is in
+[docs/runbook.md](docs/runbook.md).
 
 #### Local dev login
 

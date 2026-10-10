@@ -97,7 +97,7 @@ clinic-management-system/
 │   ├── components/            # atomic design — no component library
 │   │   ├── atoms/             # Button, Input, Field, Badge, … (hand-built Tailwind)
 │   │   ├── molecules/         # composed units (FormRow, SearchBar, …)
-│   │   ├── organisms/         # PatientTable, BillEditor, report form renderer, …
+│   │   ├── organisms/         # PatientFinder, ReportView, report form renderer, …
 │   │   ├── templates/         # page-level layouts / shells
 │   │   └── pdf/               # @react-pdf document components
 │   ├── lib/

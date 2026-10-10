@@ -4,7 +4,7 @@
 > what's next, so work continues cleanly across sessions. Keep it updated as you build —
 > tick items off, move "Next up" items into "Done", and note any decisions/gotchas.
 
-**Last updated:** 2026-06-29
+**Last updated:** 2026-10-10
 **Current stage:** Stage 5 — Polish + real-data trial, **code-complete**. Done: payment
 overpayment guard; audit coverage verified complete; backup/restore review (+ `BACKUP_KEEP`
 -NaN prune-wipe fix); Stage 4 dashboard/revenue aggregates verified live against the Docker
@@ -36,7 +36,7 @@ Login is **fully wired** (Server Action → verify hash → session cookie). It 
 PostgreSQL with migrations applied and a seeded owner to actually sign in:
 
 ```bash
-npm run db:migrate   # apply Liquibase changelog (needs local Postgres + .env)
+npm run db:deploy    # apply the schema with plain Node (needs local Postgres + .env)
 npm run seed:owner -- --clinic "Suwa Medical Centre" \
   --name "Dr. Perera" --email owner@clinic.lk --password "a-strong-password"
 ```
@@ -173,6 +173,42 @@ Matches the design-partner clinic's real report layout so Suwa is a drop-in repl
       proving `outstandingTotal` isn't capped at the 200-row list**), plus **patients, services,
       clinic settings, users, report-templates, and the full reports lifecycle** (snapshot freeze,
       flag storage, verify, draft edit, snapshot isolation) — see that section above. Needs the Docker DB up.
+
+### 2026-10-10 — Deployment tooling, demo data, UI polish ✅
+
+- [x] **Schema applies without Liquibase** — `scripts/migrate.ts` (`npm run db:deploy`) reads
+      the same `db.changelog-master.xml` include order, runs the same `changes/*.sql` one
+      transaction each, and tracks applied ids in `schema_migrations`. Verified against a
+      scratch DB: schema identical to Liquibase's across all 91 columns, 25 indexes/constraints
+      and 19 FKs; idempotent; and on an already-Liquibase-migrated DB it adopts the existing
+      ids and applies nothing. **Liquibase is still the source of truth for authoring.**
+      Why: Liquibase needs a JVM and — contrary to its docs — its Windows installer ships no
+      PostgreSQL JDBC driver, so `update` dies with `Cannot find database driver` on a fresh
+      machine. Clinic PC now needs only Node + PostgreSQL.
+- [x] **`scripts/install.ps1`** — one-pass clinic install (prereqs, role/DB, generated secrets,
+      migrate, seed owner, build, startup + nightly-backup scheduled tasks). Two traps baked
+      in from doing it by hand: the Postgres installer leaves `bin` off PATH while the nightly
+      backup shells out to a bare `pg_dump` **as SYSTEM** (so it must be the *machine* PATH or
+      backups fail silently at 01:30), and an already-open shell keeps a stale PATH. Script is
+      ASCII-only — PowerShell 5.1 reads `.ps1` as ANSI without a BOM, and UTF-8 ellipses broke
+      string parsing. **Not yet run end to end on a clean machine.**
+- [x] **Standalone bundle verified** — ran `.next/standalone` in isolation on :3001: login, DB,
+      both PDF routes (valid `%PDF-`) and CSV all work, 26 MB. Two findings: the bundle
+      **contains `.env`** (secrets — never ship as-is), and it carries **no scripts**, so
+      `backup.ts`/`restore.ts` are absent. The clinic needs those forever ⇒ ship the repo.
+- [x] **`npm run seed:demo`** — services, 5 patients, bills in mixed payment states, reports
+      (3 verified + 1 left pending for a live sign-off demo). Resets demo rows, safe to re-run.
+      Also seeds the Full Blood Count template: its `table`-style results block is the only one
+      that renders reference ranges and flag badges — the house-style `list` templates
+      deliberately omit them, so auto-flagging is invisible without it.
+- [x] **Nav, typography, a11y** — nav items are pills with hover/focus/current states and
+      `aria-current`; idle contrast 4.76:1 → 7.58:1 via a new `ink-subtle` role; skip link to a
+      focusable `main`; `PageTitle`/`SectionTitle`/`SubsectionTitle` replace a heading class
+      string copy-pasted across 21 pages (and fix section headings that rendered *smaller* than
+      body text). Dashboard cards enlarged; action-card subtitles no longer truncate.
+- [x] **Reports list rows fully clickable** — stretched `::after` overlay on the real anchor
+      (not `onClick` on the `tr`), so keyboard, modifier-click and open-in-new-tab survive.
+      `PatientTable` deleted (no importers since `PatientFinder`).
 
 ### Stage 5 — Polish + real-data trial (in progress)
 - [x] **Payment edge cases** — `recordPayment` now rejects a payment larger than the
@@ -419,22 +455,24 @@ once the clinic-PC DB is up.
 
 ## Next up (ordered)
 
-Stages 0–4 code is complete. The next stage is **Stage 5 — Polish + real-data trial**
-(`docs/roadmap.md`):
+Stages 0–5 code is complete and the whole flow has been exercised live. Remaining before the
+pilot clinic goes live:
 
-1. Run real patients / bills / reports through the app on the clinic PC; fix friction points.
-2. Tighten audit logging and edge cases.
-3. **Verify the Google Drive backup + restore drill end-to-end** (`docs/backups.md`) — the
-   one Stage-5 non-negotiable still un-exercised.
+1. **Run `scripts/install.ps1` on a spare machine or VM end to end.** It is syntax-checked and
+   its risky parts were dry-run, but it has never been executed start to finish — do not let
+   the first real run be in front of the client.
+2. **Run the restore drill on the clinic PC** (`docs/backups.md`) — still the one
+   non-negotiable that has not been exercised on the target hardware.
+3. Decide what the clinic sees for the **audit log**: every mutation is recorded, but there is
+   no screen to read it. Don't promise it in a demo until there is.
+4. Run real patients / bills / reports through the app on the clinic PC; fix friction points.
 
-**Verify live in the browser:** dashboard stat figures and the revenue report (date-range,
-by-service totals, outstanding list, PDF + CSV exports) against real seeded data — only the
-RevenueDocument render and the build have been checked so far, not the live aggregate queries.
+**Pilot deployment is one PC** (app + PostgreSQL on the same Windows machine, bound to
+localhost). That removes TLS, firewall and LAN-auth concerns, and makes backups-off-the-machine
+plus BitLocker the entire data-safety story.
 
-**Local DB is up in Docker** (`suwa-db`, schema applied via Liquibase, owner seeded), so flows
-can be exercised live in the browser. For a fresh clinic PC the setup is still: install Postgres
-(or Docker), apply the schema, `npm run seed:owner`, and run the backup + restore drill
-(`docs/backups.md`).
+**Local dev DB** is a native PostgreSQL 17 install (`suwa` role/database, schema via
+`npm run db:deploy`, owner + demo data seeded). Docker remains a fine alternative — see README.
 
 ## Decisions & gotchas
 

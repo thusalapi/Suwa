@@ -31,7 +31,7 @@ the detail layer for the **frontend**. Docs win on any conflict; flag drift.
   (atoms take their labels as props).
 - **molecules/** — small compositions of atoms: `FormRow`, `SearchBar`, `StatCard`,
   `Pagination`. May call `t()` for their own copy.
-- **organisms/** — feature-aware sections: `PatientTable`, `BillEditor`, the report form
+- **organisms/** — feature-aware sections: `PatientFinder`, `ReportView`, the report form
   renderer. May read data passed in via props from a Server Component.
 - **templates/** — page-level layout/shell (dashboard shell, auth shell). No business
   data — slots/children only.
