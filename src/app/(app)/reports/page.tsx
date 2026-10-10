@@ -5,6 +5,7 @@ import { Badge } from "@/components/atoms/Badge";
 import { getT, formatDate } from "@/lib/i18n";
 import { DEFAULT_LOCALE } from "@/lib/i18n/types";
 import { PageTitle } from "@/components/atoms/Heading";
+import { cn } from "@/lib/utils/cn";
 
 const statusTone = { draft: "neutral", finalized: "neutral", verified: "success" } as const;
 
@@ -35,9 +36,19 @@ export default async function ReportsPage() {
             </thead>
             <tbody>
               {reports.map((r) => (
-                <tr key={r.id} className="border-b border-border last:border-0 hover:bg-surface">
+                <tr key={r.id} className="relative border-b border-border last:border-0 hover:bg-surface">
                   <td className="px-4 py-2">
-                    <Link href={`/reports/${r.id}`} className="font-medium text-primary-dark hover:underline">
+                    {/* The ::after overlay stretches this link across the whole row, so the row is
+                        one big target while staying a real link — keyboard focus, modifier-click
+                        and "open in new tab" all keep working. */}
+                    <Link
+                      href={`/reports/${r.id}`}
+                      className={cn(
+                        "font-medium text-primary-dark hover:underline",
+                        "after:absolute after:inset-0 after:content-['']",
+                        "focus-visible:outline-none focus-visible:after:outline-2 focus-visible:after:-outline-offset-2 focus-visible:after:outline-primary",
+                      )}
+                    >
                       #{r.reportNumber}
                     </Link>
                   </td>
