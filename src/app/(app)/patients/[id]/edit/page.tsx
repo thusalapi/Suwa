@@ -6,6 +6,7 @@ import { getT } from "@/lib/i18n";
 import { DEFAULT_LOCALE } from "@/lib/i18n/types";
 import { PatientForm } from "../../PatientForm";
 import { updatePatientAction } from "../../actions";
+import { PageTitle } from "@/components/atoms/Heading";
 
 export default async function EditPatientPage({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireUser();
@@ -22,7 +23,7 @@ export default async function EditPatientPage({ params }: { params: Promise<{ id
         <Link href={`/patients/${patient.id}`} className="text-sm text-muted hover:text-ink">
           ← {patient.fullName}
         </Link>
-        <h1 className="text-xl font-semibold text-ink">{t("patients.editTitle")}</h1>
+        <PageTitle>{t("patients.editTitle")}</PageTitle>
       </div>
 
       <PatientForm

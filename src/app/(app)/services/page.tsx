@@ -5,6 +5,7 @@ import { Button } from "@/components/atoms/Button";
 import { Badge } from "@/components/atoms/Badge";
 import { getT, formatMoney } from "@/lib/i18n";
 import { DEFAULT_LOCALE } from "@/lib/i18n/types";
+import { PageTitle } from "@/components/atoms/Heading";
 
 export default async function ServicesPage() {
   const user = await requireRole("owner");
@@ -15,7 +16,7 @@ export default async function ServicesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="space-y-1">
-          <h1 className="text-xl font-semibold text-ink">{t("services.title")}</h1>
+          <PageTitle>{t("services.title")}</PageTitle>
           <p className="text-sm text-muted">{t("services.subtitle")}</p>
         </div>
         <Link href="/services/new">

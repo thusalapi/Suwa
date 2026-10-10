@@ -5,6 +5,7 @@ import { DEFAULT_LOCALE } from "@/lib/i18n/types";
 import type { Template } from "@/lib/report-engine";
 import { TemplateBuilder } from "../TemplateBuilder";
 import { createTemplateAction } from "../actions";
+import { PageTitle } from "@/components/atoms/Heading";
 
 /** Starter skeleton the builder opens with for a new template (version is system-managed). */
 const STARTER: Template = {
@@ -33,7 +34,7 @@ export default async function NewTemplatePage() {
         <Link href="/templates" className="text-sm text-muted hover:text-ink">
           ← {t("templates.title")}
         </Link>
-        <h1 className="text-xl font-semibold text-ink">{t("templates.addTitle")}</h1>
+        <PageTitle>{t("templates.addTitle")}</PageTitle>
       </div>
 
       <TemplateBuilder

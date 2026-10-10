@@ -4,6 +4,7 @@ import { AuthShell } from "@/components/templates/AuthShell";
 import { getT } from "@/lib/i18n";
 import { DEFAULT_LOCALE } from "@/lib/i18n/types";
 import { ResetPasswordForm } from "./ResetPasswordForm";
+import { PageTitle } from "@/components/atoms/Heading";
 
 /**
  * First-login password reset. Lives OUTSIDE the (app) group so the layout's
@@ -18,7 +19,7 @@ export default async function ResetPasswordPage() {
 
   return (
     <AuthShell locale={locale}>
-      <h1 className="mb-1 text-lg font-semibold text-ink">{t("reset.title")}</h1>
+      <PageTitle className="mb-1">{t("reset.title")}</PageTitle>
       <p className="mb-4 text-sm text-muted">{t("reset.subtitle")}</p>
       <ResetPasswordForm locale={locale} />
     </AuthShell>

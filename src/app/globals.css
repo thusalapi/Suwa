@@ -10,8 +10,10 @@
   --color-primary: var(--ds-primary);
   --color-primary-dark: var(--ds-primary-dark);
   --color-primary-fg: var(--ds-primary-fg);
+  --color-primary-soft: var(--ds-primary-soft);
   --color-accent: var(--ds-accent);
   --color-ink: var(--ds-ink);
+  --color-ink-subtle: var(--ds-ink-subtle);
   --color-muted: var(--ds-muted);
   --color-surface: var(--ds-surface);
   --color-surface-raised: var(--ds-surface-raised);
@@ -32,8 +34,10 @@
   --ds-primary: #0e9f8e;
   --ds-primary-dark: #0b7d70;
   --ds-primary-fg: #ffffff;
+  --ds-primary-soft: #ecfdf8;
   --ds-accent: #10b981;
   --ds-ink: #0f172a;
+  --ds-ink-subtle: #475569;
   --ds-muted: #64748b;
   --ds-surface: #f8fafc;
   --ds-surface-raised: #ffffff;

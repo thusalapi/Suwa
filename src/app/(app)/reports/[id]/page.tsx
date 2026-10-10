@@ -8,6 +8,7 @@ import { ReportView } from "@/components/organisms/ReportView";
 import { getT, formatDate } from "@/lib/i18n";
 import { DEFAULT_LOCALE } from "@/lib/i18n/types";
 import { verifyReportAction } from "../actions";
+import { PageTitle } from "@/components/atoms/Heading";
 
 const statusTone = { draft: "neutral", finalized: "neutral", verified: "success" } as const;
 
@@ -30,9 +31,9 @@ export default async function ReportDetailPage({ params }: { params: Promise<{ i
           <Link href={`/patients/${report.patientId}`} className="text-sm text-muted hover:text-ink">
             ← {report.patientName}
           </Link>
-          <h1 className="text-xl font-semibold text-ink">
+          <PageTitle>
             {report.snapshot.name} <span className="text-muted">#{report.reportNumber}</span>
-          </h1>
+          </PageTitle>
           <div className="flex items-center gap-2 text-sm text-muted">
             <Badge tone={statusTone[report.status]}>{t(`reports.status_${report.status}`)}</Badge>
             {report.status === "verified" && report.verifiedByName ? (

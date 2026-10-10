@@ -8,6 +8,7 @@ import { PatientFinder } from "@/components/organisms/PatientFinder";
 import { getT } from "@/lib/i18n";
 import { DEFAULT_LOCALE } from "@/lib/i18n/types";
 import { BillForm } from "../BillForm";
+import { PageTitle } from "@/components/atoms/Heading";
 
 export default async function NewBillPage({ searchParams }: { searchParams: Promise<{ patientId?: string }> }) {
   const user = await requireUser();
@@ -21,7 +22,7 @@ export default async function NewBillPage({ searchParams }: { searchParams: Prom
     return (
       <div className="space-y-6">
         <div className="space-y-1">
-          <h1 className="text-xl font-semibold text-ink">{t("bills.newTitle")}</h1>
+          <PageTitle>{t("bills.newTitle")}</PageTitle>
           <p className="text-sm text-muted">{t("bills.pickPatient")}</p>
         </div>
         <PatientFinder locale={locale} initialQuery="" initialResults={recent} mode="bill" />
@@ -40,7 +41,7 @@ export default async function NewBillPage({ searchParams }: { searchParams: Prom
         <Link href={`/patients/${patient.id}`} className="text-sm text-muted hover:text-ink">
           ← {patient.fullName}
         </Link>
-        <h1 className="text-xl font-semibold text-ink">{t("bills.newTitle")}</h1>
+        <PageTitle>{t("bills.newTitle")}</PageTitle>
       </div>
 
       <BillForm

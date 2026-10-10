@@ -8,6 +8,7 @@ import { PatientFinder } from "@/components/organisms/PatientFinder";
 import { getT } from "@/lib/i18n";
 import { DEFAULT_LOCALE } from "@/lib/i18n/types";
 import { createReportAction } from "../actions";
+import { PageTitle } from "@/components/atoms/Heading";
 
 /** Whole years between dob and today, as a string for the patient_info prefill. */
 function ageFromDob(dob: string | null): string {
@@ -37,7 +38,7 @@ export default async function NewReportPage({
     return (
       <div className="space-y-6">
         <div className="space-y-1">
-          <h1 className="text-xl font-semibold text-ink">{t("reports.newTitle")}</h1>
+          <PageTitle>{t("reports.newTitle")}</PageTitle>
           <p className="text-sm text-muted">{t("reports.pickPatient")}</p>
         </div>
         <PatientFinder locale={locale} initialQuery="" initialResults={recent} mode="report" />
@@ -62,7 +63,7 @@ export default async function NewReportPage({
       <Link href={`/patients/${patient.id}`} className="text-sm text-muted hover:text-ink">
         ← {patient.fullName}
       </Link>
-      <h1 className="text-xl font-semibold text-ink">{t("reports.newTitle")}</h1>
+      <PageTitle>{t("reports.newTitle")}</PageTitle>
     </div>
   );
 

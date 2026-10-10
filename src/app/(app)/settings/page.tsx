@@ -3,6 +3,7 @@ import { getClinic } from "@/lib/clinic";
 import { getT } from "@/lib/i18n";
 import { DEFAULT_LOCALE } from "@/lib/i18n/types";
 import { SettingsForm } from "./SettingsForm";
+import { PageTitle } from "@/components/atoms/Heading";
 
 /** Owner-only clinic settings: identity (name/address/phone/logo) + billing defaults. */
 export default async function SettingsPage() {
@@ -13,7 +14,7 @@ export default async function SettingsPage() {
   return (
     <div className="space-y-6">
       <div className="space-y-1">
-        <h1 className="text-xl font-semibold text-ink">{t("settings.title")}</h1>
+        <PageTitle>{t("settings.title")}</PageTitle>
         <p className="text-sm text-muted">{t("settings.subtitle")}</p>
       </div>
 

@@ -33,6 +33,8 @@ export const en = {
     doctor: "Doctor",
   },
   nav: {
+    primary: "Primary",
+    skipToContent: "Skip to content",
     dashboard: "Dashboard",
     patients: "Patients",
     reports: "Reports",

@@ -7,6 +7,7 @@ import { Label } from "@/components/atoms/Label";
 import { Button } from "@/components/atoms/Button";
 import { getT, formatMoney, formatDate } from "@/lib/i18n";
 import { DEFAULT_LOCALE } from "@/lib/i18n/types";
+import { PageTitle, SectionTitle } from "@/components/atoms/Heading";
 
 export default async function RevenuePage({ searchParams }: { searchParams: Promise<{ from?: string; to?: string }> }) {
   const user = await requireRole("owner");
@@ -23,7 +24,7 @@ export default async function RevenuePage({ searchParams }: { searchParams: Prom
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="space-y-1">
-          <h1 className="text-xl font-semibold text-ink">{t("revenue.title")}</h1>
+          <PageTitle>{t("revenue.title")}</PageTitle>
           <p className="text-sm text-muted">{t("revenue.subtitle")}</p>
         </div>
         <div className="flex gap-3">
@@ -57,7 +58,7 @@ export default async function RevenuePage({ searchParams }: { searchParams: Prom
 
       {/* Revenue by service */}
       <section className="space-y-3">
-        <h2 className="text-sm font-medium text-muted">{t("revenue.byService")}</h2>
+        <SectionTitle>{t("revenue.byService")}</SectionTitle>
         {report.byService.length === 0 ? (
           <div className="rounded-lg border border-border bg-surface-raised px-4 py-8 text-center text-sm text-muted">
             {t("revenue.noService")}
@@ -88,7 +89,7 @@ export default async function RevenuePage({ searchParams }: { searchParams: Prom
 
       {/* Outstanding payments */}
       <section className="space-y-3">
-        <h2 className="text-sm font-medium text-muted">{t("revenue.outstanding")}</h2>
+        <SectionTitle>{t("revenue.outstanding")}</SectionTitle>
         {report.outstanding.length === 0 ? (
           <div className="rounded-lg border border-border bg-surface-raised px-4 py-8 text-center text-sm text-muted">
             {t("revenue.noOutstanding")}

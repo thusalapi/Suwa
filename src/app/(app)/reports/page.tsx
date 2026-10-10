@@ -4,6 +4,7 @@ import { listReports } from "@/lib/reports";
 import { Badge } from "@/components/atoms/Badge";
 import { getT, formatDate } from "@/lib/i18n";
 import { DEFAULT_LOCALE } from "@/lib/i18n/types";
+import { PageTitle } from "@/components/atoms/Heading";
 
 const statusTone = { draft: "neutral", finalized: "neutral", verified: "success" } as const;
 
@@ -14,7 +15,7 @@ export default async function ReportsPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-xl font-semibold text-ink">{t("reports.title")}</h1>
+      <PageTitle>{t("reports.title")}</PageTitle>
 
       {reports.length === 0 ? (
         <div className="rounded-lg border border-border bg-surface-raised px-4 py-8 text-center text-sm text-muted">

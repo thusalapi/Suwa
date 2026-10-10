@@ -8,6 +8,7 @@ import { Badge } from "@/components/atoms/Badge";
 import { Button } from "@/components/atoms/Button";
 import { getT, formatDate, formatMoney } from "@/lib/i18n";
 import { DEFAULT_LOCALE } from "@/lib/i18n/types";
+import { PageTitle, SectionTitle } from "@/components/atoms/Heading";
 
 const statusTone = { draft: "neutral", finalized: "neutral", verified: "success" } as const;
 const billTone = { draft: "neutral", finalized: "neutral", paid: "success", cancelled: "danger" } as const;
@@ -42,7 +43,7 @@ export default async function PatientDetailPage({ params }: { params: Promise<{ 
           <Link href="/patients" className="text-sm text-muted hover:text-ink">
             ← {t("patients.title")}
           </Link>
-          <h1 className="text-xl font-semibold text-ink">{patient.fullName}</h1>
+          <PageTitle>{patient.fullName}</PageTitle>
           <p className="text-sm text-muted">{patient.phone}</p>
         </div>
         <Link href={`/patients/${patient.id}/edit`}>
@@ -63,7 +64,7 @@ export default async function PatientDetailPage({ params }: { params: Promise<{ 
         {/* Reports — wired to the report engine (Stage 2). */}
         <section className="rounded-lg border border-border bg-surface-raised p-4">
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-ink">{t("patients.reports")}</h2>
+            <SectionTitle>{t("patients.reports")}</SectionTitle>
             <Link href={`/reports/new?patientId=${patient.id}`}>
               <Button variant="secondary" size="sm">
                 {t("patients.newReport")}
@@ -89,7 +90,7 @@ export default async function PatientDetailPage({ params }: { params: Promise<{ 
         {/* Bills — wired to billing (Stage 3). */}
         <section className="rounded-lg border border-border bg-surface-raised p-4">
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-ink">{t("patients.bills")}</h2>
+            <SectionTitle>{t("patients.bills")}</SectionTitle>
             <Link href={`/bills/new?patientId=${patient.id}`}>
               <Button variant="secondary" size="sm">
                 {t("patients.newBill")}

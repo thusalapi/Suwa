@@ -8,6 +8,7 @@ import { getT } from "@/lib/i18n";
 import { DEFAULT_LOCALE } from "@/lib/i18n/types";
 import { TemplateBuilder } from "../TemplateBuilder";
 import { updateTemplateAction, toggleTemplateActiveAction } from "../actions";
+import { PageTitle } from "@/components/atoms/Heading";
 
 export default async function EditTemplatePage({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireRole("owner");
@@ -25,7 +26,7 @@ export default async function EditTemplatePage({ params }: { params: Promise<{ i
           <Link href="/templates" className="text-sm text-muted hover:text-ink">
             ← {t("templates.title")}
           </Link>
-          <h1 className="text-xl font-semibold text-ink">{template.name}</h1>
+          <PageTitle>{template.name}</PageTitle>
           <div className="flex items-center gap-2 text-sm text-muted">
             <span>v{template.version}</span>
             {template.active ? (

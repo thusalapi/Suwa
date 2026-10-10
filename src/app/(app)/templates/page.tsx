@@ -5,6 +5,7 @@ import { Button } from "@/components/atoms/Button";
 import { Badge } from "@/components/atoms/Badge";
 import { getT } from "@/lib/i18n";
 import { DEFAULT_LOCALE } from "@/lib/i18n/types";
+import { PageTitle } from "@/components/atoms/Heading";
 
 export default async function TemplatesPage() {
   const user = await requireRole("owner");
@@ -15,7 +16,7 @@ export default async function TemplatesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="space-y-1">
-          <h1 className="text-xl font-semibold text-ink">{t("templates.title")}</h1>
+          <PageTitle>{t("templates.title")}</PageTitle>
           <p className="text-sm text-muted">{t("templates.subtitle")}</p>
         </div>
         <Link href="/templates/new">

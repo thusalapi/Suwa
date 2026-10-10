@@ -4,6 +4,7 @@ import { getT } from "@/lib/i18n";
 import { DEFAULT_LOCALE } from "@/lib/i18n/types";
 import { ServiceForm } from "../ServiceForm";
 import { createServiceAction } from "../actions";
+import { PageTitle } from "@/components/atoms/Heading";
 
 export default async function NewServicePage() {
   await requireRole("owner");
@@ -16,7 +17,7 @@ export default async function NewServicePage() {
         <Link href="/services" className="text-sm text-muted hover:text-ink">
           ← {t("services.title")}
         </Link>
-        <h1 className="text-xl font-semibold text-ink">{t("services.addTitle")}</h1>
+        <PageTitle>{t("services.addTitle")}</PageTitle>
       </div>
 
       <ServiceForm locale={locale} action={createServiceAction} submitLabel={t("services.add")} />

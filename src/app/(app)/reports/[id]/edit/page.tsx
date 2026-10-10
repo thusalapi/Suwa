@@ -7,6 +7,7 @@ import { ReportFormRenderer } from "@/components/forms/ReportFormRenderer";
 import { getT } from "@/lib/i18n";
 import { DEFAULT_LOCALE } from "@/lib/i18n/types";
 import { updateReportAction } from "../../actions";
+import { PageTitle } from "@/components/atoms/Heading";
 
 /**
  * Edit a draft report's data. A verified report is the released artifact, so this redirects
@@ -31,7 +32,7 @@ export default async function EditReportPage({ params }: { params: Promise<{ id:
         <Link href={`/reports/${report.id}`} className="text-sm text-muted hover:text-ink">
           ← {report.snapshot.name} #{report.reportNumber}
         </Link>
-        <h1 className="text-xl font-semibold text-ink">{t("reports.editTitle")}</h1>
+        <PageTitle>{t("reports.editTitle")}</PageTitle>
       </div>
       <ReportFormRenderer
         locale={locale}

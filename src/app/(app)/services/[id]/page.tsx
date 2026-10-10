@@ -8,6 +8,7 @@ import { getT } from "@/lib/i18n";
 import { DEFAULT_LOCALE } from "@/lib/i18n/types";
 import { ServiceForm } from "../ServiceForm";
 import { updateServiceAction, toggleServiceActiveAction } from "../actions";
+import { PageTitle } from "@/components/atoms/Heading";
 
 export default async function EditServicePage({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireRole("owner");
@@ -25,7 +26,7 @@ export default async function EditServicePage({ params }: { params: Promise<{ id
           <Link href="/services" className="text-sm text-muted hover:text-ink">
             ← {t("services.title")}
           </Link>
-          <h1 className="text-xl font-semibold text-ink">{service.name}</h1>
+          <PageTitle>{service.name}</PageTitle>
           {service.active ? (
             <Badge tone="success">{t("services.active")}</Badge>
           ) : (

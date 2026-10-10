@@ -4,6 +4,7 @@ import { Badge } from "@/components/atoms/Badge";
 import { getT } from "@/lib/i18n";
 import { DEFAULT_LOCALE } from "@/lib/i18n/types";
 import { InviteForm } from "./InviteForm";
+import { PageTitle, SectionTitle } from "@/components/atoms/Heading";
 
 /** Owner-only team management: list clinic users and invite staff/doctor accounts. */
 export default async function TeamPage() {
@@ -14,7 +15,7 @@ export default async function TeamPage() {
   return (
     <div className="space-y-8">
       <div className="space-y-1">
-        <h1 className="text-xl font-semibold text-ink">{t("team.title")}</h1>
+        <PageTitle>{t("team.title")}</PageTitle>
         <p className="text-sm text-muted">{t("team.subtitle")}</p>
       </div>
 
@@ -51,7 +52,7 @@ export default async function TeamPage() {
 
       <section className="space-y-3">
         <div className="space-y-1">
-          <h2 className="text-lg font-semibold text-ink">{t("team.inviteTitle")}</h2>
+          <SectionTitle>{t("team.inviteTitle")}</SectionTitle>
           <p className="text-sm text-muted">{t("team.inviteSubtitle")}</p>
         </div>
         <InviteForm locale={DEFAULT_LOCALE} />

@@ -11,7 +11,10 @@ export const semanticLight = {
   primaryFg: palette.white,
   accent: palette.emerald[500],
 
+  primarySoft: palette.teal[50], // tinted surface: selected nav, active pills
+
   ink: palette.slate[900],
+  inkSubtle: palette.slate[600], // interactive text at rest — stronger contrast than `muted`
   muted: palette.slate[500],
 
   surface: palette.slate[50], // page background

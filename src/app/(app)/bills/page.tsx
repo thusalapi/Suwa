@@ -4,6 +4,7 @@ import { listBills } from "@/lib/bills";
 import { Badge } from "@/components/atoms/Badge";
 import { getT, formatMoney, formatDate } from "@/lib/i18n";
 import { DEFAULT_LOCALE } from "@/lib/i18n/types";
+import { PageTitle } from "@/components/atoms/Heading";
 
 const statusTone = { draft: "neutral", finalized: "neutral", paid: "success", cancelled: "danger" } as const;
 
@@ -14,7 +15,7 @@ export default async function BillsPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-xl font-semibold text-ink">{t("bills.title")}</h1>
+      <PageTitle>{t("bills.title")}</PageTitle>
 
       {bills.length === 0 ? (
         <div className="rounded-lg border border-border bg-surface-raised px-4 py-8 text-center text-sm text-muted">

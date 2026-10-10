@@ -7,6 +7,7 @@ import { Button } from "@/components/atoms/Button";
 import { getT, formatMoney, formatDate } from "@/lib/i18n";
 import { DEFAULT_LOCALE } from "@/lib/i18n/types";
 import { PaymentForm } from "../PaymentForm";
+import { PageTitle, SectionTitle } from "@/components/atoms/Heading";
 
 const statusTone = { draft: "neutral", finalized: "neutral", paid: "success", cancelled: "danger" } as const;
 
@@ -37,9 +38,9 @@ export default async function BillDetailPage({ params }: { params: Promise<{ id:
           <Link href={`/patients/${bill.patientId}`} className="text-sm text-muted hover:text-ink">
             ← {bill.patientName}
           </Link>
-          <h1 className="text-xl font-semibold text-ink">
+          <PageTitle>
             {t("bills.title")} <span className="text-muted">#{bill.billNumber}</span>
-          </h1>
+          </PageTitle>
           <div className="flex items-center gap-2 text-sm text-muted">
             <Badge tone={statusTone[bill.status]}>{t(`bills.status_${bill.status}`)}</Badge>
             <span>{formatDate(bill.createdAt, locale)}</span>
@@ -86,7 +87,7 @@ export default async function BillDetailPage({ params }: { params: Promise<{ id:
 
       {/* Payments */}
       <section className="space-y-3">
-        <h2 className="text-sm font-semibold text-ink">{t("bills.payments")}</h2>
+        <SectionTitle>{t("bills.payments")}</SectionTitle>
         {bill.payments.length === 0 ? (
           <p className="text-sm text-muted">{t("bills.noPayments")}</p>
         ) : (

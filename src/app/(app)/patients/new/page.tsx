@@ -4,6 +4,7 @@ import { getT } from "@/lib/i18n";
 import { DEFAULT_LOCALE } from "@/lib/i18n/types";
 import { PatientForm } from "../PatientForm";
 import { createPatientAction } from "../actions";
+import { PageTitle } from "@/components/atoms/Heading";
 
 export default async function NewPatientPage({
   searchParams,
@@ -27,7 +28,7 @@ export default async function NewPatientPage({
         <Link href="/patients" className="text-sm text-muted hover:text-ink">
           ← {t("patients.title")}
         </Link>
-        <h1 className="text-xl font-semibold text-ink">{t("patients.addTitle")}</h1>
+        <PageTitle>{t("patients.addTitle")}</PageTitle>
       </div>
 
       <PatientForm locale={locale} action={createPatientAction} initial={initial} submitLabel={t("patients.add")} />

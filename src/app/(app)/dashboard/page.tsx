@@ -14,6 +14,7 @@ import {
 } from "@/components/atoms/icons";
 import { getT, formatMoney, formatDate } from "@/lib/i18n";
 import { DEFAULT_LOCALE } from "@/lib/i18n/types";
+import { PageTitle, SectionTitle } from "@/components/atoms/Heading";
 
 export default async function DashboardPage() {
   const user = await requireUser();
@@ -27,7 +28,7 @@ export default async function DashboardPage() {
     <div className="space-y-8">
       <div className="flex flex-wrap items-end justify-between gap-2">
         <div className="space-y-1">
-          <h1 className="text-xl font-semibold text-ink">{t("dashboard.title")}</h1>
+          <PageTitle>{t("dashboard.title")}</PageTitle>
           <p className="text-sm text-muted">{t("dashboard.welcome", { name: user.name })}</p>
         </div>
         <p className="text-sm text-muted">{formatDate(new Date(), locale)}</p>
@@ -69,7 +70,7 @@ export default async function DashboardPage() {
       </div>
 
       <section className="space-y-3">
-        <h2 className="text-sm font-medium text-muted">{t("dashboard.quickLinks")}</h2>
+        <SectionTitle>{t("dashboard.quickLinks")}</SectionTitle>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <ActionCard
             href="/patients/new"

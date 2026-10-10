@@ -178,8 +178,12 @@ async function main() {
     if (!owner) throw new Error(`No user found for clinic "${clinic.name}".`);
 
     console.log(`Resetting demo data for clinic "${clinic.name}"...`);
-    await db.execute(sql`delete from payments using bills where payments.bill_id = bills.id and bills.clinic_id = ${clinic.id}`);
-    await db.execute(sql`delete from bill_items using bills where bill_items.bill_id = bills.id and bills.clinic_id = ${clinic.id}`);
+    await db.execute(
+      sql`delete from payments using bills where payments.bill_id = bills.id and bills.clinic_id = ${clinic.id}`,
+    );
+    await db.execute(
+      sql`delete from bill_items using bills where bill_items.bill_id = bills.id and bills.clinic_id = ${clinic.id}`,
+    );
     await db.delete(bills).where(eq(bills.clinicId, clinic.id));
     await db.delete(reports).where(eq(reports.clinicId, clinic.id));
     await db.delete(patients).where(eq(patients.clinicId, clinic.id));
@@ -363,7 +367,13 @@ async function main() {
       await seedReport(tx, clinic.id, owner.id, {
         patientId: pid("Sunil Rathnayake"),
         template: { id: bloodGroupId, schema: bloodGroupingTemplate },
-        patientInfo: { name: "Sunil Rathnayake", age: 52, gender: "Male", requested_by: "Dr. A. Jayasuriya", datetime: "2026-10-10T11:30" },
+        patientInfo: {
+          name: "Sunil Rathnayake",
+          age: 52,
+          gender: "Male",
+          requested_by: "Dr. A. Jayasuriya",
+          datetime: "2026-10-10T11:30",
+        },
         results: { blood_group: "O Positive" },
         verified: false,
       });
