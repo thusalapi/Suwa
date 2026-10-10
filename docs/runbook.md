@@ -15,13 +15,36 @@ Related docs: [`liquibase/README.md`](../liquibase/README.md) (schema migrations
 
 ## 1. Prerequisites (install once)
 
+A clinic PC needs **two** things: Node and PostgreSQL. Liquibase and Java are development
+tools — `npm run db:deploy` applies the same changesets with plain Node (see §2.4).
+
 | Tool | Why | Notes |
 |------|-----|-------|
 | **Node.js 20.12+** (LTS 22 or 24 recommended) | Runs the app + scripts | `node -v`. 20.12+ is required for `process.loadEnvFile`. |
-| **PostgreSQL 16** | The database | Install the server **and** the client tools (`pg_dump`, `pg_restore`). |
-| **Liquibase** | Applies the schema | <https://www.liquibase.com/download>. Bundles the Postgres JDBC driver. |
+| **PostgreSQL 16+** | The database | Install the server **and** the client tools (`pg_dump`, `pg_restore`). |
 | **rclone** *(optional)* | Off-site backup copy to Google Drive | <https://rclone.org/downloads/>. Only needed for off-site backups. |
 | **Git** *(optional)* | Pull app updates | Or copy the project folder manually. |
+
+> **Liquibase is not installed on the clinic PC.** It stays the source of truth in
+> development, but it needs a JVM and — contrary to its docs — the Windows installer does
+> **not** ship the PostgreSQL JDBC driver, so `liquibase update` fails on a fresh machine with
+> `Cannot find database driver: org.postgresql.Driver` until you drop `postgresql-<ver>.jar`
+> somewhere on its classpath. `npm run db:deploy` avoids all of that.
+
+### Automated install
+
+`scripts/install.ps1` does everything in §2 and §3.2 in one pass — installs Node and
+PostgreSQL, creates the role/database, generates real secrets into `.env`, migrates, seeds the
+owner, builds, and registers both scheduled tasks. From an **elevated** PowerShell in the repo
+root:
+
+```powershell
+.\scripts\install.ps1 -ClinicName "Clinic Name" -OwnerName "Owner Name" -OwnerEmail owner@clinic.lk
+```
+
+It is safe to re-run: it never overwrites an existing `.env`, never drops the database, and
+skips anything already in place. The manual steps below remain the reference for what it does
+and for recovering when a step needs doing by hand.
 
 **PATH check** — open a fresh PowerShell and confirm each resolves:
 
@@ -33,7 +56,19 @@ rclone version            # optional
 ```
 
 If `pg_dump`/`pg_restore` are "not recognized", add the PostgreSQL `bin` directory
-(e.g. `C:\Program Files\PostgreSQL\16\bin`) to the system PATH and reopen PowerShell.
+(e.g. `C:\Program Files\PostgreSQL\17\bin`) to the system PATH and reopen PowerShell.
+
+> This bites in practice: the unattended PostgreSQL installer does **not** add its `bin` to
+> PATH, and the nightly backup shells out to a bare `pg_dump`. Put it on the **machine** PATH
+> (not just your user's) — the scheduled task runs as SYSTEM, so a user-level entry leaves
+> backups failing silently at 01:30. `install.ps1` does this for you.
+
+> Installers update the machine PATH, but an **already-open** PowerShell keeps the old copy.
+> Either open a new one, or refresh in place:
+> ```powershell
+> $env:Path = [Environment]::GetEnvironmentVariable('Path','Machine') + ';' +
+>             [Environment]::GetEnvironmentVariable('Path','User')
+> ```
 
 ---
 
@@ -79,16 +114,23 @@ BACKUP_ENCRYPTION_KEY=<long random string, min 16 chars>   # REQUIRED for backup
 > **Keep a copy of `BACKUP_ENCRYPTION_KEY` somewhere off the clinic PC.** Without it, the
 > encrypted dumps cannot be decrypted — losing the key loses every backup.
 
-### 2.4 Apply the schema (Liquibase)
+### 2.4 Apply the schema
+
+On the clinic PC, use the Node runner — no Java, no Liquibase, no JDBC driver. It reads the
+same `db.changelog-master.xml` include order and runs the same `changes/*.sql` files, one
+transaction each, recording applied changeset ids in `schema_migrations`:
 
 ```powershell
-Copy-Item liquibase\liquibase.properties.example liquibase\liquibase.properties
-# edit url / username / password to match DATABASE_URL, then:
-npm run db:status     # shows pending changesets
-npm run db:migrate    # applies them
+npm run db:deploy -- --status   # list pending changesets
+npm run db:deploy               # apply them
 ```
 
-(Full detail: [`liquibase/README.md`](../liquibase/README.md).)
+On a database Liquibase previously migrated, the runner imports the ids from
+`databasechangelog` on first run, so nothing is applied twice.
+
+In **development**, Liquibase remains the source of truth and `npm run db:migrate` is still the
+command to use (full detail: [`liquibase/README.md`](../liquibase/README.md)). Don't alternate
+between the two on one database without running `liquibase changelog-sync` first.
 
 ### 2.5 Seed the first owner
 
