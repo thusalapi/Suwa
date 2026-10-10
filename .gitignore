@@ -41,6 +41,7 @@ backups/
 
 # Liquibase local config (holds the DB password)
 liquibase/liquibase.properties
+liquibase/drivers/
 
 # design-sync (Claude Design) — staged scripts, build output, machine state
 .ds-sync/
