@@ -91,7 +91,8 @@ export default async function NewReportPage({
     gender: patient.gender ?? "",
     age: String(ageFromDob(patient.dob) ?? ""),
     ref_doctor: "",
-    source: "Blood", // sensible default for the lab house-style templates; ignored if unused
+    // The template's specimen (e.g. "Urine"), else "Blood" — the lab's usual; ignored if unused.
+    source: selected.schema.sections.find((s) => s.type === "patient_info")?.defaultSource ?? "Blood",
   };
 
   return (

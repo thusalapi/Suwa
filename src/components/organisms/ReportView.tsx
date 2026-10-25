@@ -1,4 +1,7 @@
 import { Badge } from "@/components/atoms/Badge";
+import { Unit } from "@/components/atoms/Unit";
+import { FixedTable } from "@/components/organisms/FixedTable";
+import { formatPatientValue } from "@/lib/report-engine/display";
 import { getT } from "@/lib/i18n";
 import type { Locale } from "@/lib/i18n/types";
 import type { Template, ResultRow } from "@/lib/report-engine/template";
@@ -12,6 +15,7 @@ export interface ReportViewProps {
 }
 
 function rangeLabel(row: ResultRow): string {
+  if (row.ref_text) return row.ref_text;
   if (row.ref_low != null && row.ref_high != null) return `${row.ref_low}–${row.ref_high}`;
   if (row.ref_low != null) return `≥ ${row.ref_low}`;
   if (row.ref_high != null) return `≤ ${row.ref_high}`;
@@ -52,7 +56,9 @@ export function ReportView({ locale, snapshot, data }: ReportViewProps) {
                 {section.fields.map((f) => (
                   <div key={f} className="space-y-0.5">
                     <dt className="text-xs font-medium uppercase tracking-wide text-muted">{t(`reports.pi_${f}`)}</dt>
-                    <dd className="text-sm text-ink">{patientInfo[f] != null ? String(patientInfo[f]) : "—"}</dd>
+                    <dd className="text-sm text-ink">
+                      {patientInfo[f] != null ? formatPatientValue(f, patientInfo[f]) : "—"}
+                    </dd>
                   </div>
                 ))}
               </dl>
@@ -82,10 +88,22 @@ export function ReportView({ locale, snapshot, data }: ReportViewProps) {
                             <tr key={row.key} className="border-b border-border last:border-0">
                               <td className="px-3 py-2 text-ink">{row.test}</td>
                               <td className="px-3 py-2 text-ink">
-                                {entry ? `${formatResult(entry.value, row)}${row.unit ? ` ${row.unit}` : ""}` : "—"}
+                                {entry ? (
+                                  <>
+                                    {formatResult(entry.value, row)} <Unit unit={row.unit} />
+                                  </>
+                                ) : (
+                                  "—"
+                                )}
                               </td>
                               <td className="px-3 py-2 text-ink">
-                                {entry?.value2 != null ? `${entry.value2}${row.unit2 ? ` ${row.unit2}` : ""}` : "—"}
+                                {entry?.value2 != null ? (
+                                  <>
+                                    {entry.value2} <Unit unit={row.unit2} />
+                                  </>
+                                ) : (
+                                  "—"
+                                )}
                               </td>
                             </tr>
                           );
@@ -119,8 +137,14 @@ export function ReportView({ locale, snapshot, data }: ReportViewProps) {
                             {entry != null ? (
                               <>
                                 {formatResult(entry.value, row)}
-                                {row.unit ? ` ${row.unit}` : ""}
-                                {entry.value2 != null && row.unit2 ? `   ${entry.value2} ${row.unit2}` : ""}
+                                {row.unit ? " " : ""}
+                                <Unit unit={row.unit} />
+                                {entry.value2 != null && row.unit2 ? (
+                                  <>
+                                    {`   ${entry.value2} `}
+                                    <Unit unit={row.unit2} />
+                                  </>
+                                ) : null}
                               </>
                             ) : (
                               "—"
@@ -163,7 +187,7 @@ export function ReportView({ locale, snapshot, data }: ReportViewProps) {
                             >
                               {entry ? formatResult(entry.value, row) : "—"}
                             </td>
-                            <td className="px-3 py-2 text-muted">{row.unit || "—"}</td>
+                            <td className="px-3 py-2 text-muted">{row.unit ? <Unit unit={row.unit} /> : "—"}</td>
                             <td className="px-3 py-2 text-muted">{rangeLabel(row)}</td>
                             <td className="px-3 py-2">
                               {flag && isAbnormal(flag) ? (
@@ -204,6 +228,9 @@ export function ReportView({ locale, snapshot, data }: ReportViewProps) {
               </div>
             );
           }
+
+          case "table":
+            return <FixedTable key={i} section={section} />;
 
           case "signature":
             return null; // verifier shown in the page header

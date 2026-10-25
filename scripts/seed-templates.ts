@@ -1,6 +1,6 @@
 /**
  * Seed the lab's house-style report templates (Unawatuna Medical Centre format):
- * Fasting Blood Sugar, Blood Grouping & Rh, Full Blood Count, and Serum Creatinine.
+ * Fasting Blood Sugar, Blood Grouping & Rh, Full Blood Count, Serum Creatinine, Urine Microalbumin, and Lipid Profile.
  *
  *   npm run seed:templates
  *   npm run seed:templates -- --replace "Full Blood Count"
@@ -21,6 +21,8 @@ import {
   bloodGroupingTemplate,
   fullBloodCountTemplate,
   serumCreatinineTemplate,
+  urineMicroalbuminTemplate,
+  lipidProfileTemplate,
 } from "../src/lib/report-engine/examples";
 import { parseTemplate, type Template } from "../src/lib/report-engine";
 
@@ -61,6 +63,8 @@ async function main() {
       bloodGroupingTemplate,
       fullBloodCountTemplate,
       serumCreatinineTemplate,
+      urineMicroalbuminTemplate,
+      lipidProfileTemplate,
     ].map((t) => parseTemplate({ ...t, locked: true })); // fail loudly on an invalid seed
     for (const tpl of seeds) {
       const current = have.get(tpl.name);

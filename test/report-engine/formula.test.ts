@@ -2,7 +2,12 @@ import { describe, expect, it } from "vitest";
 import { evaluateFormula, parseFormula, roundTo } from "@/lib/report-engine/formula";
 import { computeResults, formatResult, validateReportData } from "@/lib/report-engine/report-data";
 import { templateSchema } from "@/lib/report-engine/template";
-import { fullBloodCountTemplate, serumCreatinineTemplate } from "@/lib/report-engine/examples";
+import {
+  fullBloodCountTemplate,
+  serumCreatinineTemplate,
+  urineMicroalbuminTemplate,
+  lipidProfileTemplate,
+} from "@/lib/report-engine/examples";
 
 describe("formula parser", () => {
   it("respects precedence, parentheses and unary minus", () => {
@@ -110,5 +115,49 @@ describe("Serum Creatinine eGFR (CKD-EPI 2021)", () => {
     expect(evaluateFormula(parseFormula("2 * 3 ^ 2"), {})).toBe(18);
     expect(evaluateFormula(parseFormula("2 ^ 3 ^ 2"), {})).toBe(512);
     expect(evaluateFormula(parseFormula("4 ^ -0.5"), {})).toBe(0.5);
+  });
+});
+
+describe("Urine Microalbumin ACR", () => {
+  it("matches the printed report: 18.26 mg/l ÷ 39.00 mg/dl × 100 → 46.82 mg/g", () => {
+    const out = computeResults(urineMicroalbuminTemplate, { ucr: "39", umalb: "18.26" });
+    expect(out.acr.value).toBe(46.82);
+    expect(formatResult(out.ucr.value, { decimals: 2 })).toBe("39.00");
+  });
+
+  it("leaves the ratio blank until both values are entered, and on zero creatinine", () => {
+    expect(computeResults(urineMicroalbuminTemplate, { umalb: 18.26 }).acr).toBeUndefined();
+    expect(computeResults(urineMicroalbuminTemplate, { ucr: 0, umalb: 18.26 }).acr).toBeUndefined();
+  });
+});
+
+describe("Lipid Profile (Friedewald)", () => {
+  it("matches the printed report: 144 / 60 / 96 → VLDL 19.2, LDL 64.8, ratio 2.40", () => {
+    const out = computeResults(lipidProfileTemplate, { tc: "144", hdl: "60", tg: "96" });
+    expect(out.vldl).toEqual({ value: 19.2, flag: "normal" });
+    expect(out.ldl).toEqual({ value: 64.8, flag: "normal" });
+    expect(out.ratio).toEqual({ value: 2.4, flag: "normal" }); // a low ratio is not flagged
+    expect(formatResult(out.ratio.value, { decimals: 2 })).toBe("2.40");
+    expect(formatResult(out.hdl.value, { decimals: 1 })).toBe("60.0");
+  });
+
+  it("flags a high LDL and ratio", () => {
+    const out = computeResults(lipidProfileTemplate, { tc: 280, hdl: 40, tg: 150 });
+    expect(out.ldl).toEqual({ value: 210, flag: "high" });
+    expect(out.ratio).toEqual({ value: 7, flag: "high" });
+  });
+});
+
+describe("table block validation", () => {
+  const tpl = (section: object) => ({ name: "T", version: 1, sections: [section] });
+
+  it("rejects rows or widths that don't match the columns", () => {
+    expect(templateSchema.safeParse(tpl({ type: "table", columns: ["A", "B"], rows: [["x"]] })).success).toBe(false);
+    expect(
+      templateSchema.safeParse(tpl({ type: "table", columns: ["A", "B"], widths: [1], rows: [["x", "y"]] })).success,
+    ).toBe(false);
+    expect(templateSchema.safeParse(tpl({ type: "table", columns: ["A", "B"], rows: [["x", "y"]] })).success).toBe(
+      true,
+    );
   });
 });

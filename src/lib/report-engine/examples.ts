@@ -167,6 +167,123 @@ export const serumCreatinineTemplate = {
 } satisfies Template;
 
 /**
+ * Urine Microalbumin — Unawatuna Medical Centre's printed report. Urine creatinine and microalbumin
+ * are entered; the albumin-to-creatinine ratio (ACR) is calculated:
+ *   ACR (mg/g) = microalbumin (mg/l) / creatinine (mg/dl) × 100
+ * (reproduces the printed 46.82 for 18.26 mg/l and 39.00 mg/dl). Values print with 2 decimals.
+ */
+export const urineMicroalbuminTemplate = {
+  name: "Urine Microalbumin",
+  version: 1,
+  locked: true,
+  sections: [
+    {
+      type: "patient_info",
+      fields: ["name", "age", "gender", "referred_by", "specimen_no", "datetime", "source"],
+      defaultSource: "Urine",
+    },
+    { type: "static", heading: true, text: "Urine Microalbumin" },
+    {
+      type: "results_table",
+      style: "list",
+      listHeader: { left: "TEST", right: "RESULT" },
+      rows: [
+        { key: "ucr", test: "Urine Creatinine", unit: "mg/dl", decimals: 2 },
+        { key: "umalb", test: "Urine Microalbumin", unit: "mg/l", decimals: 2 },
+        {
+          key: "acr",
+          test: "Urine Microalbumin Creatinine Ratio",
+          unit: "mg/g",
+          formula: "umalb / ucr * 100",
+          decimals: 2,
+        },
+      ],
+    },
+    { type: "static", heading: true, text: "Reference Range" },
+    { type: "static", text: "Normal  :  < 20" },
+    { type: "static", text: "Microalbuminuria  :  20 - 299" },
+    { type: "static", text: "Proteinuria  :  >= 300" },
+    { type: "signature", label: "Verified by", subtitle: "Medical Laboratory Technologist · SLMC Reg." },
+  ],
+} satisfies Template;
+
+/**
+ * Lipid Profile — Unawatuna Medical Centre's printed report. Total cholesterol, HDL and triglycerides
+ * are entered; the rest is calculated (Friedewald):
+ *   VLDL = TG / 5      LDL = Total − HDL − VLDL      Ratio = Total / HDL
+ * (reproduces the printed 19.2 / 64.8 / 2.40 for 144 / 60 / 96). Friedewald is not valid when
+ * TG > 400 mg/dl. Below the results, the lab's fixed lipid-fraction risk chart.
+ */
+export const lipidProfileTemplate = {
+  name: "Lipid Profile",
+  version: 1,
+  locked: true,
+  sections: [
+    { type: "patient_info", fields: ["name", "age", "gender", "referred_by", "specimen_no", "datetime", "source"] },
+    { type: "static", heading: true, text: "Lipid Profile" },
+    {
+      type: "results_table",
+      style: "ranged",
+      listHeader: { left: "CHEMISTRY", right: "RESULT" },
+      rangeHeader: "REF.RANGE",
+      rows: [
+        { key: "tc", test: "Cholesterol Total", unit: "mg/dl", ref_low: 120, ref_high: 200, ref_text: "120-200 mg/dl" },
+        {
+          key: "hdl",
+          test: "Cholesterol HDL",
+          unit: "mg/dl",
+          ref_low: 30,
+          ref_high: 75,
+          ref_text: "30-75 mg/dl",
+          decimals: 1,
+        },
+        { key: "tg", test: "Triglycerides", unit: "mg/dl", ref_low: 36, ref_high: 165, ref_text: "36-165 mg/dl" },
+        {
+          key: "ldl",
+          test: "Cholesterol LDL",
+          unit: "mg/dl",
+          ref_high: 130,
+          ref_text: "<130 mg/dl",
+          formula: "tc - hdl - vldl",
+          decimals: 1,
+        },
+        {
+          key: "vldl",
+          test: "Cholesterol VLDL",
+          unit: "mg/dl",
+          ref_low: 10,
+          ref_high: 40,
+          ref_text: "(10-40) mg/dl",
+          formula: "tg / 5",
+          decimals: 1,
+        },
+        // Only the upper bound flags: a low ratio is favourable, not abnormal.
+        {
+          key: "ratio",
+          test: "Cholesterol/HDL Ratio",
+          ref_high: 5,
+          ref_text: "(3.0-5.0)",
+          formula: "tc / hdl",
+          decimals: 2,
+        },
+      ],
+    },
+    {
+      type: "table",
+      columns: ["LIPID FRACTIONS", "", "PROGNOSTICALLY FAVOURABLE", "STANDARD RISK LEVEL", "RISK INDICATOR"],
+      widths: [26, 12, 22, 22, 18],
+      rows: [
+        ["Total Cholesterol", "", "220", "226-260", ">266"],
+        ["HDL (mg/100ml)", "Men\nWomen", ">55\n>65", "35-55\n45-65", "<35\n<45"],
+        ["LDL (mg/100ml)", "Men\nWomen", "<150", "150-190", ">190"],
+        ["Cholesterol/HDL Ratio", "Men\nWomen", "<3.8\n<3.1", "3.8-5.9\n3.1-4.5", ">5.9\n>4.5"],
+      ],
+    },
+    { type: "signature", label: "Verified by", subtitle: "Medical Laboratory Technologist · SLMC Reg." },
+  ],
+} satisfies Template;
+
+/**
  * Blood Grouping & Rh — a qualitative report: a single "list" result whose value is text
  * (e.g. "B Positive"), no reference range or flag.
  */

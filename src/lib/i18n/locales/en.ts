@@ -314,6 +314,8 @@ export const en = {
       block_textarea: "Text area",
       block_static: "Static text",
       block_signature: "Signature",
+      block_table: "Fixed table",
+      tableNote: "A fixed text table (e.g. a risk chart). Its contents are set in the template definition.",
       key: "Key",
       keyHint: "snake_case — used in the stored data",
       label: "Label",

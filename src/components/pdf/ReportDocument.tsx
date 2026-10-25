@@ -4,9 +4,10 @@ import { semanticLight as c } from "@/lib/design/tokens.semantic";
 import { brand } from "@/lib/branding/brand";
 import { getT, formatDate } from "@/lib/i18n";
 import type { Locale } from "@/lib/i18n/types";
-import { PAGE_CONTENT, type Template, type Section, type ResultRow } from "@/lib/report-engine/template";
+import { PAGE_CONTENT, tableWidths, type Template, type Section, type ResultRow } from "@/lib/report-engine/template";
 import { formatResult, type ReportData, type ResultValue } from "@/lib/report-engine/report-data";
 import { isAbnormal, isCritical, type Flag } from "@/lib/report-engine/flag";
+import { formatPatientValue, unitParts } from "@/lib/report-engine/display";
 
 /**
  * Branded PDF for a report — server-side via @react-pdf/renderer (pure Node, no headless
@@ -96,7 +97,10 @@ const styles = StyleSheet.create({
   rValue: { width: "14%", fontSize: 10, textAlign: "right", paddingRight: 10 },
   rUnit: { width: "18%", fontSize: 10 },
   rRange: { width: "34%", fontSize: 10 },
-  sigSubtitle: { fontSize: 8, color: c.muted, marginTop: 1 },
+  // Fixed text table (e.g. the lipid risk chart): underlined bold headers, no grid, like the print.
+  fxHead: { fontSize: 8.5, fontWeight: 700, textDecoration: "underline", paddingRight: 6 },
+  fxRow: { flexDirection: "row", paddingVertical: 4 },
+  fxCell: { fontSize: 9, paddingRight: 6 },
   subheading: { fontSize: 9.5, fontWeight: 700, color: c.ink, marginTop: 6, marginBottom: 2 },
   sectionTitle: { fontSize: 11, fontWeight: 700, marginTop: 10, marginBottom: 4 },
   tHead: { flexDirection: "row", borderBottomWidth: 1, borderBottomColor: c.border, paddingBottom: 3 },
@@ -126,7 +130,26 @@ const styles = StyleSheet.create({
   },
 });
 
+/** A unit with its powers raised (m², 10³) — nested inside a parent <Text>. */
+function PdfUnit({ unit }: { unit: string | undefined }) {
+  if (!unit) return null;
+  return (
+    <>
+      {unitParts(unit).map((p, i) =>
+        p.sup ? (
+          <Text key={i} style={{ verticalAlign: "super", fontSize: 7 }}>
+            {p.text}
+          </Text>
+        ) : (
+          p.text
+        ),
+      )}
+    </>
+  );
+}
+
 function rangeLabel(row: ResultRow): string {
+  if (row.ref_text) return row.ref_text;
   if (row.ref_low != null && row.ref_high != null) return `${row.ref_low} - ${row.ref_high}`;
   if (row.ref_low != null) return `>= ${row.ref_low}`;
   if (row.ref_high != null) return `<= ${row.ref_high}`;
@@ -141,6 +164,7 @@ export function ReportDocument({ locale, clinic, qrDataUrl, report }: ReportDocu
   const showLogo = !!clinic.logoUrl && (clinic.logoUrl.startsWith("http") || clinic.logoUrl.startsWith("data:"));
 
   const isCanvas = snapshot.layout === "canvas";
+  const showsPatientName = snapshot.sections.some((s) => s.type === "patient_info" && s.fields.includes("name"));
 
   /** The inner content for one block — shared by flow (fragment-wrapped) and canvas (absolute). */
   const renderInner = (section: Section): ReactNode => {
@@ -158,7 +182,9 @@ export function ReportDocument({ locale, clinic, qrDataUrl, report }: ReportDocu
             {section.fields.map((f) => (
               <View key={f} style={styles.piRow}>
                 <Text style={styles.piRowLabel}>{t(`reports.pi_${f}`)}</Text>
-                <Text style={styles.piRowValue}>{patientInfo[f] != null ? String(patientInfo[f]) : "-"}</Text>
+                <Text style={styles.piRowValue}>
+                  {patientInfo[f] != null ? formatPatientValue(f, patientInfo[f]) : "-"}
+                </Text>
               </View>
             ))}
           </View>
@@ -181,10 +207,22 @@ export function ReportDocument({ locale, clinic, qrDataUrl, report }: ReportDocu
                   <View key={row.key} style={styles.colRow}>
                     <Text style={styles.dTest}>{row.test}</Text>
                     <Text style={styles.dValue}>
-                      {entry ? `${formatResult(entry.value, row)} ${row.unit ?? ""}` : "-"}
+                      {entry ? (
+                        <>
+                          {formatResult(entry.value, row)} <PdfUnit unit={row.unit} />
+                        </>
+                      ) : (
+                        "-"
+                      )}
                     </Text>
                     <Text style={styles.dValue2}>
-                      {entry?.value2 != null ? `${entry.value2} ${row.unit2 ?? ""}` : "-"}
+                      {entry?.value2 != null ? (
+                        <>
+                          {entry.value2} <PdfUnit unit={row.unit2} />
+                        </>
+                      ) : (
+                        "-"
+                      )}
                     </Text>
                   </View>
                 );
@@ -215,7 +253,9 @@ export function ReportDocument({ locale, clinic, qrDataUrl, report }: ReportDocu
                     <Text style={abn ? [styles.rValue, styles.abnormal] : styles.rValue}>
                       {entry ? formatResult(entry.value, row) : "-"}
                     </Text>
-                    <Text style={styles.rUnit}>{row.unit ?? ""}</Text>
+                    <Text style={styles.rUnit}>
+                      <PdfUnit unit={row.unit} />
+                    </Text>
                     <Text style={styles.rRange}>{rangeLabel(row) === "-" ? "" : rangeLabel(row)}</Text>
                   </View>
                 );
@@ -236,10 +276,21 @@ export function ReportDocument({ locale, clinic, qrDataUrl, report }: ReportDocu
               {section.rows.map((row) => {
                 const entry = results[row.key];
                 const result =
-                  entry != null
-                    ? `${formatResult(entry.value, row)}${row.unit ? ` ${row.unit}` : ""}` +
-                      (entry.value2 != null && row.unit2 ? `    ${entry.value2} ${row.unit2}` : "")
-                    : "-";
+                  entry != null ? (
+                    <>
+                      {formatResult(entry.value, row)}
+                      {row.unit ? " " : ""}
+                      <PdfUnit unit={row.unit} />
+                      {entry.value2 != null && row.unit2 ? (
+                        <>
+                          {`    ${entry.value2} `}
+                          <PdfUnit unit={row.unit2} />
+                        </>
+                      ) : null}
+                    </>
+                  ) : (
+                    "-"
+                  );
                 return (
                   <View key={row.key} style={styles.listRow}>
                     <Text style={styles.listTest}>{row.test}</Text>
@@ -272,7 +323,7 @@ export function ReportDocument({ locale, clinic, qrDataUrl, report }: ReportDocu
                 >
                   <Text style={[styles.td, styles.cTest]}>{row.test}</Text>
                   <Text style={[...cell, styles.cResult]}>{entry ? formatResult(entry.value, row) : "-"}</Text>
-                  <Text style={[styles.td, styles.cUnit]}>{row.unit || "-"}</Text>
+                  <Text style={[styles.td, styles.cUnit]}>{row.unit ? <PdfUnit unit={row.unit} /> : "-"}</Text>
                   <Text style={[styles.td, styles.cRange]}>{rangeLabel(row)}</Text>
                   <Text style={[...cell, styles.cFlag]}>{flag ? t(`reports.flag_${flag}`) : "-"}</Text>
                 </View>
@@ -292,18 +343,33 @@ export function ReportDocument({ locale, clinic, qrDataUrl, report }: ReportDocu
         );
       }
 
-      case "signature":
-        // Unverified: no signature line at all — the DRAFT banner already says so.
-        if (report.status !== "verified" || !report.verifiedByName) return null;
+      case "table": {
+        const w = tableWidths(section);
         return (
-          <View style={isCanvas ? undefined : { marginTop: 16 }}>
-            <Text style={styles.meta}>
-              {section.label}: {report.verifiedByName}
-            </Text>
-            {section.subtitle ? <Text style={styles.sigSubtitle}>{section.subtitle}</Text> : null}
+          <View wrap={false} style={{ marginTop: 14 }}>
+            {section.title ? <Text style={styles.sectionTitle}>{section.title}</Text> : null}
+            <View style={[styles.fxRow, { alignItems: "flex-end" }]}>
+              {section.columns.map((col, i) => (
+                <Text key={i} style={[styles.fxHead, { width: `${w[i]}%` }]}>
+                  {col}
+                </Text>
+              ))}
+            </View>
+            {section.rows.map((row, r) => (
+              <View key={r} style={styles.fxRow}>
+                {row.map((cell, i) => (
+                  <Text key={i} style={[styles.fxCell, { width: `${w[i]}%` }, i === 0 ? { fontWeight: 700 } : {}]}>
+                    {cell}
+                  </Text>
+                ))}
+              </View>
+            ))}
           </View>
         );
+      }
 
+      // The verifier isn't printed (the clinic signs/stamps the paper); verification still gates release.
+      case "signature":
       default:
         return null;
     }
@@ -386,9 +452,12 @@ export function ReportDocument({ locale, clinic, qrDataUrl, report }: ReportDocu
                 {t("reports.number")} #{report.reportNumber} · {formatDate(report.createdAt, locale)}
               </Text>
             </View>
-            <Text style={[styles.meta, { marginBottom: 8 }]}>
-              {t("reports.patient")}: {report.patientName}
-            </Text>
+            {/* Only when the template doesn't already print a "Patient Name" field — never both. */}
+            {showsPatientName ? null : (
+              <Text style={[styles.meta, { marginBottom: 8 }]}>
+                {t("reports.patient")}: {report.patientName}
+              </Text>
+            )}
             {snapshot.sections.map((section, i) => (
               <View key={i}>{renderInner(section)}</View>
             ))}
@@ -397,13 +466,7 @@ export function ReportDocument({ locale, clinic, qrDataUrl, report }: ReportDocu
 
         {/* Footer */}
         <View style={styles.footer} fixed>
-          <Text>
-            {report.status === "verified" && report.verifiedByName
-              ? `${t("reports.verifiedBy", { name: report.verifiedByName })}${
-                  report.verifiedAt ? ` · ${formatDate(report.verifiedAt, locale)}` : ""
-                }`
-              : ""}
-          </Text>
+          <Text />
           <Text>
             {brand.name} · #{report.reportNumber}
           </Text>

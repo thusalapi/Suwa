@@ -7,6 +7,9 @@ import { Input } from "@/components/atoms/Input";
 import { Label } from "@/components/atoms/Label";
 import { Button } from "@/components/atoms/Button";
 import { Badge } from "@/components/atoms/Badge";
+import { Unit } from "@/components/atoms/Unit";
+import { FixedTable } from "@/components/organisms/FixedTable";
+import { formatPatientValue } from "@/lib/report-engine/display";
 import { Spinner } from "@/components/atoms/Spinner";
 import { cn } from "@/lib/utils/cn";
 import { getT } from "@/lib/i18n";
@@ -51,6 +54,7 @@ const selectClass = cn(
 );
 
 function rangeLabel(row: ResultRow): string {
+  if (row.ref_text) return row.ref_text;
   if (row.ref_low != null && row.ref_high != null) return `${row.ref_low}–${row.ref_high}`;
   if (row.ref_low != null) return `≥ ${row.ref_low}`;
   if (row.ref_high != null) return `≤ ${row.ref_high}`;
@@ -171,7 +175,7 @@ export function ReportFormRenderer({
                         id={`pi_${f}`}
                         name={`pi.${f}`}
                         type={DATETIME.has(f) ? "datetime-local" : f === "age" ? "number" : "text"}
-                        defaultValue={patientInfo[f] ?? ""}
+                        defaultValue={patientInfo[f] ? formatPatientValue(f, patientInfo[f]) : ""}
                         readOnly={!editable}
                         className={editable ? undefined : "bg-surface text-muted"}
                       />
@@ -204,8 +208,13 @@ export function ReportFormRenderer({
                           {resultInput(row, "max-w-[12rem]")}
                           {row.unit ? (
                             <span className="whitespace-nowrap text-xs text-muted">
-                              {row.unit}
-                              {row.unit2 && !dual ? ` · ${row.unit2}` : ""}
+                              <Unit unit={row.unit} />
+                              {row.unit2 && !dual ? (
+                                <>
+                                  {" · "}
+                                  <Unit unit={row.unit2} />
+                                </>
+                              ) : null}
                             </span>
                           ) : null}
                           {dual && row.unit2 ? (
@@ -213,7 +222,10 @@ export function ReportFormRenderer({
                               className="ml-auto whitespace-nowrap text-sm text-ink"
                               title={t("reports.calculated")}
                             >
-                              {live[row.key]?.value2 ?? "—"} <span className="text-xs text-muted">{row.unit2}</span>
+                              {live[row.key]?.value2 ?? "—"}{" "}
+                              <span className="text-xs text-muted">
+                                <Unit unit={row.unit2} />
+                              </span>
                             </span>
                           ) : null}
                         </div>
@@ -244,7 +256,7 @@ export function ReportFormRenderer({
                           <tr key={row.key} className="border-b border-border last:border-0">
                             <td className="px-3 py-2 text-ink">{row.test}</td>
                             <td className="px-3 py-2">{resultInput(row, "max-w-[8rem]")}</td>
-                            <td className="px-3 py-2 text-muted">{row.unit || "—"}</td>
+                            <td className="px-3 py-2 text-muted">{row.unit ? <Unit unit={row.unit} /> : "—"}</td>
                             <td className="px-3 py-2 text-muted">{rangeLabel(row)}</td>
                             <td className="px-3 py-2">
                               {flag ? <FlagBadge flag={flag} label={t(`reports.flag_${flag}`)} /> : "—"}
@@ -304,6 +316,9 @@ export function ReportFormRenderer({
                 />
               </div>
             );
+
+          case "table":
+            return <FixedTable key={i} section={section} />;
 
           case "signature":
             return null; // signed off on verification, not during entry

@@ -10,3 +10,4 @@ export * from "./template";
 export * from "./flag";
 export * from "./report-data";
 export * from "./formula";
+export * from "./display";

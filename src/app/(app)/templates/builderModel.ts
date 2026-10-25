@@ -33,10 +33,12 @@ export interface BRow {
   formula2?: string;
   decimals?: number;
   decimals2?: number;
+  /** Printed reference range text (display only). Carried opaquely. */
+  refText?: string;
 }
 
 type BSectionBase =
-  | { _id: string; type: "patient_info"; fields: PatientField[] }
+  | { _id: string; type: "patient_info"; fields: PatientField[]; defaultSource?: string }
   | { _id: string; type: "static"; text: string; heading: boolean; subheading?: boolean }
   | { _id: string; type: "field"; key: string; label: string; inputType: InputType; options: string; required: boolean }
   | {
@@ -50,6 +52,8 @@ type BSectionBase =
       rangeHeader?: string;
     }
   | { _id: string; type: "textarea"; key: string; label: string }
+  // Fixed text table (e.g. a risk chart). Carried opaquely — no editor UI yet.
+  | { _id: string; type: "table"; title?: string; columns: string[]; widths?: number[]; rows: string[][] }
   | { _id: string; type: "signature"; label: string; subtitle?: string };
 
 /** Each block also carries an optional free-form position (percent x/y/w) for canvas layout. */
@@ -69,6 +73,7 @@ export const NEW_BLOCKS: Record<BlockType, () => BSection> = {
   textarea: () => ({ _id: uid(), type: "textarea", key: "", label: "" }),
   static: () => ({ _id: uid(), type: "static", text: "", heading: false }),
   signature: () => ({ _id: uid(), type: "signature", label: "Verified by" }),
+  table: () => ({ _id: uid(), type: "table", columns: ["", ""], rows: [["", ""]] }),
 };
 
 export function emptyRow(): BRow {
@@ -81,7 +86,13 @@ export function fromTemplate(tpl: Template): BSection[] {
     const pos = s.pos;
     switch (s.type) {
       case "patient_info":
-        return { _id: uid(), type: "patient_info", fields: s.fields as PatientField[], pos };
+        return {
+          _id: uid(),
+          type: "patient_info",
+          fields: s.fields as PatientField[],
+          defaultSource: s.defaultSource,
+          pos,
+        };
       case "static":
         return { _id: uid(), type: "static", text: s.text, heading: !!s.heading, subheading: s.subheading, pos };
       case "field":
@@ -118,12 +129,23 @@ export function fromTemplate(tpl: Template): BSection[] {
             formula: r.formula,
             formula2: r.formula2,
             decimals: r.decimals,
+            refText: r.ref_text,
             decimals2: r.decimals2,
           })),
           pos,
         };
       case "textarea":
         return { _id: uid(), type: "textarea", key: s.key, label: s.label, pos };
+      case "table":
+        return {
+          _id: uid(),
+          type: "table",
+          title: s.title,
+          columns: s.columns,
+          widths: s.widths,
+          rows: s.rows,
+          pos,
+        };
       case "signature":
         return { _id: uid(), type: "signature", label: s.label, subtitle: s.subtitle, pos };
     }
@@ -165,7 +187,10 @@ export function toTemplate(
     sections: src.map((s) => {
       switch (s.type) {
         case "patient_info":
-          return withPos({ type: "patient_info", fields: s.fields }, s);
+          return withPos(
+            { type: "patient_info", fields: s.fields, ...(s.defaultSource ? { defaultSource: s.defaultSource } : {}) },
+            s,
+          );
         case "static":
           return withPos(
             {
@@ -216,12 +241,24 @@ export function toTemplate(
                 ...numField(r.ref_high, "ref_high"),
                 ...numField(r.critical_low, "critical_low"),
                 ...numField(r.critical_high, "critical_high"),
+                ...(r.refText?.trim() ? { ref_text: r.refText.trim() } : {}),
               })),
             },
             s,
           );
         case "textarea":
           return withPos({ type: "textarea", key: s.key.trim(), label: s.label }, s);
+        case "table":
+          return withPos(
+            {
+              type: "table",
+              ...(s.title ? { title: s.title } : {}),
+              columns: s.columns,
+              ...(s.widths ? { widths: s.widths } : {}),
+              rows: s.rows,
+            },
+            s,
+          );
         case "signature":
           return withPos({ type: "signature", label: s.label, ...(s.subtitle ? { subtitle: s.subtitle } : {}) }, s);
       }

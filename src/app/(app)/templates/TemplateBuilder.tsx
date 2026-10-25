@@ -395,6 +395,9 @@ function SectionEditor({
         </div>
       );
 
+    case "table":
+      return <p className="text-sm text-muted">{t("templates.builder.tableNote")}</p>;
+
     case "signature":
       return (
         <div className="flex flex-wrap gap-2">
@@ -480,6 +483,8 @@ function blockSummary(s: BSection, t: (k: string) => string): string {
       return s.label || s.key || "—";
     case "results_table":
       return s.title || `${s.rows.length} rows`;
+    case "table":
+      return s.title || s.columns.filter(Boolean).join(" · ") || "—";
     case "signature":
       return s.label || "—";
   }

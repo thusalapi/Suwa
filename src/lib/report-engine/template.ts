@@ -64,6 +64,8 @@ export const FIELD_INPUT_TYPES = ["text", "number", "date", "select"] as const;
 const patientInfoSection = z.object({
   type: z.literal("patient_info"),
   fields: z.array(z.enum(PATIENT_INFO_FIELDS)).min(1),
+  /** Prefill for "Source of Specimen" on a new report (e.g. "Urine"). Default "Blood". */
+  defaultSource: z.string().trim().min(1).optional(),
   pos: positionSchema,
 });
 
@@ -111,6 +113,9 @@ const resultRow = z.object({
   ref_high: z.number().optional(),
   critical_low: z.number().optional(),
   critical_high: z.number().optional(),
+  /** Printed reference range, verbatim (e.g. "120-200 mg/dl", "(3.0-5.0)"). Display only — flags
+   *  still come from the numeric bounds above. */
+  ref_text: z.string().trim().min(1).optional(),
 });
 
 const resultsTableSection = z.object({
@@ -136,6 +141,21 @@ const textareaSection = z.object({
   pos: positionSchema,
 });
 
+/**
+ * A fixed table of text (e.g. a lipid risk chart): column headers + rows of cells. Nothing is
+ * entered or calculated. A cell may contain "
+" for a second line.
+ */
+const tableSection = z.object({
+  type: z.literal("table"),
+  title: z.string().optional(),
+  columns: z.array(z.string()).min(1),
+  /** Relative column widths (any positive numbers; normalised to 100%). Default: equal. */
+  widths: z.array(z.number().positive()).optional(),
+  rows: z.array(z.array(z.string())).min(1),
+  pos: positionSchema,
+});
+
 const signatureSection = z.object({
   type: z.literal("signature"),
   label: z.string().min(1),
@@ -150,6 +170,7 @@ export const sectionSchema = z.discriminatedUnion("type", [
   fieldSection,
   resultsTableSection,
   textareaSection,
+  tableSection,
   signatureSection,
 ]);
 
@@ -193,6 +214,20 @@ export const templateSchema = z
           });
         }
         topKeys.add(s.key);
+      } else if (s.type === "table") {
+        const n = s.columns.length;
+        if (s.widths && s.widths.length !== n) {
+          ctx.addIssue({ code: "custom", message: "widths must match columns", path: ["sections", i, "widths"] });
+        }
+        s.rows.forEach((row, j) => {
+          if (row.length !== n) {
+            ctx.addIssue({
+              code: "custom",
+              message: `row has ${row.length} cells, expected ${n}`,
+              path: ["sections", i, "rows", j],
+            });
+          }
+        });
       } else if (s.type === "results_table") {
         s.rows.forEach((r, j) => {
           if (r.ref_low != null && r.ref_high != null && r.ref_low > r.ref_high) {
@@ -305,6 +340,14 @@ export type ResultRow = z.infer<typeof resultRow>;
 export type FieldSection = Extract<Section, { type: "field" }>;
 export type ResultsTableSection = Extract<Section, { type: "results_table" }>;
 export type PatientInfoSection = Extract<Section, { type: "patient_info" }>;
+export type TableSection = Extract<Section, { type: "table" }>;
+
+/** Column widths of a table block as percentages summing to 100. */
+export function tableWidths(s: TableSection): number[] {
+  const w = s.widths ?? s.columns.map(() => 1);
+  const total = w.reduce((a, b) => a + b, 0);
+  return w.map((x) => (x / total) * 100);
+}
 
 /** Parse + validate unknown JSON (e.g. a stored snapshot) into a Template. Throws on invalid. */
 export function parseTemplate(input: unknown): Template {

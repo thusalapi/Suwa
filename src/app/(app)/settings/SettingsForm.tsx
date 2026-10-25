@@ -6,6 +6,7 @@ import { Field } from "@/components/atoms/Field";
 import { Input } from "@/components/atoms/Input";
 import { Button } from "@/components/atoms/Button";
 import { Spinner } from "@/components/atoms/Spinner";
+import { cn } from "@/lib/utils/cn";
 import { getT } from "@/lib/i18n";
 import type { Locale } from "@/lib/i18n/types";
 import { updateSettingsAction, type SettingsState } from "./actions";
@@ -47,7 +48,17 @@ export function SettingsForm({ locale, initial }: { locale: Locale; initial: Set
       </Field>
 
       <Field label={t("settings.address")} htmlFor="address">
-        <Input id="address" name="address" defaultValue={initial.address} />
+        {/* Multi-line: each line prints on its own line in the PDF header. */}
+        <textarea
+          id="address"
+          name="address"
+          rows={3}
+          defaultValue={initial.address}
+          className={cn(
+            "w-full rounded-md border border-border bg-white px-3 py-2 text-sm text-ink",
+            "focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-primary",
+          )}
+        />
       </Field>
 
       <div className="grid grid-cols-2 gap-4">
