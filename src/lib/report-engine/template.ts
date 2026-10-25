@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { formulaRefs, parseFormula } from "./formula";
 
 /**
  * Template schema — the heart of the report engine. A template is stored as JSONB on
@@ -91,8 +92,18 @@ const resultRow = z.object({
   unit2: z.string().optional(),
   /** value2 = value × factor2 (computed + stored on entry). Requires `unit2`. */
   factor2: z.number().optional(),
+  /** Second value from arithmetic over other rows (e.g. `wbc * neut / 100` for an absolute count).
+   *  Requires `unit2`; an alternative to `factor2`. */
+  formula2: z.string().trim().min(1).optional(),
   /** "number" (default) flags against the range; "text" stores a qualitative value (e.g. "B Positive"). */
   value_type: z.enum(["number", "text"]).optional(),
+  /** Calculated row: the value is arithmetic over other rows' keys (e.g. `hb * 100 / pcv`), not
+   *  entered by hand. See formula.ts for the grammar. */
+  formula: z.string().trim().min(1).optional(),
+  /** Decimal places a calculated value (`formula`) is rounded to before it is stored. Default 1. */
+  decimals: z.number().int().min(0).max(6).optional(),
+  /** Decimal places for `formula2`. Default 0. */
+  decimals2: z.number().int().min(0).max(6).optional(),
   ref_low: z.number().optional(),
   ref_high: z.number().optional(),
   critical_low: z.number().optional(),
@@ -103,10 +114,14 @@ const resultsTableSection = z.object({
   type: z.literal("results_table"),
   title: z.string().optional(),
   /** "table" (default): the 5-column Test/Result/Unit/Range/Flag grid. "list": a compact
-   *  Test — Result two-column list (the lab house style); ranges live in a separate static block. */
-  style: z.enum(["table", "list"]).optional(),
-  /** Column labels for the "list" style header (e.g. CHEMISTRY / RESULT). Omit to hide the header. */
+   *  Test — Result two-column list (the lab house style); ranges live in a separate static block.
+   *  "dual": Test | value unit | value2 unit2 (e.g. a differential count beside its absolute count).
+   *  "ranged": Test | value | unit | reference range, with no flag column (the printed FBC style). */
+  style: z.enum(["table", "list", "dual", "ranged"]).optional(),
+  /** Column labels for the "list"/"dual" style header (e.g. CHEMISTRY / RESULT). Omit to hide it. */
   listHeader: z.object({ left: z.string().min(1), right: z.string().min(1) }).optional(),
+  /** Heading over the reference-range column in the "ranged" style (e.g. "REF. VALUE"). */
+  rangeHeader: z.string().min(1).optional(),
   rows: z.array(resultRow).min(1),
   pos: positionSchema,
 });
@@ -144,6 +159,9 @@ export const templateSchema = z
     version: z.number().int().positive(),
     /** Absent/"flow": blocks stack top-to-bottom. "canvas": blocks are placed by their `pos`. */
     layout: z.enum(["flow", "canvas"]).optional(),
+    /** System-managed template (layout + formulas are fixed): the editor refuses to change it.
+     *  Only set by seed scripts — the UI strips it from anything it saves. */
+    locked: z.boolean().optional(),
     sections: z.array(sectionSchema).min(1),
   })
   .superRefine((tpl, ctx) => {
@@ -188,6 +206,20 @@ export const templateSchema = z
               path: ["sections", i, "rows", j, "factor2"],
             });
           }
+          if (r.formula2 != null && (!r.unit2 || r.factor2 != null)) {
+            ctx.addIssue({
+              code: "custom",
+              message: "formula2 requires unit2 and can't be combined with factor2",
+              path: ["sections", i, "rows", j, "formula2"],
+            });
+          }
+          if (r.formula != null && r.value_type === "text") {
+            ctx.addIssue({
+              code: "custom",
+              message: "a calculated row must be numeric",
+              path: ["sections", i, "rows", j, "formula"],
+            });
+          }
           if (rowKeys.has(r.key)) {
             ctx.addIssue({
               code: "custom",
@@ -199,7 +231,58 @@ export const templateSchema = z
         });
       }
     });
+
+    // Formulas: must parse, may only read numeric rows, and calculated rows can't form a cycle.
+    const rows = resultRows(tpl);
+    const numericKeys = new Set(rows.filter((r) => r.value_type !== "text").map((r) => r.key));
+    const deps = new Map<string, string[]>();
+    for (const r of rows) {
+      for (const field of ["formula", "formula2"] as const) {
+        const src = r[field];
+        if (src == null) continue;
+        let refs: string[];
+        try {
+          refs = formulaRefs(parseFormula(src));
+        } catch (e) {
+          ctx.addIssue({ code: "custom", message: `${r.key}.${field}: ${(e as Error).message}`, path: ["sections"] });
+          continue;
+        }
+        const unknown = refs.filter((k) => !numericKeys.has(k));
+        if (unknown.length) {
+          ctx.addIssue({
+            code: "custom",
+            message: `${r.key}.${field} refers to unknown or non-numeric rows: ${unknown.join(", ")}`,
+            path: ["sections"],
+          });
+        }
+        if (field === "formula") deps.set(r.key, refs);
+      }
+    }
+    if (formulaOrder(deps) == null) {
+      ctx.addIssue({ code: "custom", message: "calculated rows refer to each other in a cycle", path: ["sections"] });
+    }
   });
+
+/**
+ * Evaluation order for calculated rows (each after the rows it reads), or null on a cycle.
+ * `deps` maps a calculated row's key to the keys its formula reads.
+ */
+export function formulaOrder(deps: Map<string, string[]>): string[] | null {
+  const order: string[] = [];
+  const state = new Map<string, "visiting" | "done">();
+  const visit = (key: string): boolean => {
+    const s = state.get(key);
+    if (s === "done") return true;
+    if (s === "visiting") return false;
+    state.set(key, "visiting");
+    for (const d of deps.get(key) ?? []) if (deps.has(d) && !visit(d)) return false;
+    state.set(key, "done");
+    order.push(key);
+    return true;
+  };
+  for (const key of deps.keys()) if (!visit(key)) return null;
+  return order;
+}
 
 export type Template = z.infer<typeof templateSchema>;
 export type Section = z.infer<typeof sectionSchema>;

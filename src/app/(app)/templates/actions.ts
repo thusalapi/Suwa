@@ -4,7 +4,13 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { requireRole } from "@/lib/auth";
 import { templateSchema, type Template } from "@/lib/report-engine";
-import { createTemplate, updateTemplate, getTemplate, setTemplateActive } from "@/lib/report-templates";
+import {
+  createTemplate,
+  updateTemplate,
+  getTemplate,
+  setTemplateActive,
+  TemplateLockedError,
+} from "@/lib/report-templates";
 
 /** Result surfaced back to the template editor. `error` is an i18n key; `detail` is raw. */
 export interface TemplateFormState {
@@ -35,7 +41,10 @@ function parseTemplateJson(raw: FormDataEntryValue | null): ParseResult {
     return { ok: false, state: { error: "templates.invalidSchema", detail } };
   }
 
-  return { ok: true, template: parsed.data };
+  // Locking is system-only (seed scripts); the editor can neither set nor carry it.
+  const template: Template = { ...parsed.data };
+  delete template.locked;
+  return { ok: true, template };
 }
 
 export async function createTemplateAction(_prev: TemplateFormState, formData: FormData): Promise<TemplateFormState> {
@@ -67,8 +76,8 @@ export async function updateTemplateAction(_prev: TemplateFormState, formData: F
 
   try {
     await updateTemplate(user.clinicId, user.id, id, res.template);
-  } catch {
-    return { error: "templates.saveError" };
+  } catch (e) {
+    return { error: e instanceof TemplateLockedError ? "templates.lockedError" : "templates.saveError" };
   }
 
   redirect(`/templates/${id}`);

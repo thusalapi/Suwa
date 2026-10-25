@@ -57,6 +57,56 @@ export const fastingBloodSugarTemplate = {
 } satisfies Template;
 
 /**
+ * Full Blood Count — Unawatuna Medical Centre's printed FBC. Staff enter only WBC, the five
+ * differential percentages, Hb, PCV and the platelet count; everything else is calculated:
+ *   absolute count = WBC × % / 100
+ *   RBC  = PCV / 9            (the manual-lab estimate; rounded to 1 dp before the indices use it)
+ *   MCHC = Hb × 100 / PCV     MCH = Hb × 10 / RBC     MCV = PCV × 10 / RBC
+ */
+export const fullBloodCountTemplate = {
+  name: "Full Blood Count",
+  version: 1,
+  locked: true,
+  sections: [
+    { type: "patient_info", fields: ["name", "age", "gender", "referred_by", "specimen_no", "datetime", "source"] },
+    { type: "static", heading: true, text: "Full Blood Count" },
+    { type: "results_table", style: "list", rows: [{ key: "wbc", test: "WBC", unit: "/Cu mm" }] },
+    {
+      type: "results_table",
+      style: "dual",
+      listHeader: { left: "DIFFERENTIAL COUNT", right: "ABSOLUTE COUNT" },
+      rows: [
+        { key: "neut", test: "Neutrophils", unit: "%", unit2: "/Cu mm", formula2: "wbc * neut / 100" },
+        { key: "lymph", test: "Lymphocytes", unit: "%", unit2: "/Cu mm", formula2: "wbc * lymph / 100" },
+        { key: "eos", test: "Eosinophils", unit: "%", unit2: "/Cu mm", formula2: "wbc * eos / 100" },
+        { key: "mono", test: "Monocytes", unit: "%", unit2: "/Cu mm", formula2: "wbc * mono / 100" },
+        { key: "baso", test: "Basophils", unit: "%", unit2: "/Cu mm", formula2: "wbc * baso / 100" },
+      ],
+    },
+    {
+      type: "results_table",
+      style: "ranged",
+      rangeHeader: "REF. VALUE",
+      rows: [
+        { key: "hb", test: "Haemoglobin", unit: "g/dl", ref_low: 11.8, ref_high: 16.5 },
+        { key: "pcv", test: "P.C.V.", unit: "%", ref_low: 36, ref_high: 47 },
+        { key: "mchc", test: "M.C.H.C.", unit: "%", ref_low: 32, ref_high: 36, formula: "hb * 100 / pcv" },
+        { key: "rbc", test: "R.B.C.", unit: "M/Cu mm", ref_low: 3.9, ref_high: 5.6, formula: "pcv / 9" },
+        { key: "mch", test: "M.C.H.", unit: "Pg", ref_low: 27, ref_high: 33, formula: "hb * 10 / rbc" },
+        { key: "mcv", test: "M.C.V.", unit: "fl", ref_low: 76, ref_high: 96, formula: "pcv * 10 / rbc" },
+      ],
+    },
+    {
+      type: "results_table",
+      style: "ranged",
+      rows: [{ key: "plt", test: "Platelet Count", unit: "/Cu mm", ref_low: 150000, ref_high: 450000 }],
+    },
+    { type: "static", text: "Our Facilities : Laboratory, ECG, Indoor Pharmacy, OPD & Specialist Consultations" },
+    { type: "signature", label: "Verified by", subtitle: "Medical Laboratory Technologist · SLMC Reg." },
+  ],
+} satisfies Template;
+
+/**
  * Blood Grouping & Rh — a qualitative report: a single "list" result whose value is text
  * (e.g. "B Positive"), no reference range or flag.
  */

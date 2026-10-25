@@ -305,14 +305,19 @@ function SectionEditor({
             <FieldBox label={t("templates.builder.style")}>
               <select
                 value={section.style ?? "table"}
-                onChange={(e) => onChange({ ...section, style: e.target.value === "list" ? "list" : undefined })}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  onChange({ ...section, style: v === "list" || v === "dual" || v === "ranged" ? v : undefined });
+                }}
                 className={selectClass}
               >
                 <option value="table">{t("templates.builder.style_table")}</option>
                 <option value="list">{t("templates.builder.style_list")}</option>
+                <option value="dual">{t("templates.builder.style_dual")}</option>
+                <option value="ranged">{t("templates.builder.style_ranged")}</option>
               </select>
             </FieldBox>
-            {section.style === "list" ? (
+            {section.style === "list" || section.style === "dual" ? (
               <>
                 <FieldBox label={t("templates.builder.listHeaderLeft")}>
                   <Input

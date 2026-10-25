@@ -46,6 +46,11 @@ export default async function TemplatesPage() {
                     <Link href={`/templates/${tpl.id}`} className="font-medium text-primary-dark hover:underline">
                       {tpl.name}
                     </Link>
+                    {tpl.locked ? (
+                      <Badge tone="neutral" className="ml-2">
+                        🔒 {t("templates.locked")}
+                      </Badge>
+                    ) : null}
                   </td>
                   <td className="px-4 py-2 text-muted">v{tpl.version}</td>
                   <td className="px-4 py-2 text-muted">{tpl.sectionCount}</td>

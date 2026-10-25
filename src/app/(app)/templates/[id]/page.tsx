@@ -7,6 +7,7 @@ import { Button } from "@/components/atoms/Button";
 import { getT } from "@/lib/i18n";
 import { DEFAULT_LOCALE } from "@/lib/i18n/types";
 import { TemplateBuilder } from "../TemplateBuilder";
+import { ReportView } from "@/components/organisms/ReportView";
 import { updateTemplateAction, toggleTemplateActiveAction } from "../actions";
 import { PageTitle } from "@/components/atoms/Heading";
 
@@ -29,6 +30,7 @@ export default async function EditTemplatePage({ params }: { params: Promise<{ i
           <PageTitle>{template.name}</PageTitle>
           <div className="flex items-center gap-2 text-sm text-muted">
             <span>v{template.version}</span>
+            {template.schema.locked ? <Badge tone="neutral">🔒 {t("templates.locked")}</Badge> : null}
             {template.active ? (
               <Badge tone="success">{t("templates.active")}</Badge>
             ) : (
@@ -46,15 +48,28 @@ export default async function EditTemplatePage({ params }: { params: Promise<{ i
         </form>
       </div>
 
-      <p className="text-sm text-muted">{t("templates.editHint")}</p>
+      {template.schema.locked ? (
+        <>
+          <p className="rounded-md border border-border bg-surface px-3 py-2 text-sm text-muted">
+            {t("templates.lockedHint")}
+          </p>
+          <div className="rounded-lg border border-border bg-surface-raised p-6">
+            <ReportView locale={locale} snapshot={template.schema} data={{}} />
+          </div>
+        </>
+      ) : (
+        <>
+          <p className="text-sm text-muted">{t("templates.editHint")}</p>
 
-      <TemplateBuilder
-        locale={locale}
-        action={updateTemplateAction}
-        templateId={template.id}
-        initialTemplate={template.schema}
-        submitLabel={t("templates.saveNewVersion")}
-      />
+          <TemplateBuilder
+            locale={locale}
+            action={updateTemplateAction}
+            templateId={template.id}
+            initialTemplate={template.schema}
+            submitLabel={t("templates.saveNewVersion")}
+          />
+        </>
+      )}
     </div>
   );
 }

@@ -79,6 +79,17 @@ const styles = StyleSheet.create({
   listRow: { flexDirection: "row", paddingVertical: 3 },
   listTest: { width: "50%", fontSize: 10 },
   listResult: { width: "50%", fontSize: 10, fontWeight: 700 },
+  // "dual" (value + second value) and "ranged" (value · unit · reference) columns, as on the
+  // printed FBC: no grid lines, the headers underlined.
+  colHead: { fontSize: 9, fontWeight: 700, textDecoration: "underline", marginTop: 10, marginBottom: 4 },
+  colRow: { flexDirection: "row", paddingVertical: 3 },
+  dTest: { width: "34%", paddingLeft: 12, fontSize: 10 },
+  dValue: { width: "20%", fontSize: 10 },
+  dValue2: { width: "46%", fontSize: 10 },
+  rTest: { width: "34%", fontSize: 10 },
+  rValue: { width: "14%", fontSize: 10, textAlign: "right", paddingRight: 10 },
+  rUnit: { width: "18%", fontSize: 10 },
+  rRange: { width: "34%", fontSize: 10 },
   sigSubtitle: { fontSize: 8, color: c.muted, marginTop: 1 },
   sectionTitle: { fontSize: 11, fontWeight: 700, marginTop: 10, marginBottom: 4 },
   tHead: { flexDirection: "row", borderBottomWidth: 1, borderBottomColor: c.border, paddingBottom: 3 },
@@ -109,7 +120,7 @@ const styles = StyleSheet.create({
 });
 
 function rangeLabel(row: ResultRow): string {
-  if (row.ref_low != null && row.ref_high != null) return `${row.ref_low}-${row.ref_high}`;
+  if (row.ref_low != null && row.ref_high != null) return `${row.ref_low} - ${row.ref_high}`;
   if (row.ref_low != null) return `>= ${row.ref_low}`;
   if (row.ref_high != null) return `<= ${row.ref_high}`;
   return "-";
@@ -143,6 +154,59 @@ export function ReportDocument({ locale, clinic, qrDataUrl, report }: ReportDocu
         );
 
       case "results_table":
+        if (section.style === "dual") {
+          return (
+            <View wrap={false}>
+              {section.title ? <Text style={styles.listTitle}>{section.title}</Text> : null}
+              {section.listHeader ? (
+                <View style={styles.colRow}>
+                  <Text style={[styles.colHead, { width: "54%" }]}>{section.listHeader.left}</Text>
+                  <Text style={[styles.colHead, { width: "46%" }]}>{section.listHeader.right}</Text>
+                </View>
+              ) : null}
+              {section.rows.map((row) => {
+                const entry = results[row.key];
+                return (
+                  <View key={row.key} style={styles.colRow}>
+                    <Text style={styles.dTest}>{row.test}</Text>
+                    <Text style={styles.dValue}>{entry ? `${entry.value} ${row.unit ?? ""}` : "-"}</Text>
+                    <Text style={styles.dValue2}>
+                      {entry?.value2 != null ? `${entry.value2} ${row.unit2 ?? ""}` : "-"}
+                    </Text>
+                  </View>
+                );
+              })}
+            </View>
+          );
+        }
+        if (section.style === "ranged") {
+          return (
+            <View wrap={false} style={{ marginTop: 6 }}>
+              {section.title ? <Text style={styles.listTitle}>{section.title}</Text> : null}
+              {section.rangeHeader ? (
+                <View style={styles.colRow}>
+                  <Text style={{ width: "66%" }} />
+                  <Text style={[styles.colHead, { width: "34%", marginTop: 0 }]}>{section.rangeHeader}</Text>
+                </View>
+              ) : null}
+              {section.rows.map((row) => {
+                const entry = results[row.key];
+                const flag = entry?.flag as Flag | undefined;
+                const abn = !!flag && isAbnormal(flag);
+                return (
+                  <View key={row.key} style={styles.colRow}>
+                    <Text style={styles.rTest}>{row.test}</Text>
+                    <Text style={abn ? [styles.rValue, styles.abnormal] : styles.rValue}>
+                      {entry ? String(entry.value) : "-"}
+                    </Text>
+                    <Text style={styles.rUnit}>{row.unit ?? ""}</Text>
+                    <Text style={styles.rRange}>{rangeLabel(row) === "-" ? "" : rangeLabel(row)}</Text>
+                  </View>
+                );
+              })}
+            </View>
+          );
+        }
         if (section.style === "list") {
           return (
             <View wrap={false}>

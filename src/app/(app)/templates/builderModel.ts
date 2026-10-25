@@ -28,6 +28,11 @@ export interface BRow {
   unit2?: string;
   factor2?: string;
   valueType?: "number" | "text";
+  /** Calculated-row fields (see report-engine/formula.ts). Carried opaquely — no editor UI yet. */
+  formula?: string;
+  formula2?: string;
+  decimals?: number;
+  decimals2?: number;
 }
 
 type BSectionBase =
@@ -40,8 +45,9 @@ type BSectionBase =
       title: string;
       rows: BRow[];
       // Advanced layout (list style + header). Carried opaquely so an edit-save preserves it.
-      style?: "table" | "list";
+      style?: "table" | "list" | "dual" | "ranged";
       listHeader?: { left: string; right: string };
+      rangeHeader?: string;
     }
   | { _id: string; type: "textarea"; key: string; label: string }
   | { _id: string; type: "signature"; label: string; subtitle?: string };
@@ -96,6 +102,7 @@ export function fromTemplate(tpl: Template): BSection[] {
           title: s.title ?? "",
           style: s.style,
           listHeader: s.listHeader,
+          rangeHeader: s.rangeHeader,
           rows: s.rows.map((r) => ({
             _id: uid(),
             key: r.key,
@@ -108,6 +115,10 @@ export function fromTemplate(tpl: Template): BSection[] {
             unit2: r.unit2 ?? "",
             factor2: r.factor2?.toString() ?? "",
             valueType: r.value_type,
+            formula: r.formula,
+            formula2: r.formula2,
+            decimals: r.decimals,
+            decimals2: r.decimals2,
           })),
           pos,
         };
@@ -181,6 +192,7 @@ export function toTemplate(
               ...(s.listHeader && s.listHeader.left.trim() && s.listHeader.right.trim()
                 ? { listHeader: { left: s.listHeader.left.trim(), right: s.listHeader.right.trim() } }
                 : {}),
+              ...(s.rangeHeader?.trim() ? { rangeHeader: s.rangeHeader.trim() } : {}),
               rows: s.rows.map((r) => ({
                 key: r.key.trim(),
                 test: r.test,
@@ -188,6 +200,10 @@ export function toTemplate(
                 ...(r.unit2?.trim() ? { unit2: r.unit2.trim() } : {}),
                 ...numField(r.factor2 ?? "", "factor2"),
                 ...(r.valueType ? { value_type: r.valueType } : {}),
+                ...(r.formula?.trim() ? { formula: r.formula.trim() } : {}),
+                ...(r.formula2?.trim() ? { formula2: r.formula2.trim() } : {}),
+                ...(r.decimals != null ? { decimals: r.decimals } : {}),
+                ...(r.decimals2 != null ? { decimals2: r.decimals2 } : {}),
                 ...numField(r.ref_low, "ref_low"),
                 ...numField(r.ref_high, "ref_high"),
                 ...numField(r.critical_low, "critical_low"),

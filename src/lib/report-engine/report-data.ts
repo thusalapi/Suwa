@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { FLAGS, computeFlag, type Flag } from "./flag";
-import { resultRows, type Template } from "./template";
+import { formulaOrder, resultRows, type Template } from "./template";
+import { evaluateFormula, formulaRefs, parseFormula, roundTo } from "./formula";
 
 /**
  * Filled report data: the values entered against a template, stored as JSONB on `reports.data`.
@@ -97,7 +98,9 @@ export function computeResults(
   values: Record<string, number | string | null | undefined>,
 ): Record<string, ResultValue> {
   const out: Record<string, ResultValue> = {};
-  for (const row of resultRows(template)) {
+  const rows = resultRows(template);
+  for (const row of rows) {
+    if (row.formula != null) continue; // calculated below, never taken from input
     const v = values[row.key];
     if (v == null || v === "") continue;
 
@@ -111,6 +114,32 @@ export function computeResults(
     const entry: ResultValue = { value: n, flag: computeFlag(n, row) };
     if (row.factor2 != null && row.unit2) entry.value2 = Math.round(n * row.factor2 * 10) / 10;
     out[row.key] = entry;
+  }
+
+  // Calculated rows, each after the rows it reads. A formula sees the ROUNDED stored values, so
+  // the printed numbers are consistent with each other (e.g. MCV derived from the printed RBC).
+  const numeric = (): Record<string, number> =>
+    Object.fromEntries(
+      Object.entries(out).flatMap(([k, e]) => (typeof e.value === "number" ? [[k, e.value]] : [])),
+    );
+  const byKey = new Map(rows.map((r) => [r.key, r]));
+  const deps = new Map(
+    rows.flatMap((r) => (r.formula != null ? [[r.key, formulaRefs(parseFormula(r.formula))] as const] : [])),
+  );
+  for (const key of formulaOrder(deps) ?? []) {
+    const row = byKey.get(key)!;
+    const n = evaluateFormula(parseFormula(row.formula!), numeric());
+    if (n == null) continue;
+    const value = roundTo(n, row.decimals ?? 1);
+    out[key] = { value, flag: computeFlag(value, row) };
+  }
+
+  const known = numeric();
+  for (const row of rows) {
+    const entry = out[row.key];
+    if (row.formula2 == null || !row.unit2 || entry == null) continue;
+    const n = evaluateFormula(parseFormula(row.formula2), known);
+    if (n != null) entry.value2 = roundTo(n, row.decimals2 ?? 0);
   }
   return out;
 }

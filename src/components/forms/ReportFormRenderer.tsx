@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useMemo, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { Field } from "@/components/atoms/Field";
 import { Input } from "@/components/atoms/Input";
@@ -18,6 +18,7 @@ import {
   type ResultRow,
 } from "@/lib/report-engine/template";
 import { computeFlag, isAbnormal, isCritical, type Flag } from "@/lib/report-engine/flag";
+import { computeResults } from "@/lib/report-engine/report-data";
 
 const DERIVED = new Set<string>(PATIENT_DERIVED_FIELDS);
 const DATETIME = new Set<string>(PATIENT_DATETIME_FIELDS);
@@ -92,12 +93,43 @@ export function ReportFormRenderer({
   // existing data when editing a draft.
   const [resultValues, setResultValues] = useState<Record<string, string>>(() => initialResults ?? {});
 
+  // Live preview of what will be stored: calculated rows (`formula`) and second values (`formula2`)
+  // update as staff type. The server recomputes authoritatively on save.
+  const live = useMemo(() => computeResults(snapshot, resultValues), [snapshot, resultValues]);
+
   const flagFor = (row: ResultRow): Flag | null => {
+    if (row.formula != null) return live[row.key]?.flag ?? null;
     const raw = resultValues[row.key]?.trim();
     if (!raw) return null;
     const n = Number(raw);
     return Number.isNaN(n) ? null : computeFlag(n, row);
   };
+
+  /** The editable input for a row — or, for a calculated row, its read-only live value. */
+  const resultInput = (row: ResultRow, className: string) =>
+    row.formula != null ? (
+      <div
+        aria-label={`${row.test} ${t("reports.result")}`}
+        title={t("reports.calculated")}
+        className={cn(
+          "flex h-9 w-full items-center rounded-md border border-dashed border-border bg-surface px-3 text-sm text-ink",
+          className,
+        )}
+      >
+        {live[row.key]?.value ?? <span className="text-muted">{t("reports.calculated")}</span>}
+      </div>
+    ) : (
+      <Input
+        name={`res.${row.key}`}
+        type={row.value_type === "text" ? "text" : "number"}
+        step={row.value_type === "text" ? undefined : "any"}
+        inputMode={row.value_type === "text" ? undefined : "decimal"}
+        aria-label={`${row.test} ${t("reports.result")}`}
+        value={resultValues[row.key] ?? ""}
+        onChange={(e) => setResultValues((prev) => ({ ...prev, [row.key]: e.target.value }))}
+        className={cn("h-9", className)}
+      />
+    );
 
   return (
     <form action={formAction} className="space-y-8">
@@ -139,7 +171,8 @@ export function ReportFormRenderer({
             );
 
           case "results_table":
-            if (section.style === "list") {
+            if (section.style === "list" || section.style === "dual") {
+              const dual = section.style === "dual";
               return (
                 <section key={i} className="space-y-2">
                   {section.title ? <h3 className="text-sm font-semibold text-primary-dark">{section.title}</h3> : null}
@@ -154,20 +187,16 @@ export function ReportFormRenderer({
                       <div key={row.key} className="flex items-center gap-3 border-b border-border px-3 py-2 last:border-0">
                         <span className="flex-1 text-ink">{row.test}</span>
                         <div className="flex w-1/2 items-center gap-2">
-                          <Input
-                            name={`res.${row.key}`}
-                            type={row.value_type === "text" ? "text" : "number"}
-                            step={row.value_type === "text" ? undefined : "any"}
-                            inputMode={row.value_type === "text" ? undefined : "decimal"}
-                            aria-label={`${row.test} ${t("reports.result")}`}
-                            value={resultValues[row.key] ?? ""}
-                            onChange={(e) => setResultValues((prev) => ({ ...prev, [row.key]: e.target.value }))}
-                            className="h-9 max-w-[12rem]"
-                          />
+                          {resultInput(row, "max-w-[12rem]")}
                           {row.unit ? (
-                            <span className="text-xs text-muted">
+                            <span className="whitespace-nowrap text-xs text-muted">
                               {row.unit}
-                              {row.unit2 ? ` · ${row.unit2}` : ""}
+                              {row.unit2 && !dual ? ` · ${row.unit2}` : ""}
+                            </span>
+                          ) : null}
+                          {dual && row.unit2 ? (
+                            <span className="ml-auto whitespace-nowrap text-sm text-ink" title={t("reports.calculated")}>
+                              {live[row.key]?.value2 ?? "—"} <span className="text-xs text-muted">{row.unit2}</span>
                             </span>
                           ) : null}
                         </div>
@@ -197,18 +226,7 @@ export function ReportFormRenderer({
                         return (
                           <tr key={row.key} className="border-b border-border last:border-0">
                             <td className="px-3 py-2 text-ink">{row.test}</td>
-                            <td className="px-3 py-2">
-                              <Input
-                                name={`res.${row.key}`}
-                                type="number"
-                                step="any"
-                                inputMode="decimal"
-                                aria-label={`${row.test} ${t("reports.result")}`}
-                                value={resultValues[row.key] ?? ""}
-                                onChange={(e) => setResultValues((prev) => ({ ...prev, [row.key]: e.target.value }))}
-                                className="h-9 max-w-[8rem]"
-                              />
-                            </td>
+                            <td className="px-3 py-2">{resultInput(row, "max-w-[8rem]")}</td>
                             <td className="px-3 py-2 text-muted">{row.unit || "—"}</td>
                             <td className="px-3 py-2 text-muted">{rangeLabel(row)}</td>
                             <td className="px-3 py-2">

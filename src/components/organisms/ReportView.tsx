@@ -55,6 +55,43 @@ export function ReportView({ locale, snapshot, data }: ReportViewProps) {
             );
 
           case "results_table":
+            if (section.style === "dual") {
+              return (
+                <section key={i} className="space-y-2">
+                  {section.title ? <h3 className="text-sm font-semibold text-primary-dark">{section.title}</h3> : null}
+                  <div className="overflow-hidden rounded-lg border border-border bg-surface-raised">
+                    <table className="w-full text-sm">
+                      {section.listHeader ? (
+                        <thead>
+                          <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted">
+                            <th className="px-3 py-2 font-semibold" colSpan={2}>
+                              {section.listHeader.left}
+                            </th>
+                            <th className="px-3 py-2 font-semibold">{section.listHeader.right}</th>
+                          </tr>
+                        </thead>
+                      ) : null}
+                      <tbody>
+                        {section.rows.map((row) => {
+                          const entry = results[row.key];
+                          return (
+                            <tr key={row.key} className="border-b border-border last:border-0">
+                              <td className="px-3 py-2 text-ink">{row.test}</td>
+                              <td className="px-3 py-2 text-ink">
+                                {entry ? `${entry.value}${row.unit ? ` ${row.unit}` : ""}` : "—"}
+                              </td>
+                              <td className="px-3 py-2 text-ink">
+                                {entry?.value2 != null ? `${entry.value2}${row.unit2 ? ` ${row.unit2}` : ""}` : "—"}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </section>
+              );
+            }
             if (section.style === "list") {
               return (
                 <section key={i} className="space-y-2">

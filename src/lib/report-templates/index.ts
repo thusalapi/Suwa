@@ -11,6 +11,7 @@ export interface TemplateListItem {
   name: string;
   version: number;
   active: boolean;
+  locked: boolean;
   sectionCount: number;
 }
 
@@ -42,6 +43,7 @@ export async function listTemplates(clinicId: string): Promise<TemplateListItem[
     name: r.name,
     version: r.version,
     active: r.active,
+    locked: !!(r.schema as Template)?.locked,
     sectionCount: Array.isArray((r.schema as Template)?.sections) ? (r.schema as Template).sections.length : 0,
   }));
 }
@@ -90,9 +92,12 @@ export async function createTemplate(clinicId: string, userId: string, template:
   });
 }
 
+export class TemplateLockedError extends Error {}
+
 /**
  * Update a template, bumping its version. Already-issued reports are unaffected — they keep
- * the snapshot frozen at creation (docs/report-engine.md). Returns the new version.
+ * the snapshot frozen at creation (docs/report-engine.md). Returns the new version. Refuses a
+ * locked template (TemplateLockedError).
  */
 export async function updateTemplate(
   clinicId: string,
@@ -102,11 +107,13 @@ export async function updateTemplate(
 ): Promise<number> {
   return db.transaction(async (tx) => {
     const [current] = await tx
-      .select({ version: reportTemplates.version })
+      .select({ version: reportTemplates.version, schema: reportTemplates.schema })
       .from(reportTemplates)
       .where(and(eq(reportTemplates.id, id), eq(reportTemplates.clinicId, clinicId)))
-      .limit(1);
+      .limit(1)
+      .for("update");
     if (!current) throw new Error("Template not found.");
+    if ((current.schema as Template).locked) throw new TemplateLockedError("Template is locked.");
 
     const nextVersion = current.version + 1;
     const schema: Template = { ...template, version: nextVersion };
