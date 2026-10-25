@@ -1,12 +1,14 @@
 /**
  * Seed the lab's house-style report templates (Unawatuna Medical Centre format):
- * Fasting Blood Sugar, Blood Grouping & Rh, and Full Blood Count.
+ * Fasting Blood Sugar, Blood Grouping & Rh, Full Blood Count, and Serum Creatinine.
  *
  *   npm run seed:templates
  *   npm run seed:templates -- --replace "Full Blood Count"
  *
- * Idempotent: skips a template whose name already exists for the clinic — unless it's named with
- * --replace, which overwrites it as a new version (issued reports keep their frozen snapshot). Standalone connection
+ * Every template seeded here is LOCKED (read-only in the UI): system templates are only changed
+ * through this script. Idempotent: an existing template of the same name is left as-is (just
+ * locked, if it wasn't) — unless it's named with --replace, which overwrites it as a new version
+ * (issued reports keep their frozen snapshot). Standalone connection
  * (does not import the "server-only" db client, which can't load outside the Next.js runtime),
  * mirroring scripts/seed-owner.ts. Inserts the template + a `template.create` audit row in one tx.
  */
@@ -18,6 +20,7 @@ import {
   fastingBloodSugarTemplate,
   bloodGroupingTemplate,
   fullBloodCountTemplate,
+  serumCreatinineTemplate,
 } from "../src/lib/report-engine/examples";
 import { parseTemplate, type Template } from "../src/lib/report-engine";
 
@@ -43,14 +46,23 @@ async function main() {
     if (!owner) throw new Error(`No user found for clinic "${clinic.name}".`);
 
     const existing = await db
-      .select({ id: reportTemplates.id, name: reportTemplates.name, version: reportTemplates.version })
+      .select({
+        id: reportTemplates.id,
+        name: reportTemplates.name,
+        version: reportTemplates.version,
+        schema: reportTemplates.schema,
+      })
       .from(reportTemplates)
       .where(eq(reportTemplates.clinicId, clinic.id));
     const have = new Map(existing.map((t) => [t.name, t]));
 
-    const seeds: Template[] = [fastingBloodSugarTemplate, bloodGroupingTemplate, fullBloodCountTemplate];
+    const seeds: Template[] = [
+      fastingBloodSugarTemplate,
+      bloodGroupingTemplate,
+      fullBloodCountTemplate,
+      serumCreatinineTemplate,
+    ].map((t) => parseTemplate({ ...t, locked: true })); // fail loudly on an invalid seed
     for (const tpl of seeds) {
-      parseTemplate(tpl); // fail loudly on an invalid seed rather than store it
       const current = have.get(tpl.name);
       if (current && tpl.name === replaceName) {
         const version = current.version + 1;
@@ -69,6 +81,25 @@ async function main() {
           });
         });
         console.log(`~ replaced "${tpl.name}" → v${version} (${current.id})`);
+        continue;
+      }
+      if (current && !(current.schema as Template).locked) {
+        // Lock in place — the content (and so the version) is unchanged.
+        await db.transaction(async (tx) => {
+          await tx
+            .update(reportTemplates)
+            .set({ schema: { ...(current.schema as Template), locked: true } })
+            .where(and(eq(reportTemplates.id, current.id), eq(reportTemplates.clinicId, clinic.id)));
+          await tx.insert(auditLogs).values({
+            clinicId: clinic.id,
+            userId: owner.id,
+            action: "template.update",
+            entityType: "template",
+            entityId: current.id,
+            metadata: { version: current.version, locked: true, seeded: true },
+          });
+        });
+        console.log(`🔒 locked "${tpl.name}" (v${current.version}, content unchanged)`);
         continue;
       }
       if (current) {

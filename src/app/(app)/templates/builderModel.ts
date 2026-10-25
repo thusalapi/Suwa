@@ -37,7 +37,7 @@ export interface BRow {
 
 type BSectionBase =
   | { _id: string; type: "patient_info"; fields: PatientField[] }
-  | { _id: string; type: "static"; text: string; heading: boolean }
+  | { _id: string; type: "static"; text: string; heading: boolean; subheading?: boolean }
   | { _id: string; type: "field"; key: string; label: string; inputType: InputType; options: string; required: boolean }
   | {
       _id: string;
@@ -83,7 +83,7 @@ export function fromTemplate(tpl: Template): BSection[] {
       case "patient_info":
         return { _id: uid(), type: "patient_info", fields: s.fields as PatientField[], pos };
       case "static":
-        return { _id: uid(), type: "static", text: s.text, heading: !!s.heading, pos };
+        return { _id: uid(), type: "static", text: s.text, heading: !!s.heading, subheading: s.subheading, pos };
       case "field":
         return {
           _id: uid(),
@@ -167,7 +167,15 @@ export function toTemplate(
         case "patient_info":
           return withPos({ type: "patient_info", fields: s.fields }, s);
         case "static":
-          return withPos({ type: "static", text: s.text, ...(s.heading ? { heading: true } : {}) }, s);
+          return withPos(
+            {
+              type: "static",
+              text: s.text,
+              ...(s.heading ? { heading: true } : {}),
+              ...(s.subheading ? { subheading: true } : {}),
+            },
+            s,
+          );
         case "field": {
           const base: Record<string, unknown> = {
             type: "field",

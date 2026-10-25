@@ -19,6 +19,8 @@ export interface PatientFormValues {
   nic: string;
   gender: string;
   dob: string;
+  /** Age in years — used when the date of birth isn't known. */
+  age: string;
   address: string;
   notes: string;
 }
@@ -38,6 +40,7 @@ const EMPTY: PatientFormValues = {
   nic: "",
   gender: "",
   dob: "",
+  age: "",
   address: "",
   notes: "",
 };
@@ -97,7 +100,7 @@ export function PatientForm({ locale, action, patientId, initial, submitLabel }:
         </Field>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-3 gap-4">
         <div className="space-y-1.5">
           <Label htmlFor="gender">{t("patients.gender")}</Label>
           <select
@@ -120,6 +123,25 @@ export function PatientForm({ locale, action, patientId, initial, submitLabel }:
 
         <Field label={t("patients.dob")} htmlFor="dob">
           <Input id="dob" name="dob" type="date" defaultValue={values.dob} />
+        </Field>
+
+        <Field
+          label={t("patients.age")}
+          htmlFor="age"
+          hint={t("patients.ageHint")}
+          error={state.fieldErrors?.age ? t(state.fieldErrors.age) : undefined}
+        >
+          <Input
+            id="age"
+            name="age"
+            type="number"
+            min={0}
+            max={130}
+            step={1}
+            inputMode="numeric"
+            defaultValue={values.age}
+            invalid={!!state.fieldErrors?.age}
+          />
         </Field>
       </div>
 

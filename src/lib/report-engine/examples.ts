@@ -32,6 +32,7 @@ export const fbcTemplate = {
 export const fastingBloodSugarTemplate = {
   name: "Fasting Blood Sugar",
   version: 1,
+  locked: true,
   sections: [
     { type: "patient_info", fields: ["name", "age", "gender", "referred_by", "specimen_no", "datetime", "source"] },
     {
@@ -101,7 +102,66 @@ export const fullBloodCountTemplate = {
       style: "ranged",
       rows: [{ key: "plt", test: "Platelet Count", unit: "/Cu mm", ref_low: 150000, ref_high: 450000 }],
     },
-    { type: "static", text: "Our Facilities : Laboratory, ECG, Indoor Pharmacy, OPD & Specialist Consultations" },
+    { type: "signature", label: "Verified by", subtitle: "Medical Laboratory Technologist · SLMC Reg." },
+  ],
+} satisfies Template;
+
+/**
+ * Serum Creatinine + eGFR — Unawatuna Medical Centre's printed report. Only creatinine is entered;
+ * eGFR uses the CKD-EPI 2021 (race-free) equation with the patient's age and sex from their record:
+ *   eGFR = 142 × min(Scr/κ, 1)^α × max(Scr/κ, 1)^-1.200 × 0.9938^age × 1.012 [if female]
+ *   κ = 0.7 (female) / 0.9 (male)      α = -0.241 (female) / -0.302 (male)      [ml/min/1.73 m²]
+ * Written with `female` (1/0): κ = 0.9 - 0.2·female, α = -0.302 + 0.061·female.
+ */
+export const serumCreatinineTemplate = {
+  name: "Serum Creatinine",
+  version: 1,
+  locked: true,
+  sections: [
+    { type: "patient_info", fields: ["name", "age", "gender", "referred_by", "specimen_no", "datetime", "source"] },
+    { type: "static", heading: true, text: "Creatinine e GFR" },
+    {
+      type: "results_table",
+      style: "ranged",
+      listHeader: { left: "CHEMISTRY", right: "RESULT" },
+      rangeHeader: "REF.RANGE",
+      rows: [
+        { key: "scr", test: "Serum Creatinine", unit: "mg/dl", ref_low: 0.5, ref_high: 1.3 },
+        {
+          key: "egfr",
+          test: "Estimated GFR",
+          unit: "ml/min/1.73 m2",
+          ref_low: 60,
+          ref_high: 120,
+          formula:
+            "142 * min(scr / (0.9 - 0.2 * female), 1) ^ (-0.302 + 0.061 * female)" +
+            " * max(scr / (0.9 - 0.2 * female), 1) ^ -1.2 * 0.9938 ^ age * (1 + 0.012 * female)",
+          decimals: 2,
+        },
+      ],
+    },
+    { type: "static", heading: true, text: "SERUM CREATININE" },
+    { type: "static", subheading: true, text: "Elevated in:" },
+    {
+      type: "static",
+      text:
+        "Renal insufficiency (acute and chronic), decreased renal perfusion (hypotension, dehydration, " +
+        "congestive heart failure), urinary tract infection, rhabdomyolysis, ketonemia.",
+    },
+    {
+      type: "static",
+      text: "Drugs (antibiotics [aminoglycosides, cephalosporins], hydantoin, diuretics, methyldopa)",
+    },
+    { type: "static", subheading: true, text: "Falsely elevated in:" },
+    {
+      type: "static",
+      text: "Diabetic ketoacidosis, administration of some cephalosporins (e.g. cefoxitin, cephalothin)",
+    },
+    { type: "static", subheading: true, text: "Decreased in:" },
+    {
+      type: "static",
+      text: "Decreased muscle mass (including amputees and older persons), pregnancy, prolonged debilitation.",
+    },
     { type: "signature", label: "Verified by", subtitle: "Medical Laboratory Technologist · SLMC Reg." },
   ],
 } satisfies Template;
@@ -113,6 +173,7 @@ export const fullBloodCountTemplate = {
 export const bloodGroupingTemplate = {
   name: "Blood Grouping & Rh",
   version: 1,
+  locked: true,
   sections: [
     { type: "patient_info", fields: ["name", "age", "gender", "requested_by", "datetime"] },
     { type: "static", heading: true, text: "Blood" },

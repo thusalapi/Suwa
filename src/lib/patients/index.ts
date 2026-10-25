@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { patients } from "@/lib/db/schema";
 import { recordAudit } from "@/lib/audit";
 import type { PatientInput } from "@/lib/schema/patient";
+import { ageFromDob, estimatedDobFromAge } from "@/lib/utils/age";
 
 /** Row shape for the patient list/search table. */
 export interface PatientListItem {
@@ -17,6 +18,8 @@ export interface PatientListItem {
 /** Full patient record for the detail/edit screens. */
 export interface Patient extends PatientListItem {
   dob: string | null;
+  /** `dob` was derived from an entered age — show the age, never this as a birth date. */
+  dobEstimated: boolean;
   address: string | null;
   notes: string | null;
   createdAt: Date;
@@ -66,6 +69,7 @@ export async function getPatient(clinicId: string, id: string): Promise<Patient 
       nic: patients.nic,
       gender: patients.gender,
       dob: patients.dob,
+      dobEstimated: patients.dobEstimated,
       address: patients.address,
       notes: patients.notes,
       createdAt: patients.createdAt,
@@ -95,14 +99,30 @@ export async function findByPhone(
   return row;
 }
 
-/** Map empty strings from the form to NULL for optional columns. */
-function normalize(input: PatientInput) {
+/**
+ * Map empty strings from the form to NULL for optional columns. A real date of birth wins; failing
+ * that, an entered age becomes an estimated dob. `existing` (on edit) keeps an estimate stable when
+ * the age is re-saved unchanged, so the estimated birthday doesn't drift on every save.
+ */
+function normalize(input: PatientInput, existing?: { dob: string | null; dobEstimated: boolean }) {
+  let dob: string | null = null;
+  let dobEstimated = false;
+  if (input.dob) {
+    dob = input.dob;
+  } else if (input.age !== "") {
+    dobEstimated = true;
+    dob =
+      existing?.dobEstimated && existing.dob && ageFromDob(existing.dob) === input.age
+        ? existing.dob
+        : estimatedDobFromAge(input.age);
+  }
   return {
     fullName: input.fullName,
     phone: input.phone,
     nic: input.nic || null,
     gender: input.gender || null,
-    dob: input.dob || null,
+    dob,
+    dobEstimated,
     address: input.address || null,
     notes: input.notes || null,
   };
@@ -124,9 +144,14 @@ export async function createPatient(clinicId: string, userId: string, input: Pat
 /** Update a patient (update + `patient.update` audit in one transaction). Tenant-scoped. */
 export async function updatePatient(clinicId: string, userId: string, id: string, input: PatientInput): Promise<void> {
   await db.transaction(async (tx) => {
+    const [existing] = await tx
+      .select({ dob: patients.dob, dobEstimated: patients.dobEstimated })
+      .from(patients)
+      .where(and(eq(patients.id, id), eq(patients.clinicId, clinicId)))
+      .limit(1);
     await tx
       .update(patients)
-      .set(normalize(input))
+      .set(normalize(input, existing))
       .where(and(eq(patients.id, id), eq(patients.clinicId, clinicId)));
 
     await recordAudit({ clinicId, userId, action: "patient.update", entityType: "patient", entityId: id }, tx);

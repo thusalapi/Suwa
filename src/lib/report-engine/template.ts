@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { formulaRefs, parseFormula } from "./formula";
+import { PATIENT_VARS, formulaRefs, parseFormula } from "./formula";
 
 /**
  * Template schema — the heart of the report engine. A template is stored as JSONB on
@@ -71,6 +71,8 @@ const staticSection = z.object({
   type: z.literal("static"),
   text: z.string().min(1),
   heading: z.boolean().optional(),
+  /** A small bold line (e.g. "Elevated in:") — between a heading and body text. */
+  subheading: z.boolean().optional(),
   pos: positionSchema,
 });
 
@@ -100,7 +102,8 @@ const resultRow = z.object({
   /** Calculated row: the value is arithmetic over other rows' keys (e.g. `hb * 100 / pcv`), not
    *  entered by hand. See formula.ts for the grammar. */
   formula: z.string().trim().min(1).optional(),
-  /** Decimal places a calculated value (`formula`) is rounded to before it is stored. Default 1. */
+  /** Decimal places a calculated value (`formula`) is rounded to before it is stored (default 1);
+   *  when set, the value is also always shown with that many places (e.g. 57.50). */
   decimals: z.number().int().min(0).max(6).optional(),
   /** Decimal places for `formula2`. Default 0. */
   decimals2: z.number().int().min(0).max(6).optional(),
@@ -118,7 +121,7 @@ const resultsTableSection = z.object({
    *  "dual": Test | value unit | value2 unit2 (e.g. a differential count beside its absolute count).
    *  "ranged": Test | value | unit | reference range, with no flag column (the printed FBC style). */
   style: z.enum(["table", "list", "dual", "ranged"]).optional(),
-  /** Column labels for the "list"/"dual" style header (e.g. CHEMISTRY / RESULT). Omit to hide it. */
+  /** Column labels for the "list"/"dual"/"ranged" header (e.g. CHEMISTRY / RESULT). Omit to hide it. */
   listHeader: z.object({ left: z.string().min(1), right: z.string().min(1) }).optional(),
   /** Heading over the reference-range column in the "ranged" style (e.g. "REF. VALUE"). */
   rangeHeader: z.string().min(1).optional(),
@@ -247,7 +250,7 @@ export const templateSchema = z
           ctx.addIssue({ code: "custom", message: `${r.key}.${field}: ${(e as Error).message}`, path: ["sections"] });
           continue;
         }
-        const unknown = refs.filter((k) => !numericKeys.has(k));
+        const unknown = refs.filter((k) => !numericKeys.has(k) && !(PATIENT_VARS as readonly string[]).includes(k));
         if (unknown.length) {
           ctx.addIssue({
             code: "custom",
@@ -255,7 +258,11 @@ export const templateSchema = z
             path: ["sections"],
           });
         }
-        if (field === "formula") deps.set(r.key, refs);
+        if (field === "formula")
+          deps.set(
+            r.key,
+            refs.filter((k) => numericKeys.has(k)),
+          );
       }
     }
     if (formulaOrder(deps) == null) {

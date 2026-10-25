@@ -21,6 +21,8 @@ export const patientSchema = z.object({
   nic: optionalText(20),
   gender: z.enum(GENDERS).or(z.literal("")).default(""),
   dob: z.union([z.literal(""), z.string().regex(/^\d{4}-\d{2}-\d{2}$/)]).default(""),
+  /** Age in years, for when the birth date isn't known. Ignored if `dob` is given. */
+  age: z.union([z.literal(""), z.coerce.number().int().min(0).max(130)]).default(""),
   address: optionalText(500),
   notes: optionalText(2000),
 });

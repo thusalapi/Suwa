@@ -10,5 +10,6 @@
   <include file="changes/001-initial-schema.sql" relativeToChangelogFile="true"/>
   <include file="changes/002-clinic-show-report-qr.sql" relativeToChangelogFile="true"/>
   <include file="changes/003-clinic-contact.sql" relativeToChangelogFile="true"/>
+  <include file="changes/004-patient-dob-estimated.sql" relativeToChangelogFile="true"/>
 
 </databaseChangeLog>

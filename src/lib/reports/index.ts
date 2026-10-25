@@ -5,6 +5,7 @@ import { reports, patients, users, type ReportStatus } from "@/lib/db/schema";
 import { recordAudit } from "@/lib/audit";
 import { getTemplate } from "@/lib/report-templates";
 import { computeResults, validateReportData, type Template, type ReportData } from "@/lib/report-engine";
+import { ageFromDob } from "@/lib/utils/age";
 
 /** Raw, stringy entry from the form. The service coerces it against the template snapshot. */
 export interface CreateReportInput {
@@ -58,8 +59,31 @@ async function nextReportNumber(tx: Tx, clinicId: string): Promise<number> {
   return Number(row?.max ?? 0) + 1;
 }
 
+/**
+ * Age + sex for formulas (e.g. eGFR), read from the patient RECORD — never from the submitted form,
+ * whose read-only patient fields could be altered. Tenant-scoped.
+ */
+async function patientFormulaInfo(
+  q: Tx | typeof db,
+  clinicId: string,
+  patientId: string,
+): Promise<{ age?: number; gender?: string }> {
+  const [p] = await q
+    .select({ dob: patients.dob, gender: patients.gender })
+    .from(patients)
+    .where(and(eq(patients.id, patientId), eq(patients.clinicId, clinicId)))
+    .limit(1);
+  if (!p) throw new ReportValidationError("Patient not found.");
+  const age = ageFromDob(p.dob);
+  return { ...(age != null ? { age } : {}), ...(p.gender ? { gender: p.gender } : {}) };
+}
+
 /** Coerce raw form strings into typed ReportData using the template snapshot. */
-function buildData(snapshot: Template, input: CreateReportInput): ReportData {
+function buildData(
+  snapshot: Template,
+  input: CreateReportInput,
+  patient: { age?: number; gender?: string },
+): ReportData {
   const data: ReportData = {};
 
   const patientInfoSection = snapshot.sections.find((s) => s.type === "patient_info");
@@ -79,7 +103,8 @@ function buildData(snapshot: Template, input: CreateReportInput): ReportData {
     const trimmed = raw?.trim();
     if (trimmed) resultValues[key] = trimmed;
   }
-  const results = computeResults(snapshot, resultValues);
+  // Patient info (age, sex) feeds formulas such as eGFR — taken from the record, not the form.
+  const results = computeResults(snapshot, resultValues, patient);
   if (Object.keys(results).length) data.results = results;
 
   for (const s of snapshot.sections) {
@@ -110,7 +135,7 @@ export async function createReport(
   if (!template) throw new ReportValidationError("Template not found.");
 
   const snapshot = template.schema;
-  const data = buildData(snapshot, input);
+  const data = buildData(snapshot, input, await patientFormulaInfo(db, clinicId, input.patientId));
 
   const parsed = validateReportData(snapshot, data);
   if (!parsed.success) {
@@ -155,7 +180,7 @@ export async function updateReport(
 ): Promise<void> {
   await db.transaction(async (tx) => {
     const [existing] = await tx
-      .select({ status: reports.status, snapshot: reports.templateSnapshot })
+      .select({ status: reports.status, snapshot: reports.templateSnapshot, patientId: reports.patientId })
       .from(reports)
       .where(and(eq(reports.id, id), eq(reports.clinicId, clinicId)))
       .limit(1);
@@ -163,7 +188,7 @@ export async function updateReport(
     if (existing.status === "verified") throw new ReportValidationError("A verified report can’t be edited.");
 
     const snapshot = existing.snapshot as Template;
-    const data = buildData(snapshot, input);
+    const data = buildData(snapshot, input, await patientFormulaInfo(tx, clinicId, existing.patientId));
 
     const parsed = validateReportData(snapshot, data);
     if (!parsed.success) {

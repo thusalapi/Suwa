@@ -19,7 +19,7 @@ export default async function NewPatientPage({
   // Prefill from the finder's "register new" shortcut so the typed phone/name carries over.
   const initial =
     phone || name
-      ? { fullName: name, phone, nic: "", gender: "", dob: "", address: "", notes: "" }
+      ? { fullName: name, phone, nic: "", gender: "", dob: "", age: "", address: "", notes: "" }
       : undefined;
 
   return (

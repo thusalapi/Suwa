@@ -3,7 +3,14 @@
 import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { patientSchema } from "@/lib/schema/patient";
-import { createPatient, updatePatient, findByPhone, getPatient, searchPatients, type PatientListItem } from "@/lib/patients";
+import {
+  createPatient,
+  updatePatient,
+  findByPhone,
+  getPatient,
+  searchPatients,
+  type PatientListItem,
+} from "@/lib/patients";
 
 /** Live patient search for the client-side finder (tenant-scoped). Returns up to 50 matches. */
 export async function searchPatientsAction(query: string): Promise<PatientListItem[]> {
@@ -14,7 +21,7 @@ export async function searchPatientsAction(query: string): Promise<PatientListIt
 /** Result surfaced back to the patient form via `useActionState`. Messages are i18n keys. */
 export interface PatientFormState {
   error?: string;
-  fieldErrors?: { fullName?: string; phone?: string };
+  fieldErrors?: { fullName?: string; phone?: string; age?: string };
 }
 
 function parse(formData: FormData) {
@@ -24,6 +31,7 @@ function parse(formData: FormData) {
     nic: formData.get("nic") ?? "",
     gender: formData.get("gender") ?? "",
     dob: formData.get("dob") ?? "",
+    age: formData.get("age") ?? "",
     address: formData.get("address") ?? "",
     notes: formData.get("notes") ?? "",
   });
@@ -35,6 +43,7 @@ function fieldErrorsFrom(parsed: ReturnType<typeof parse>): PatientFormState["fi
   return {
     fullName: f.fullName?.length ? "patients.nameRequired" : undefined,
     phone: f.phone?.length ? "patients.phoneInvalid" : undefined,
+    age: f.age?.length ? "patients.ageInvalid" : undefined,
   };
 }
 

@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { FLAGS, computeFlag, type Flag } from "./flag";
 import { formulaOrder, resultRows, type Template } from "./template";
-import { evaluateFormula, formulaRefs, parseFormula, roundTo } from "./formula";
+import { evaluateFormula, formulaRefs, parseFormula, patientVars, roundTo } from "./formula";
 
 /**
  * Filled report data: the values entered against a template, stored as JSONB on `reports.data`.
@@ -82,6 +82,14 @@ export function buildReportDataSchema(template: Template): z.ZodTypeAny {
   return z.object(shape).strict();
 }
 
+/**
+ * Display text for a stored value: numbers use the row's fixed `decimals` when set (57.5 → "57.50"),
+ * anything else prints as stored.
+ */
+export function formatResult(value: number | string, row: { decimals?: number }): string {
+  return typeof value === "number" && row.decimals != null ? value.toFixed(row.decimals) : String(value);
+}
+
 /** Validate filled data against its template. Returns the parsed data or a flattened error. */
 export function validateReportData(template: Template, data: unknown) {
   return buildReportDataSchema(template).safeParse(data);
@@ -96,6 +104,8 @@ export function validateReportData(template: Template, data: unknown) {
 export function computeResults(
   template: Template,
   values: Record<string, number | string | null | undefined>,
+  /** The report's patient_info — supplies `age` / `male` / `female` to formulas. */
+  patientInfo?: Record<string, unknown>,
 ): Record<string, ResultValue> {
   const out: Record<string, ResultValue> = {};
   const rows = resultRows(template);
@@ -118,10 +128,11 @@ export function computeResults(
 
   // Calculated rows, each after the rows it reads. A formula sees the ROUNDED stored values, so
   // the printed numbers are consistent with each other (e.g. MCV derived from the printed RBC).
-  const numeric = (): Record<string, number> =>
-    Object.fromEntries(
-      Object.entries(out).flatMap(([k, e]) => (typeof e.value === "number" ? [[k, e.value]] : [])),
-    );
+  const pv = patientVars(patientInfo);
+  const numeric = (): Record<string, number> => ({
+    ...pv,
+    ...Object.fromEntries(Object.entries(out).flatMap(([k, e]) => (typeof e.value === "number" ? [[k, e.value]] : []))),
+  });
   const byKey = new Map(rows.map((r) => [r.key, r]));
   const deps = new Map(
     rows.flatMap((r) => (r.formula != null ? [[r.key, formulaRefs(parseFormula(r.formula))] as const] : [])),

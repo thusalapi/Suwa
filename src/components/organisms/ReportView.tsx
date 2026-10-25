@@ -3,7 +3,7 @@ import { getT } from "@/lib/i18n";
 import type { Locale } from "@/lib/i18n/types";
 import type { Template, ResultRow } from "@/lib/report-engine/template";
 import { isAbnormal, isCritical, type Flag } from "@/lib/report-engine/flag";
-import type { ReportData, ResultValue } from "@/lib/report-engine/report-data";
+import { formatResult, type ReportData, type ResultValue } from "@/lib/report-engine/report-data";
 
 export interface ReportViewProps {
   locale: Locale;
@@ -36,6 +36,10 @@ export function ReportView({ locale, snapshot, data }: ReportViewProps) {
               <h2 key={i} className="text-lg font-semibold text-ink">
                 {section.text}
               </h2>
+            ) : section.subheading ? (
+              <p key={i} className="text-sm font-semibold text-ink">
+                {section.text}
+              </p>
             ) : (
               <p key={i} className="text-sm text-muted">
                 {section.text}
@@ -78,7 +82,7 @@ export function ReportView({ locale, snapshot, data }: ReportViewProps) {
                             <tr key={row.key} className="border-b border-border last:border-0">
                               <td className="px-3 py-2 text-ink">{row.test}</td>
                               <td className="px-3 py-2 text-ink">
-                                {entry ? `${entry.value}${row.unit ? ` ${row.unit}` : ""}` : "—"}
+                                {entry ? `${formatResult(entry.value, row)}${row.unit ? ` ${row.unit}` : ""}` : "—"}
                               </td>
                               <td className="px-3 py-2 text-ink">
                                 {entry?.value2 != null ? `${entry.value2}${row.unit2 ? ` ${row.unit2}` : ""}` : "—"}
@@ -114,7 +118,7 @@ export function ReportView({ locale, snapshot, data }: ReportViewProps) {
                           <span className="w-1/2 text-ink">
                             {entry != null ? (
                               <>
-                                {entry.value}
+                                {formatResult(entry.value, row)}
                                 {row.unit ? ` ${row.unit}` : ""}
                                 {entry.value2 != null && row.unit2 ? `   ${entry.value2} ${row.unit2}` : ""}
                               </>
@@ -157,7 +161,7 @@ export function ReportView({ locale, snapshot, data }: ReportViewProps) {
                                   : "px-3 py-2 text-ink"
                               }
                             >
-                              {entry ? entry.value : "—"}
+                              {entry ? formatResult(entry.value, row) : "—"}
                             </td>
                             <td className="px-3 py-2 text-muted">{row.unit || "—"}</td>
                             <td className="px-3 py-2 text-muted">{rangeLabel(row)}</td>

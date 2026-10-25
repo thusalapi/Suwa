@@ -317,13 +317,16 @@ function SectionEditor({
                 <option value="ranged">{t("templates.builder.style_ranged")}</option>
               </select>
             </FieldBox>
-            {section.style === "list" || section.style === "dual" ? (
+            {section.style === "list" || section.style === "dual" || section.style === "ranged" ? (
               <>
                 <FieldBox label={t("templates.builder.listHeaderLeft")}>
                   <Input
                     value={section.listHeader?.left ?? ""}
                     onChange={(e) =>
-                      onChange({ ...section, listHeader: { left: e.target.value, right: section.listHeader?.right ?? "" } })
+                      onChange({
+                        ...section,
+                        listHeader: { left: e.target.value, right: section.listHeader?.right ?? "" },
+                      })
                     }
                     className="h-9 w-32"
                   />
@@ -332,7 +335,10 @@ function SectionEditor({
                   <Input
                     value={section.listHeader?.right ?? ""}
                     onChange={(e) =>
-                      onChange({ ...section, listHeader: { left: section.listHeader?.left ?? "", right: e.target.value } })
+                      onChange({
+                        ...section,
+                        listHeader: { left: section.listHeader?.left ?? "", right: e.target.value },
+                      })
                     }
                     className="h-9 w-32"
                   />

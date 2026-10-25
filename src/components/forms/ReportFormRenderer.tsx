@@ -18,7 +18,7 @@ import {
   type ResultRow,
 } from "@/lib/report-engine/template";
 import { computeFlag, isAbnormal, isCritical, type Flag } from "@/lib/report-engine/flag";
-import { computeResults } from "@/lib/report-engine/report-data";
+import { computeResults, formatResult } from "@/lib/report-engine/report-data";
 
 const DERIVED = new Set<string>(PATIENT_DERIVED_FIELDS);
 const DATETIME = new Set<string>(PATIENT_DATETIME_FIELDS);
@@ -95,7 +95,10 @@ export function ReportFormRenderer({
 
   // Live preview of what will be stored: calculated rows (`formula`) and second values (`formula2`)
   // update as staff type. The server recomputes authoritatively on save.
-  const live = useMemo(() => computeResults(snapshot, resultValues), [snapshot, resultValues]);
+  const live = useMemo(
+    () => computeResults(snapshot, resultValues, patientInfo),
+    [snapshot, resultValues, patientInfo],
+  );
 
   const flagFor = (row: ResultRow): Flag | null => {
     if (row.formula != null) return live[row.key]?.flag ?? null;
@@ -116,7 +119,11 @@ export function ReportFormRenderer({
           className,
         )}
       >
-        {live[row.key]?.value ?? <span className="text-muted">{t("reports.calculated")}</span>}
+        {live[row.key] != null ? (
+          formatResult(live[row.key].value, row)
+        ) : (
+          <span className="text-muted">{t("reports.calculated")}</span>
+        )}
       </div>
     ) : (
       <Input
@@ -143,6 +150,10 @@ export function ReportFormRenderer({
               <h2 key={i} className="text-lg font-semibold text-ink">
                 {section.text}
               </h2>
+            ) : section.subheading ? (
+              <p key={i} className="text-sm font-semibold text-ink">
+                {section.text}
+              </p>
             ) : (
               <p key={i} className="text-sm text-muted">
                 {section.text}
@@ -184,7 +195,10 @@ export function ReportFormRenderer({
                       </div>
                     ) : null}
                     {section.rows.map((row) => (
-                      <div key={row.key} className="flex items-center gap-3 border-b border-border px-3 py-2 last:border-0">
+                      <div
+                        key={row.key}
+                        className="flex items-center gap-3 border-b border-border px-3 py-2 last:border-0"
+                      >
                         <span className="flex-1 text-ink">{row.test}</span>
                         <div className="flex w-1/2 items-center gap-2">
                           {resultInput(row, "max-w-[12rem]")}
@@ -195,7 +209,10 @@ export function ReportFormRenderer({
                             </span>
                           ) : null}
                           {dual && row.unit2 ? (
-                            <span className="ml-auto whitespace-nowrap text-sm text-ink" title={t("reports.calculated")}>
+                            <span
+                              className="ml-auto whitespace-nowrap text-sm text-ink"
+                              title={t("reports.calculated")}
+                            >
                               {live[row.key]?.value2 ?? "—"} <span className="text-xs text-muted">{row.unit2}</span>
                             </span>
                           ) : null}
@@ -289,11 +306,7 @@ export function ReportFormRenderer({
             );
 
           case "signature":
-            return (
-              <p key={i} className="text-sm text-muted">
-                {section.label}: {t("reports.pendingVerification")}
-              </p>
-            );
+            return null; // signed off on verification, not during entry
 
           default:
             return null;

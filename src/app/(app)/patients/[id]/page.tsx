@@ -9,6 +9,7 @@ import { Button } from "@/components/atoms/Button";
 import { getT, formatDate, formatMoney } from "@/lib/i18n";
 import { DEFAULT_LOCALE } from "@/lib/i18n/types";
 import { PageTitle, SectionTitle } from "@/components/atoms/Heading";
+import { ageFromDob } from "@/lib/utils/age";
 
 const statusTone = { draft: "neutral", finalized: "neutral", verified: "success" } as const;
 const billTone = { draft: "neutral", finalized: "neutral", paid: "success", cancelled: "danger" } as const;
@@ -30,6 +31,7 @@ export default async function PatientDetailPage({ params }: { params: Promise<{ 
 
   const patient = await getPatient(user.clinicId, id);
   if (!patient) notFound();
+  const age = ageFromDob(patient.dob);
 
   const [reports, bills] = await Promise.all([
     listReports(user.clinicId, patient.id),
@@ -54,7 +56,18 @@ export default async function PatientDetailPage({ params }: { params: Promise<{ 
       <dl className="grid grid-cols-2 gap-4 rounded-lg border border-border bg-surface-raised p-4 sm:grid-cols-3">
         <Detail label={t("patients.nic")} value={patient.nic ?? ""} />
         <Detail label={t("patients.gender")} value={patient.gender ? t(`patients.gender_${patient.gender}`) : ""} />
-        <Detail label={t("patients.dob")} value={patient.dob ? formatDate(patient.dob, locale) : ""} />
+        <Detail
+          label={t("patients.dob")}
+          value={patient.dob && !patient.dobEstimated ? formatDate(patient.dob, locale) : ""}
+        />
+        <Detail
+          label={t("patients.age")}
+          value={
+            age != null
+              ? `${t("patients.ageYears", { n: age })}${patient.dobEstimated ? ` ${t("patients.ageEstimated")}` : ""}`
+              : ""
+          }
+        />
         <Detail label={t("patients.address")} value={patient.address ?? ""} />
         <Detail label={t("patients.notes")} value={patient.notes ?? ""} />
         <Detail label={t("patients.registered")} value={formatDate(patient.createdAt, locale)} />

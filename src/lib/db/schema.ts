@@ -66,6 +66,8 @@ export const patients = pgTable(
     nic: text("nic"),
     gender: text("gender"),
     dob: date("dob"),
+    /** True when `dob` was derived from an entered age (an estimate, never shown as a birth date). */
+    dobEstimated: boolean("dob_estimated").notNull().default(false),
     address: text("address"),
     notes: text("notes"),
     createdAt,

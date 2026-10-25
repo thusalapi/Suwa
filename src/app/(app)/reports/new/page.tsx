@@ -9,18 +9,7 @@ import { getT } from "@/lib/i18n";
 import { DEFAULT_LOCALE } from "@/lib/i18n/types";
 import { createReportAction } from "../actions";
 import { PageTitle } from "@/components/atoms/Heading";
-
-/** Whole years between dob and today, as a string for the patient_info prefill. */
-function ageFromDob(dob: string | null): string {
-  if (!dob) return "";
-  const d = new Date(dob);
-  if (Number.isNaN(d.getTime())) return "";
-  const now = new Date();
-  let age = now.getFullYear() - d.getFullYear();
-  const m = now.getMonth() - d.getMonth();
-  if (m < 0 || (m === 0 && now.getDate() < d.getDate())) age--;
-  return age >= 0 ? String(age) : "";
-}
+import { ageFromDob } from "@/lib/utils/age";
 
 export default async function NewReportPage({
   searchParams,
@@ -100,7 +89,7 @@ export default async function NewReportPage({
   const patientInfo: Record<string, string> = {
     name: patient.fullName,
     gender: patient.gender ?? "",
-    age: ageFromDob(patient.dob),
+    age: String(ageFromDob(patient.dob) ?? ""),
     ref_doctor: "",
     source: "Blood", // sensible default for the lab house-style templates; ignored if unused
   };

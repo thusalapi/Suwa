@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { evaluateFormula, parseFormula, roundTo } from "@/lib/report-engine/formula";
-import { computeResults, validateReportData } from "@/lib/report-engine/report-data";
+import { computeResults, formatResult, validateReportData } from "@/lib/report-engine/report-data";
 import { templateSchema } from "@/lib/report-engine/template";
-import { fullBloodCountTemplate } from "@/lib/report-engine/examples";
+import { fullBloodCountTemplate, serumCreatinineTemplate } from "@/lib/report-engine/examples";
 
 describe("formula parser", () => {
   it("respects precedence, parentheses and unary minus", () => {
@@ -75,5 +75,40 @@ describe("Full Blood Count calculations", () => {
   it("produces data that validates against the template", () => {
     const results = computeResults(fullBloodCountTemplate, { ...entered, pcv: 30 });
     expect(validateReportData(fullBloodCountTemplate, { results }).success).toBe(true);
+  });
+});
+
+describe("Serum Creatinine eGFR (CKD-EPI 2021)", () => {
+  const egfr = (scr: number, age: number, gender: string) =>
+    computeResults(serumCreatinineTemplate, { scr }, { age, gender }).egfr;
+
+  // Reference values computed independently from the published equation.
+  it("uses the max() branch above κ (Scr 1.32, 67): male 59.12, female 44.25", () => {
+    expect(egfr(1.32, 67, "male")).toEqual({ value: 59.12, flag: "low" });
+    expect(egfr(1.32, 67, "female")).toEqual({ value: 44.25, flag: "low" });
+    expect(formatResult(59.1, { decimals: 2 })).toBe("59.10");
+  });
+
+  it("uses the min() branch below κ: female Scr 0.6 → 116.30, male Scr 0.8 → 114.74 (age 40)", () => {
+    expect(egfr(0.6, 40, "female")?.value).toBe(116.3);
+    expect(egfr(0.8, 40, "male")?.value).toBe(114.74);
+  });
+
+  it("leaves eGFR blank when age or sex is unknown", () => {
+    expect(computeResults(serumCreatinineTemplate, { scr: 1.32 }, { gender: "male" }).egfr).toBeUndefined();
+    expect(computeResults(serumCreatinineTemplate, { scr: 1.32 }, { age: 67 }).egfr).toBeUndefined();
+  });
+
+  it("supports min/max and rejects other functions", () => {
+    expect(evaluateFormula(parseFormula("min(3, 1, 2) + max(1, 5)"), {})).toBe(6);
+    expect(() => parseFormula("abs(1)")).toThrow();
+    expect(() => parseFormula("min(1, 2")).toThrow();
+  });
+
+  it("gives ^ precedence over unary minus and * (right-associative)", () => {
+    expect(evaluateFormula(parseFormula("-2 ^ 2"), {})).toBe(-4);
+    expect(evaluateFormula(parseFormula("2 * 3 ^ 2"), {})).toBe(18);
+    expect(evaluateFormula(parseFormula("2 ^ 3 ^ 2"), {})).toBe(512);
+    expect(evaluateFormula(parseFormula("4 ^ -0.5"), {})).toBe(0.5);
   });
 });

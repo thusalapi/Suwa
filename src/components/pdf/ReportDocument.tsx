@@ -5,7 +5,7 @@ import { brand } from "@/lib/branding/brand";
 import { getT, formatDate } from "@/lib/i18n";
 import type { Locale } from "@/lib/i18n/types";
 import { PAGE_CONTENT, type Template, type Section, type ResultRow } from "@/lib/report-engine/template";
-import type { ReportData, ResultValue } from "@/lib/report-engine/report-data";
+import { formatResult, type ReportData, type ResultValue } from "@/lib/report-engine/report-data";
 import { isAbnormal, isCritical, type Flag } from "@/lib/report-engine/flag";
 
 /**
@@ -74,7 +74,13 @@ const styles = StyleSheet.create({
   piRowValue: { flex: 1, fontSize: 10, fontWeight: 700, color: c.ink },
   // Compact Test — Result list.
   listTitle: { fontSize: 11, fontWeight: 700, color: c.primaryDark, marginTop: 10, marginBottom: 4 },
-  listHeadRow: { flexDirection: "row", borderBottomWidth: 1, borderBottomColor: c.border, paddingBottom: 3, marginBottom: 2 },
+  listHeadRow: {
+    flexDirection: "row",
+    borderBottomWidth: 1,
+    borderBottomColor: c.border,
+    paddingBottom: 3,
+    marginBottom: 2,
+  },
   listHeadCell: { fontSize: 8, color: c.muted, textTransform: "uppercase", fontWeight: 700 },
   listRow: { flexDirection: "row", paddingVertical: 3 },
   listTest: { width: "50%", fontSize: 10 },
@@ -91,6 +97,7 @@ const styles = StyleSheet.create({
   rUnit: { width: "18%", fontSize: 10 },
   rRange: { width: "34%", fontSize: 10 },
   sigSubtitle: { fontSize: 8, color: c.muted, marginTop: 1 },
+  subheading: { fontSize: 9.5, fontWeight: 700, color: c.ink, marginTop: 6, marginBottom: 2 },
   sectionTitle: { fontSize: 11, fontWeight: 700, marginTop: 10, marginBottom: 4 },
   tHead: { flexDirection: "row", borderBottomWidth: 1, borderBottomColor: c.border, paddingBottom: 3 },
   tRow: { flexDirection: "row", borderBottomWidth: 0.5, borderBottomColor: c.border, paddingVertical: 3 },
@@ -139,7 +146,11 @@ export function ReportDocument({ locale, clinic, qrDataUrl, report }: ReportDocu
   const renderInner = (section: Section): ReactNode => {
     switch (section.type) {
       case "static":
-        return <Text style={section.heading ? styles.sectionTitle : styles.meta}>{section.text}</Text>;
+        return (
+          <Text style={section.heading ? styles.sectionTitle : section.subheading ? styles.subheading : styles.meta}>
+            {section.text}
+          </Text>
+        );
 
       case "patient_info":
         return (
@@ -169,7 +180,9 @@ export function ReportDocument({ locale, clinic, qrDataUrl, report }: ReportDocu
                 return (
                   <View key={row.key} style={styles.colRow}>
                     <Text style={styles.dTest}>{row.test}</Text>
-                    <Text style={styles.dValue}>{entry ? `${entry.value} ${row.unit ?? ""}` : "-"}</Text>
+                    <Text style={styles.dValue}>
+                      {entry ? `${formatResult(entry.value, row)} ${row.unit ?? ""}` : "-"}
+                    </Text>
                     <Text style={styles.dValue2}>
                       {entry?.value2 != null ? `${entry.value2} ${row.unit2 ?? ""}` : "-"}
                     </Text>
@@ -183,10 +196,13 @@ export function ReportDocument({ locale, clinic, qrDataUrl, report }: ReportDocu
           return (
             <View wrap={false} style={{ marginTop: 6 }}>
               {section.title ? <Text style={styles.listTitle}>{section.title}</Text> : null}
-              {section.rangeHeader ? (
+              {section.rangeHeader || section.listHeader ? (
                 <View style={styles.colRow}>
-                  <Text style={{ width: "66%" }} />
-                  <Text style={[styles.colHead, { width: "34%", marginTop: 0 }]}>{section.rangeHeader}</Text>
+                  <Text style={[styles.colHead, { width: "34%", marginTop: 0 }]}>{section.listHeader?.left ?? ""}</Text>
+                  <Text style={[styles.colHead, { width: "32%", marginTop: 0 }]}>
+                    {section.listHeader?.right ?? ""}
+                  </Text>
+                  <Text style={[styles.colHead, { width: "34%", marginTop: 0 }]}>{section.rangeHeader ?? ""}</Text>
                 </View>
               ) : null}
               {section.rows.map((row) => {
@@ -197,7 +213,7 @@ export function ReportDocument({ locale, clinic, qrDataUrl, report }: ReportDocu
                   <View key={row.key} style={styles.colRow}>
                     <Text style={styles.rTest}>{row.test}</Text>
                     <Text style={abn ? [styles.rValue, styles.abnormal] : styles.rValue}>
-                      {entry ? String(entry.value) : "-"}
+                      {entry ? formatResult(entry.value, row) : "-"}
                     </Text>
                     <Text style={styles.rUnit}>{row.unit ?? ""}</Text>
                     <Text style={styles.rRange}>{rangeLabel(row) === "-" ? "" : rangeLabel(row)}</Text>
@@ -221,7 +237,7 @@ export function ReportDocument({ locale, clinic, qrDataUrl, report }: ReportDocu
                 const entry = results[row.key];
                 const result =
                   entry != null
-                    ? `${entry.value}${row.unit ? ` ${row.unit}` : ""}` +
+                    ? `${formatResult(entry.value, row)}${row.unit ? ` ${row.unit}` : ""}` +
                       (entry.value2 != null && row.unit2 ? `    ${entry.value2} ${row.unit2}` : "")
                     : "-";
                 return (
@@ -255,7 +271,7 @@ export function ReportDocument({ locale, clinic, qrDataUrl, report }: ReportDocu
                   style={flag && isCritical(flag) ? [styles.tRow, { backgroundColor: "#FEECEC" }] : styles.tRow}
                 >
                   <Text style={[styles.td, styles.cTest]}>{row.test}</Text>
-                  <Text style={[...cell, styles.cResult]}>{entry ? String(entry.value) : "-"}</Text>
+                  <Text style={[...cell, styles.cResult]}>{entry ? formatResult(entry.value, row) : "-"}</Text>
                   <Text style={[styles.td, styles.cUnit]}>{row.unit || "-"}</Text>
                   <Text style={[styles.td, styles.cRange]}>{rangeLabel(row)}</Text>
                   <Text style={[...cell, styles.cFlag]}>{flag ? t(`reports.flag_${flag}`) : "-"}</Text>
@@ -277,13 +293,12 @@ export function ReportDocument({ locale, clinic, qrDataUrl, report }: ReportDocu
       }
 
       case "signature":
+        // Unverified: no signature line at all — the DRAFT banner already says so.
+        if (report.status !== "verified" || !report.verifiedByName) return null;
         return (
           <View style={isCanvas ? undefined : { marginTop: 16 }}>
             <Text style={styles.meta}>
-              {section.label}:{" "}
-              {report.status === "verified" && report.verifiedByName
-                ? report.verifiedByName
-                : t("reports.pendingVerification")}
+              {section.label}: {report.verifiedByName}
             </Text>
             {section.subtitle ? <Text style={styles.sigSubtitle}>{section.subtitle}</Text> : null}
           </View>
@@ -387,7 +402,7 @@ export function ReportDocument({ locale, clinic, qrDataUrl, report }: ReportDocu
               ? `${t("reports.verifiedBy", { name: report.verifiedByName })}${
                   report.verifiedAt ? ` · ${formatDate(report.verifiedAt, locale)}` : ""
                 }`
-              : t("reports.pendingVerification")}
+              : ""}
           </Text>
           <Text>
             {brand.name} · #{report.reportNumber}

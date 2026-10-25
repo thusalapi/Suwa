@@ -1,6 +1,12 @@
 import { describe, it, expect } from "vitest";
 import { templateSchema, type Template } from "@/lib/report-engine";
-import { fbcTemplate, fastingBloodSugarTemplate, bloodGroupingTemplate } from "@/lib/report-engine/examples";
+import {
+  fbcTemplate,
+  fastingBloodSugarTemplate,
+  bloodGroupingTemplate,
+  fullBloodCountTemplate,
+  serumCreatinineTemplate,
+} from "@/lib/report-engine/examples";
 import { fromTemplate, toTemplate, withPositions, NEW_BLOCKS, type BSection } from "@/app/(app)/templates/builderModel";
 
 /** Serialise builder state the way the component does, then validate against the schema. */
@@ -25,7 +31,15 @@ describe("builder serialisation", () => {
   it("preserves the house-style templates through hydrate → serialise (builder safety)", () => {
     // The advanced fields (list style, dual unit, qualitative, signature subtitle, manual
     // patient fields) must survive an edit-save in the visual builder, not get dropped.
-    for (const tpl of [fastingBloodSugarTemplate, bloodGroupingTemplate]) {
+    // `locked` is the one field the builder never carries — locking is seed-script-only.
+    for (const seeded of [
+      fastingBloodSugarTemplate,
+      bloodGroupingTemplate,
+      fullBloodCountTemplate,
+      serumCreatinineTemplate,
+    ] as Template[]) {
+      const tpl: Template = { ...seeded };
+      delete tpl.locked;
       const out = toTemplate(tpl.name, 1, fromTemplate(tpl)) as Template;
       expect(out).toEqual({ ...tpl, version: 1 });
       expect(templateSchema.safeParse(out).success).toBe(true);

@@ -2,13 +2,7 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { and, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { auditLogs } from "@/lib/db/schema";
-import {
-  createPatient,
-  updatePatient,
-  getPatient,
-  findByPhone,
-  searchPatients,
-} from "@/lib/patients";
+import { createPatient, updatePatient, getPatient, findByPhone, searchPatients } from "@/lib/patients";
 import type { PatientInput } from "@/lib/schema/patient";
 import { resetDb, seedClinic, seedUser } from "./helpers";
 
@@ -20,6 +14,7 @@ const base: PatientInput = {
   nic: "",
   gender: "male",
   dob: "1980-01-01",
+  age: "",
   address: "",
   notes: "",
 };
