@@ -81,7 +81,16 @@ export function titleCase(value: string): string {
   return value.replace(/\b\p{L}/gu, (c) => c.toUpperCase());
 }
 
-/** A patient_info value as shown on a report (sex is title-cased; everything else as stored). */
+/** A stored datetime-local value ("2026-10-24T11:16") as the lab prints it: "24/10/2026 11:16". */
+export function formatStoredDateTime(value: string): string {
+  const m = value.match(/^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2}))?/);
+  if (!m) return value;
+  return `${m[3]}/${m[2]}/${m[1]}${m[4] ? ` ${m[4]}:${m[5]}` : ""}`;
+}
+
+/** A patient_info value as shown on a report: sex title-cased, date & time in the lab's style. */
 export function formatPatientValue(field: string, value: string | number): string {
-  return field === "gender" ? titleCase(String(value)) : String(value);
+  if (field === "gender") return titleCase(String(value));
+  if (field === "datetime") return formatStoredDateTime(String(value));
+  return String(value);
 }

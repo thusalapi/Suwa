@@ -4,7 +4,7 @@ import { requireUser } from "@/lib/auth";
 import { getBill } from "@/lib/bills";
 import { Badge } from "@/components/atoms/Badge";
 import { Button } from "@/components/atoms/Button";
-import { getT, formatMoney, formatDate } from "@/lib/i18n";
+import { getT, formatMoney, formatDateTime } from "@/lib/i18n";
 import { DEFAULT_LOCALE } from "@/lib/i18n/types";
 import { PaymentForm } from "../PaymentForm";
 import { PageTitle, SectionTitle } from "@/components/atoms/Heading";
@@ -43,12 +43,17 @@ export default async function BillDetailPage({ params }: { params: Promise<{ id:
           </PageTitle>
           <div className="flex items-center gap-2 text-sm text-muted">
             <Badge tone={statusTone[bill.status]}>{t(`bills.status_${bill.status}`)}</Badge>
-            <span>{formatDate(bill.createdAt, locale)}</span>
+            <span>{formatDateTime(bill.createdAt)}</span>
           </div>
         </div>
-        <a href={`/bills/${bill.id}/pdf`} target="_blank" rel="noopener noreferrer">
-          <Button variant="secondary">{t("bills.downloadPdf")}</Button>
-        </a>
+        <div className="flex flex-wrap gap-2">
+          <a href={`/bills/${bill.id}/receipt`} target="_blank" rel="noopener noreferrer">
+            <Button>{t("bills.printReceipt")}</Button>
+          </a>
+          <a href={`/bills/${bill.id}/pdf`} target="_blank" rel="noopener noreferrer">
+            <Button variant="secondary">{t("bills.downloadPdf")}</Button>
+          </a>
+        </div>
       </div>
 
       {/* Line items */}
@@ -96,7 +101,7 @@ export default async function BillDetailPage({ params }: { params: Promise<{ id:
               <li key={i} className="flex items-center justify-between px-4 py-2">
                 <span className="text-ink">{formatMoney(p.amount, locale)}</span>
                 <span className="text-muted">{t(`bills.method_${p.method}`)}</span>
-                <span className="text-muted">{formatDate(p.receivedAt, locale)}</span>
+                <span className="text-muted">{formatDateTime(p.receivedAt)}</span>
               </li>
             ))}
           </ul>

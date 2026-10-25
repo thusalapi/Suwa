@@ -17,6 +17,7 @@ export interface SettingsInitial {
   phone: string;
   fax: string;
   email: string;
+  footerNote: string;
   logoUrl: string;
   currency: string;
   taxRatePercent: number;
@@ -73,6 +74,10 @@ export function SettingsForm({ locale, initial }: { locale: Locale; initial: Set
 
       <Field label={t("settings.email")} htmlFor="email" hint={t("settings.emailHint")}>
         <Input id="email" name="email" type="email" defaultValue={initial.email} />
+      </Field>
+
+      <Field label={t("settings.footerNote")} htmlFor="footerNote" hint={t("settings.footerNoteHint")}>
+        <Input id="footerNote" name="footerNote" defaultValue={initial.footerNote} />
       </Field>
 
       <Field label={t("settings.logoUrl")} htmlFor="logoUrl" hint={t("settings.logoUrlHint")}>

@@ -5,7 +5,7 @@ import { getPatient, searchPatients } from "@/lib/patients";
 import { listTemplates, getTemplate } from "@/lib/report-templates";
 import { ReportFormRenderer } from "@/components/forms/ReportFormRenderer";
 import { PatientFinder } from "@/components/organisms/PatientFinder";
-import { getT } from "@/lib/i18n";
+import { getT, nowForDateTimeInput } from "@/lib/i18n";
 import { DEFAULT_LOCALE } from "@/lib/i18n/types";
 import { createReportAction } from "../actions";
 import { PageTitle } from "@/components/atoms/Heading";
@@ -84,6 +84,8 @@ export default async function NewReportPage({
     gender: patient.gender ?? "",
     age: String(ageFromDob(patient.dob) ?? ""),
     ref_doctor: "",
+    // Prefilled with the current time; staff can still change it (e.g. sample collected earlier).
+    datetime: nowForDateTimeInput(),
     // The template's specimen (e.g. "Urine"), else "Blood" — the lab's usual; ignored if unused.
     source: selected.schema.sections.find((s) => s.type === "patient_info")?.defaultSource ?? "Blood",
   };

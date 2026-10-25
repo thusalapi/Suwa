@@ -23,6 +23,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
         name: clinic?.name ?? "",
         address: clinic?.address ?? null,
         phone: clinic?.phone ?? null,
+        footerNote: clinic?.footerNote ?? null,
         logoUrl: clinic?.logoUrl ?? null,
       }}
       bill={bill}

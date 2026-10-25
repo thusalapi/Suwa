@@ -29,6 +29,8 @@ export interface ReportListItem {
   templateName: string;
   patientName: string;
   createdAt: Date;
+  /** The specimen Date & Time as entered ("2026-10-24T11:16"), if any — decides the visit day. */
+  specimenAt: string | null;
 }
 
 /** A full report for the view/PDF: frozen snapshot + entered data + related names. */
@@ -241,6 +243,7 @@ export async function listReports(clinicId: string, patientId?: string): Promise
       snapshot: reports.templateSnapshot,
       patientName: patients.fullName,
       createdAt: reports.createdAt,
+      specimenAt: sql<string | null>`${reports.data}->'patient_info'->>'datetime'`,
     })
     .from(reports)
     .innerJoin(patients, eq(reports.patientId, patients.id))
@@ -255,6 +258,7 @@ export async function listReports(clinicId: string, patientId?: string): Promise
     templateName: (r.snapshot as Template)?.name ?? "—",
     patientName: r.patientName,
     createdAt: r.createdAt,
+    specimenAt: r.specimenAt,
   }));
 }
 

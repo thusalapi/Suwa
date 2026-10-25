@@ -23,6 +23,7 @@ export async function GET(req: Request) {
         name: clinic?.name ?? "",
         address: clinic?.address ?? null,
         phone: clinic?.phone ?? null,
+        footerNote: clinic?.footerNote ?? null,
         logoUrl: clinic?.logoUrl ?? null,
       }}
       report={report}

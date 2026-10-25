@@ -26,6 +26,7 @@ export default async function SettingsPage() {
           phone: clinic?.phone ?? "",
           fax: clinic?.fax ?? "",
           email: clinic?.email ?? "",
+          footerNote: clinic?.footerNote ?? "",
           logoUrl: clinic?.logoUrl ?? "",
           currency: clinic?.currency ?? "LKR",
           taxRatePercent: clinic ? clinic.taxRate / 100 : 0,

@@ -12,6 +12,8 @@ export interface Clinic {
   phone: string | null;
   fax: string | null;
   email: string | null;
+  /** Footer line printed on every report, bill, receipt and revenue PDF. */
+  footerNote: string | null;
   logoUrl: string | null;
   currency: string;
   /** Basis points, e.g. 800 = 8.00%. */
@@ -30,6 +32,7 @@ export async function getClinic(clinicId: string): Promise<Clinic | null> {
       phone: clinics.phone,
       fax: clinics.fax,
       email: clinics.email,
+      footerNote: clinics.footerNote,
       logoUrl: clinics.logoUrl,
       currency: clinics.currency,
       taxRate: clinics.taxRate,
@@ -47,6 +50,7 @@ export interface UpdateClinicInput {
   phone: string;
   fax: string;
   email: string;
+  footerNote: string;
   logoUrl: string;
   currency: string;
   /** Basis points (already converted from the UI percentage). */
@@ -68,6 +72,7 @@ export async function updateClinicSettings(clinicId: string, userId: string, inp
         phone: input.phone || null,
         fax: input.fax || null,
         email: input.email || null,
+        footerNote: input.footerNote || null,
         logoUrl: input.logoUrl || null,
         currency: input.currency,
         taxRate: input.taxRate,

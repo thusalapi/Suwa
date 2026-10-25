@@ -44,4 +44,20 @@ export function formatDate(date: Date | string, locale: Locale = DEFAULT_LOCALE)
   return new Intl.DateTimeFormat(localeTag[locale], { dateStyle: "medium" }).format(d);
 }
 
+/**
+ * Date and time as the lab prints it — "24/10/2026 11:16" (day/month/year, 24-hour, local clock).
+ * The app runs on the clinic's own PC, so the local clock is the clinic's time.
+ */
+export function formatDateTime(date: Date | string): string {
+  const d = typeof date === "string" ? new Date(date) : date;
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${p(d.getDate())}/${p(d.getMonth() + 1)}/${d.getFullYear()} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
+/** "Now" as a datetime-local input value ("2026-10-25T13:16"), on the local clock. */
+export function nowForDateTimeInput(now: Date = new Date()): string {
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${now.getFullYear()}-${p(now.getMonth() + 1)}-${p(now.getDate())}T${p(now.getHours())}:${p(now.getMinutes())}`;
+}
+
 export { DEFAULT_LOCALE, type Locale } from "./types";

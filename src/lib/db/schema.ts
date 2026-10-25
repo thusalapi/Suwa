@@ -28,6 +28,8 @@ export const clinics = pgTable("clinics", {
   phone: text("phone"),
   fax: text("fax"),
   email: text("email"),
+  /** The clinic's footer line on every printed document (replaces app branding). */
+  footerNote: text("footer_note"),
   logoUrl: text("logo_url"),
   currency: text("currency").notNull().default("LKR"),
   taxRate: integer("tax_rate").notNull().default(0), // basis points, e.g. 800 = 8.00%

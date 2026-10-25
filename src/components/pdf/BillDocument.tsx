@@ -1,7 +1,6 @@
 import { Document, Page, View, Text, Image, StyleSheet } from "@react-pdf/renderer";
 import { semanticLight as c } from "@/lib/design/tokens.semantic";
-import { brand } from "@/lib/branding/brand";
-import { getT, formatMoney, formatDate } from "@/lib/i18n";
+import { getT, formatMoney, formatDateTime } from "@/lib/i18n";
 import type { Locale } from "@/lib/i18n/types";
 import type { BillDetail } from "@/lib/bills";
 import type { ReportClinic } from "./ReportDocument";
@@ -83,7 +82,7 @@ export function BillDocument({ locale, clinic, bill }: BillDocumentProps) {
         <View style={styles.titleRow}>
           <Text style={styles.docTitle}>{title}</Text>
           <Text style={styles.meta}>
-            #{bill.billNumber} · {formatDate(bill.createdAt, locale)}
+            #{bill.billNumber} · {formatDateTime(bill.createdAt)}
           </Text>
         </View>
         <Text style={[styles.meta, { marginBottom: 4 }]}>
@@ -143,19 +142,18 @@ export function BillDocument({ locale, clinic, bill }: BillDocumentProps) {
                 <Text style={[styles.td, { width: "40%" }]}>{money(p.amount)}</Text>
                 <Text style={[styles.td, { width: "30%", color: c.muted }]}>{t(`bills.method_${p.method}`)}</Text>
                 <Text style={[styles.td, { width: "30%", color: c.muted, textAlign: "right" }]}>
-                  {formatDate(p.receivedAt, locale)}
+                  {formatDateTime(p.receivedAt)}
                 </Text>
               </View>
             ))}
           </View>
         ) : null}
 
-        <View style={styles.footer} fixed>
-          <Text>{clinic.name}</Text>
-          <Text>
-            {brand.name} · #{bill.billNumber}
-          </Text>
-        </View>
+        {clinic.footerNote ? (
+          <View style={[styles.footer, { justifyContent: "center" }]} fixed>
+            <Text>{clinic.footerNote}</Text>
+          </View>
+        ) : null}
       </Page>
     </Document>
   );

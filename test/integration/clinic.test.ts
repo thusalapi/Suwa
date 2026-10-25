@@ -26,6 +26,7 @@ describe("clinic settings", () => {
       phone: "091-2250755",
       fax: "091-2250755",
       email: "umedic@hotmail.com",
+      footerNote: "Our Facilities : Laboratory, ECG",
       logoUrl: "",
       currency: "LKR",
       taxRate: 800,
@@ -39,6 +40,7 @@ describe("clinic settings", () => {
       phone: "091-2250755",
       fax: "091-2250755",
       email: "umedic@hotmail.com",
+      footerNote: "Our Facilities : Laboratory, ECG",
       taxRate: 800,
       showReportQr: false,
     });

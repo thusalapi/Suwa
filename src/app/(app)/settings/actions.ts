@@ -22,6 +22,7 @@ export async function updateSettingsAction(_prev: SettingsState, formData: FormD
     phone: formData.get("phone"),
     fax: formData.get("fax"),
     email: formData.get("email"),
+    footerNote: formData.get("footerNote"),
     logoUrl: formData.get("logoUrl"),
     currency: formData.get("currency"),
     taxRatePercent: formData.get("taxRatePercent"),
@@ -47,6 +48,7 @@ export async function updateSettingsAction(_prev: SettingsState, formData: FormD
       phone: d.phone,
       fax: d.fax,
       email: d.email,
+      footerNote: d.footerNote,
       logoUrl: d.logoUrl,
       currency: d.currency.toUpperCase(),
       taxRate: Math.round(d.taxRatePercent * 100), // percentage → basis points

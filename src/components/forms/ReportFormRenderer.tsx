@@ -191,7 +191,13 @@ export function ReportFormRenderer({
                         id={`pi_${f}`}
                         name={`pi.${f}`}
                         type={DATETIME.has(f) ? "datetime-local" : f === "age" ? "number" : "text"}
-                        defaultValue={patientInfo[f] ? formatPatientValue(f, patientInfo[f]) : ""}
+                        defaultValue={
+                          !patientInfo[f]
+                            ? ""
+                            : DATETIME.has(f)
+                              ? patientInfo[f]
+                              : formatPatientValue(f, patientInfo[f])
+                        }
                         readOnly={!editable}
                         className={editable ? undefined : "bg-surface text-muted"}
                       />

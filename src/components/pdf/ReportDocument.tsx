@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
 import { Document, Page, View, Text, Image, StyleSheet, Font } from "@react-pdf/renderer";
 import { semanticLight as c } from "@/lib/design/tokens.semantic";
-import { brand } from "@/lib/branding/brand";
 import { getT, formatDate } from "@/lib/i18n";
 import type { Locale } from "@/lib/i18n/types";
 import { PAGE_CONTENT, tableWidths, type Template, type Section, type ResultRow } from "@/lib/report-engine/template";
@@ -21,6 +20,8 @@ export interface ReportClinic {
   /** Optional — only the report header shows these; bill/revenue PDFs omit them. */
   fax?: string | null;
   email?: string | null;
+  /** The clinic's footer line (e.g. its facilities), printed at the foot of every page. */
+  footerNote?: string | null;
   logoUrl: string | null;
 }
 
@@ -544,12 +545,11 @@ export function ReportDocument({ locale, clinic, qrDataUrl, report }: ReportDocu
         )}
 
         {/* Footer */}
-        <View style={styles.footer} fixed>
-          <Text />
-          <Text>
-            {brand.name} · #{report.reportNumber}
-          </Text>
-        </View>
+        {clinic.footerNote ? (
+          <View style={[styles.footer, { justifyContent: "center" }]} fixed>
+            <Text>{clinic.footerNote}</Text>
+          </View>
+        ) : null}
       </Page>
     </Document>
   );

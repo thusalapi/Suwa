@@ -1,6 +1,5 @@
 import { Document, Page, View, Text, Image, StyleSheet } from "@react-pdf/renderer";
 import { semanticLight as c } from "@/lib/design/tokens.semantic";
-import { brand } from "@/lib/branding/brand";
 import { getT, formatMoney, formatDate } from "@/lib/i18n";
 import type { Locale } from "@/lib/i18n/types";
 import type { RevenueReport } from "@/lib/analytics";
@@ -139,12 +138,11 @@ export function RevenueDocument({ locale, clinic, report }: RevenueDocumentProps
           </View>
         )}
 
-        <View style={styles.footer} fixed>
-          <Text>{clinic.name}</Text>
-          <Text>
-            {brand.name} · {t("revenue.pdfTitle")}
-          </Text>
-        </View>
+        {clinic.footerNote ? (
+          <View style={[styles.footer, { justifyContent: "center" }]} fixed>
+            <Text>{clinic.footerNote}</Text>
+          </View>
+        ) : null}
       </Page>
     </Document>
   );
