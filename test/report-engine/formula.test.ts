@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { evaluateFormula, parseFormula, roundTo } from "@/lib/report-engine/formula";
 import { computeResults, formatResult, validateReportData } from "@/lib/report-engine/report-data";
 import { templateSchema } from "@/lib/report-engine/template";
+import { hasRange } from "@/lib/report-engine/flag";
 import {
   fullBloodCountTemplate,
   serumCreatinineTemplate,
@@ -15,6 +16,15 @@ import {
   liverProfileTemplate,
   randomBloodSugarTemplate,
   postprandialBloodSugarTemplate,
+  sgotTemplate,
+  amylaseTemplate,
+  uricAcidTemplate,
+  gammaGtTemplate,
+  alkalinePhosphataseTemplate,
+  electrolytesTemplate,
+  glycoHaemoglobinTemplate,
+  bilirubinTemplate,
+  totalProteinTemplate,
 } from "@/lib/report-engine/examples";
 
 describe("formula parser", () => {
@@ -268,5 +278,64 @@ describe("Random and Postprandial Blood Sugar", () => {
 
   it("flags random blood sugar against 65-140", () => {
     expect(computeResults(randomBloodSugarTemplate, { rbs: 180 }).rbs.flag).toBe("high");
+  });
+});
+
+describe("Single-test chemistry reports, Electrolytes, Glyco-Haemoglobin", () => {
+  it("are valid templates", () => {
+    for (const t of [
+      sgotTemplate,
+      amylaseTemplate,
+      uricAcidTemplate,
+      gammaGtTemplate,
+      alkalinePhosphataseTemplate,
+      electrolytesTemplate,
+      glycoHaemoglobinTemplate,
+    ]) {
+      expect(templateSchema.safeParse(t).success).toBe(true);
+    }
+  });
+
+  it("give the printed REMARKS for the lab's sample results", () => {
+    expect(computeResults(sgotTemplate, { ast: 36 }).ast.flag).toBe("normal");
+    expect(computeResults(uricAcidTemplate, { uric: 4.5 }).uric.flag).toBe("normal");
+    expect(computeResults(amylaseTemplate, { amylase: 42 }).amylase.flag).toBe("normal");
+    expect(computeResults(gammaGtTemplate, { ggt: 35 }).ggt.flag).toBe("normal");
+    expect(computeResults(alkalinePhosphataseTemplate, { alp: 12 }).alp.flag).toBe("low");
+    const e = computeResults(electrolytesTemplate, { k: 3.4, na: 136.6, cl: 99.2, ica: 1.2, tca: 2.4, ph: 6 });
+    expect(e.k.flag).toBe("low");
+    expect([e.na, e.cl, e.ica, e.tca].every((x) => x.flag === "normal")).toBe(true);
+    expect(formatResult(e.na.value, { decimals: 2 })).toBe("136.60");
+  });
+});
+
+describe("hasRange", () => {
+  it("is false for a row with no bounds (pH), so no remark is shown", () => {
+    expect(hasRange({})).toBe(false);
+    expect(hasRange({ ref_high: 40 })).toBe(true);
+  });
+});
+
+describe("Bilirubin and Total Protein", () => {
+  it("matches the printed bilirubin: indirect = total − direct (1.10 − 0.10 = 1.00)", () => {
+    const out = computeResults(bilirubinTemplate, { tbil: "1.10", dbil: "0.10" });
+    expect(out.ibil.value).toBe(1);
+    expect(formatResult(out.ibil.value, { decimals: 2 })).toBe("1.00");
+    expect([out.tbil.flag, out.dbil.flag]).toEqual(["normal", "normal"]);
+  });
+
+  it("matches the printed protein: globulin 3.40 and A/G 1.08 (cut off, not rounded to 1.09)", () => {
+    const out = computeResults(totalProteinTemplate, { tp: "7.10", alb: "3.70" });
+    expect(out.glob).toEqual({ value: 3.4, flag: "normal" });
+    expect(out.ag.value).toBe(1.08);
+  });
+});
+
+describe("trunc()", () => {
+  it("cuts off to N places without float noise, and rejects extra args", () => {
+    expect(evaluateFormula(parseFormula("trunc(1.0882, 2)"), {})).toBe(1.08);
+    expect(evaluateFormula(parseFormula("trunc(0.29, 2)"), {})).toBe(0.29);
+    expect(evaluateFormula(parseFormula("trunc(-2.79)"), {})).toBe(-2);
+    expect(() => parseFormula("trunc(1, 2, 3)")).toThrow();
   });
 });

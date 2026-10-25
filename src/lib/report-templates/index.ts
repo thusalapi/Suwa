@@ -12,6 +12,8 @@ export interface TemplateListItem {
   version: number;
   active: boolean;
   locked: boolean;
+  /** Search keywords for the report picker. */
+  aliases: string[];
   sectionCount: number;
 }
 
@@ -44,6 +46,7 @@ export async function listTemplates(clinicId: string): Promise<TemplateListItem[
     version: r.version,
     active: r.active,
     locked: !!(r.schema as Template)?.locked,
+    aliases: (r.schema as Template)?.aliases ?? [],
     sectionCount: Array.isArray((r.schema as Template)?.sections) ? (r.schema as Template).sections.length : 0,
   }));
 }

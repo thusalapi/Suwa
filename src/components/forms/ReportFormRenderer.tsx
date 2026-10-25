@@ -20,7 +20,7 @@ import {
   type Template,
   type ResultRow,
 } from "@/lib/report-engine/template";
-import { computeFlag, isAbnormal, isCritical, type Flag } from "@/lib/report-engine/flag";
+import { computeFlag, hasRange, isAbnormal, isCritical, type Flag } from "@/lib/report-engine/flag";
 import { computeResults, formatResult } from "@/lib/report-engine/report-data";
 
 const DERIVED = new Set<string>(PATIENT_DERIVED_FIELDS);
@@ -105,6 +105,7 @@ export function ReportFormRenderer({
   );
 
   const flagFor = (row: ResultRow): Flag | null => {
+    if (!hasRange(row)) return null;
     if (row.formula != null) return live[row.key]?.flag ?? null;
     const raw = resultValues[row.key]?.trim();
     if (!raw) return null;

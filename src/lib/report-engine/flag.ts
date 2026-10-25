@@ -26,6 +26,12 @@ export function computeFlag(value: number, range: RefRange): Flag {
   return "normal";
 }
 
+/** True when a row defines any bound. A row without one is never shown as Normal/Low/High — the
+ *  stored flag is a placeholder there (e.g. pH, or a calculated value with no printed range). */
+export function hasRange(range: RefRange): boolean {
+  return range.ref_low != null || range.ref_high != null || range.critical_low != null || range.critical_high != null;
+}
+
 /** True for flags that should be visually emphasised as out-of-range. */
 export function isAbnormal(flag: Flag): boolean {
   return flag !== "normal";

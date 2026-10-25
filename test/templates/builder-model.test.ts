@@ -16,6 +16,15 @@ import {
   liverProfileTemplate,
   randomBloodSugarTemplate,
   postprandialBloodSugarTemplate,
+  sgotTemplate,
+  amylaseTemplate,
+  uricAcidTemplate,
+  gammaGtTemplate,
+  alkalinePhosphataseTemplate,
+  electrolytesTemplate,
+  glycoHaemoglobinTemplate,
+  bilirubinTemplate,
+  totalProteinTemplate,
 } from "@/lib/report-engine/examples";
 import { fromTemplate, toTemplate, withPositions, NEW_BLOCKS, type BSection } from "@/app/(app)/templates/builderModel";
 
@@ -57,6 +66,15 @@ describe("builder serialisation", () => {
       liverProfileTemplate,
       randomBloodSugarTemplate,
       postprandialBloodSugarTemplate,
+      sgotTemplate,
+      amylaseTemplate,
+      uricAcidTemplate,
+      gammaGtTemplate,
+      alkalinePhosphataseTemplate,
+      electrolytesTemplate,
+      glycoHaemoglobinTemplate,
+      bilirubinTemplate,
+      totalProteinTemplate,
     ] as Template[]) {
       const tpl: Template = { ...seeded };
       delete tpl.locked;
@@ -64,6 +82,12 @@ describe("builder serialisation", () => {
       expect(out).toEqual({ ...tpl, version: 1 });
       expect(templateSchema.safeParse(out).success).toBe(true);
     }
+  });
+
+  it("carries template search keywords (aliases) through an edit-save", () => {
+    const tpl = { ...fastingBloodSugarTemplate, aliases: ["FBS"] } as Template;
+    const out = toTemplate(tpl.name, 1, fromTemplate(tpl), "flow", { aliases: tpl.aliases }) as Template;
+    expect(out.aliases).toEqual(["FBS"]);
   });
 
   it("omits empty optional row bounds rather than emitting blanks", () => {

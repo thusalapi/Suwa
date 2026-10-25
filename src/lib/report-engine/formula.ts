@@ -2,7 +2,7 @@
  * Calculated results. A result row may define a `formula` — plain arithmetic over other rows'
  * keys, e.g. `wbc * neut / 100` or `hb * 100 / pcv` — instead of being entered by hand. The
  * grammar is deliberately tiny (numbers, row keys, + - * / ^, parentheses, unary minus, and the
- * functions min(a, b, …) / max(a, b, …)) and is parsed here, never `eval`'d, so a template can't
+ * functions min(a, b, …) / max(a, b, …) / trunc(x, places)) and is parsed here, never `eval`'d, so a template can't
  * run code.
  *
  * Formulas may also read the patient (PATIENT_VARS): `age` in years, and `male` / `female`
@@ -20,7 +20,7 @@ export type Expr =
   | { kind: "call"; fn: FormulaFn; args: Expr[] };
 
 /** The only functions a formula may call. */
-export const FORMULA_FNS = ["min", "max"] as const;
+export const FORMULA_FNS = ["min", "max", "trunc"] as const;
 export type FormulaFn = (typeof FORMULA_FNS)[number];
 
 /** Patient values a formula can read (a row key of the same name takes precedence). */
@@ -111,6 +111,7 @@ export function parseFormula(src: string): Expr {
         args.push(expr());
       }
       if (next() !== ")") throw new FormulaError("missing )");
+      if (tok === "trunc" && args.length > 2) throw new FormulaError("trunc takes (value) or (value, places)");
       return { kind: "call", fn: tok as FormulaFn, args };
     }
     throw new FormulaError(`unexpected "${tok}"`);
@@ -160,6 +161,12 @@ export function evaluateFormula(expr: Expr, values: Record<string, number>): num
       }
       case "call": {
         const args = e.args.map(ev);
+        if (e.fn === "trunc") {
+          // Cut off (don't round) to N places, as some lab printouts do: trunc(1.0882, 2) → 1.08.
+          // The epsilon stops float noise (0.29 * 100 = 28.999…) from losing a digit.
+          const f = 10 ** (args[1] ?? 0);
+          return Math.trunc(args[0] * f + Math.sign(args[0]) * 1e-9) / f;
+        }
         return e.fn === "min" ? Math.min(...args) : Math.max(...args);
       }
     }

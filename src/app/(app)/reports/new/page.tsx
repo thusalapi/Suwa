@@ -10,6 +10,7 @@ import { DEFAULT_LOCALE } from "@/lib/i18n/types";
 import { createReportAction } from "../actions";
 import { PageTitle } from "@/components/atoms/Heading";
 import { ageFromDob } from "@/lib/utils/age";
+import { TemplatePicker } from "./TemplatePicker";
 
 export default async function NewReportPage({
   searchParams,
@@ -67,19 +68,11 @@ export default async function NewReportPage({
             {t("reports.noTemplates")}
           </div>
         ) : (
-          <ul className="grid gap-3 sm:grid-cols-2">
-            {templates.map((tpl) => (
-              <li key={tpl.id}>
-                <Link
-                  href={`/reports/new?patientId=${patient.id}&templateId=${tpl.id}`}
-                  className="block rounded-lg border border-border bg-surface-raised p-4 hover:bg-surface"
-                >
-                  <span className="font-medium text-ink">{tpl.name}</span>
-                  <span className="block text-xs text-muted">v{tpl.version}</span>
-                </Link>
-              </li>
-            ))}
-          </ul>
+          <TemplatePicker
+            locale={locale}
+            patientId={patient.id}
+            templates={templates.map(({ id, name, version, aliases }) => ({ id, name, version, aliases }))}
+          />
         )}
       </div>
     );

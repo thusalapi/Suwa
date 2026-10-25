@@ -657,8 +657,8 @@ export function TemplateBuilder({ locale, action, templateId, initialTemplate, s
   );
 
   const schemaJson = useMemo(
-    () => toTemplateJson(name, initialTemplate.version, sections, layout),
-    [name, initialTemplate.version, sections, layout],
+    () => toTemplateJson(name, initialTemplate.version, sections, layout, { aliases: initialTemplate.aliases }),
+    [name, initialTemplate.version, initialTemplate.aliases, sections, layout],
   );
 
   /** Switching to canvas assigns a position to any block that lacks one. */

@@ -5,7 +5,7 @@ import { formatPatientValue } from "@/lib/report-engine/display";
 import { getT } from "@/lib/i18n";
 import type { Locale } from "@/lib/i18n/types";
 import type { Template, ResultRow } from "@/lib/report-engine/template";
-import { isAbnormal, isCritical, type Flag } from "@/lib/report-engine/flag";
+import { hasRange, isAbnormal, isCritical, type Flag } from "@/lib/report-engine/flag";
 import { formatResult, type ReportData, type ResultValue } from "@/lib/report-engine/report-data";
 
 export interface ReportViewProps {
@@ -182,7 +182,7 @@ export function ReportView({ locale, snapshot, data }: ReportViewProps) {
                     <tbody>
                       {section.rows.map((row) => {
                         const entry = results[row.key];
-                        const flag = entry?.flag as Flag | undefined;
+                        const flag = hasRange(row) ? (entry?.flag as Flag | undefined) : undefined;
                         return (
                           <tr key={row.key} className="border-b border-border last:border-0">
                             <td className="px-3 py-2 text-ink">

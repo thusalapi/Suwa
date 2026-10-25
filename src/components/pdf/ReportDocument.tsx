@@ -6,7 +6,7 @@ import { getT, formatDate } from "@/lib/i18n";
 import type { Locale } from "@/lib/i18n/types";
 import { PAGE_CONTENT, tableWidths, type Template, type Section, type ResultRow } from "@/lib/report-engine/template";
 import { formatResult, type ReportData, type ResultValue } from "@/lib/report-engine/report-data";
-import { isAbnormal, isCritical, type Flag } from "@/lib/report-engine/flag";
+import { hasRange, isAbnormal, isCritical, type Flag } from "@/lib/report-engine/flag";
 import { formatPatientValue, nameParts, noteParts, unitParts, type UnitPart } from "@/lib/report-engine/display";
 
 /**
@@ -300,7 +300,7 @@ export function ReportDocument({ locale, clinic, qrDataUrl, report }: ReportDocu
               ) : null}
               {section.rows.map((row) => {
                 const entry = results[row.key];
-                const flag = entry?.flag as Flag | undefined;
+                const flag = hasRange(row) ? (entry?.flag as Flag | undefined) : undefined;
                 const abn = !!flag && isAbnormal(flag);
                 return (
                   <View key={row.key} style={styles.colRow}>
@@ -390,7 +390,7 @@ export function ReportDocument({ locale, clinic, qrDataUrl, report }: ReportDocu
             </View>
             {section.rows.map((row) => {
               const entry = results[row.key];
-              const flag = entry?.flag as Flag | undefined;
+              const flag = hasRange(row) ? (entry?.flag as Flag | undefined) : undefined;
               const abn = !!flag && isAbnormal(flag);
               const cell = abn ? [styles.td, styles.abnormal] : [styles.td];
               return (

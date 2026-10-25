@@ -187,6 +187,8 @@ export function toTemplate(
   version: number,
   sections: BSection[],
   layout: TemplateLayout = "flow",
+  /** Template-level fields the builder has no editor for, carried through unchanged. */
+  extras: { aliases?: string[] } = {},
 ): unknown {
   // In canvas layout, persist a position for every block so the PDF lays them out exactly.
   const src = layout === "canvas" ? withPositions(sections) : sections;
@@ -197,6 +199,7 @@ export function toTemplate(
     name: name.trim(),
     version: version || 1,
     ...(layout === "canvas" ? { layout } : {}),
+    ...(extras.aliases?.length ? { aliases: extras.aliases } : {}),
     sections: src.map((s) => {
       switch (s.type) {
         case "patient_info":
@@ -287,4 +290,5 @@ export const toTemplateJson = (
   version: number,
   sections: BSection[],
   layout: TemplateLayout = "flow",
-): string => JSON.stringify(toTemplate(name, version, sections, layout));
+  extras: { aliases?: string[] } = {},
+): string => JSON.stringify(toTemplate(name, version, sections, layout, extras));

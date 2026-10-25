@@ -194,6 +194,8 @@ export const templateSchema = z
     /** System-managed template (layout + formulas are fixed): the editor refuses to change it.
      *  Only set by seed scripts — the UI strips it from anything it saves. */
     locked: z.boolean().optional(),
+    /** Extra search keywords for the report picker (e.g. "PPBS", "LFT"). Not printed anywhere. */
+    aliases: z.array(z.string().trim().min(1)).optional(),
     sections: z.array(sectionSchema).min(1),
   })
   .superRefine((tpl, ctx) => {

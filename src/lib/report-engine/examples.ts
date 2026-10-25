@@ -1,4 +1,4 @@
-import type { Template } from "./template";
+import type { ResultRow, Template } from "./template";
 
 /**
  * Example template (the Full Blood Count from docs/report-engine.md). Typed with `satisfies`
@@ -631,6 +631,193 @@ export const postprandialBloodSugarTemplate = {
 } satisfies Template;
 
 /**
+ * The lab's one-test chemistry layout: CHEMISTRY | RESULT | REF.RANGE | REMARKS, where REMARKS
+ * (Normal / Low / High) follows from the range. Used by the single-enzyme / single-analyte reports.
+ */
+function singleTestTemplate(name: string, heading: string, rows: ResultRow[]) {
+  return {
+    name,
+    version: 1,
+    locked: true,
+    sections: [
+      { type: "patient_info", fields: ["name", "age", "gender", "referred_by", "specimen_no", "datetime", "source"] },
+      { type: "static", heading: true, text: heading },
+      {
+        type: "results_table",
+        style: "ranged",
+        listHeader: { left: "CHEMISTRY", right: "RESULT" },
+        rangeHeader: "REF.RANGE",
+        remarksHeader: "REMARKS",
+        rows,
+      },
+      { type: "signature", label: "Verified by", subtitle: "Medical Laboratory Technologist · SLMC Reg." },
+    ],
+  } satisfies Template;
+}
+
+export const sgotTemplate = singleTestTemplate("SGOT (AST)", "Enzyme Assays", [
+  { key: "ast", test: "S.G.O.T./A.S.T.", unit: "U/l", ref_high: 40, ref_text: "<40 U/l", decimals: 1 },
+]);
+
+export const amylaseTemplate = singleTestTemplate("Amylase", "Enzyme Assays", [
+  { key: "amylase", test: "Amylase", unit: "U/l", ref_low: 25, ref_high: 125, ref_text: "25 - 125 U/l", decimals: 1 },
+]);
+
+export const uricAcidTemplate = singleTestTemplate("Uric Acid", "Uric Acid", [
+  {
+    key: "uric",
+    test: "Uric Acid",
+    unit: "mg/dl",
+    ref_low: 3,
+    ref_high: 6.5,
+    ref_text: "3.0 - 6.5 mg/dl",
+    decimals: 1,
+  },
+]);
+
+export const gammaGtTemplate = singleTestTemplate("Gamma GT", "Gamma GT", [
+  { key: "ggt", test: "Gamma GT", unit: "IU/l", ref_low: 6, ref_high: 50, ref_text: "6 - 50 IU/l", decimals: 1 },
+]);
+
+export const alkalinePhosphataseTemplate = singleTestTemplate("Alkaline Phosphatase", "Alkaline Phosphatase", [
+  {
+    key: "alp",
+    test: "Alkaline Phosphatase",
+    unit: "U/l",
+    ref_low: 35,
+    ref_high: 123,
+    ref_text: "35-123 U/l",
+    decimals: 1,
+  },
+]);
+
+/** Bilirubin — total and direct entered; Indirect = Total − Direct (printed with no range). */
+export const bilirubinTemplate = singleTestTemplate("Bilirubin", "Bilirubin", [
+  {
+    key: "tbil",
+    test: "Total Bilirubin",
+    unit: "mg/dl",
+    ref_low: 0.3,
+    ref_high: 1.2,
+    ref_text: "0.3-1.2 mg/dl",
+    decimals: 2,
+  },
+  { key: "dbil", test: "Direct Bilirubin", unit: "mg/dl", ref_high: 0.2, ref_text: "<0.2 mg/dl", decimals: 2 },
+  { key: "ibil", test: "Indirect Bilirubin", unit: "mg/dl", formula: "tbil - dbil", decimals: 2 },
+]);
+
+/**
+ * Total Protein — total protein and albumin entered; Globulin = Total − Albumin, and the A/G ratio
+ * = Albumin / Globulin, cut off (not rounded) to 2 places as the lab prints it (3.70/3.40 → 1.08).
+ * Units are g/dl throughout (the old printout said mg/dl for two rows; its ranges were g/dl).
+ */
+export const totalProteinTemplate = singleTestTemplate("Total Protein", "Total Protein", [
+  {
+    key: "tp",
+    test: "Total Protein",
+    unit: "g/dl",
+    ref_low: 6.2,
+    ref_high: 8.2,
+    ref_text: "6.2 - 8.2 g/dl",
+    decimals: 2,
+  },
+  { key: "alb", test: "Albumin", unit: "g/dl", ref_low: 3.5, ref_high: 5.3, ref_text: "3.5 - 5.3 g/dl", decimals: 2 },
+  {
+    key: "glob",
+    test: "Globulin",
+    unit: "g/dl",
+    ref_low: 1.2,
+    ref_high: 4.8,
+    ref_text: "1.2 - 4.8 g/dl",
+    formula: "tp - alb",
+    decimals: 2,
+  },
+  { key: "ag", test: "A/G Ratio", formula: "trunc(alb / glob, 2)", decimals: 2 },
+]);
+
+/** Electrolytes — five flagged results plus pH (no range, so no remark), all printed to 2 decimals. */
+export const electrolytesTemplate = singleTestTemplate("Electrolytes", "Electrolytes", [
+  {
+    key: "k",
+    test: "Serum Potassium",
+    unit: "mmol/L",
+    ref_low: 3.5,
+    ref_high: 5.5,
+    ref_text: "3.5 - 5.5 mmol/L",
+    decimals: 2,
+  },
+  {
+    key: "na",
+    test: "Serum Sodium",
+    unit: "mmol/L",
+    ref_low: 135,
+    ref_high: 145,
+    ref_text: "135-145 mmol/L",
+    decimals: 2,
+  },
+  {
+    key: "cl",
+    test: "Serum Chloride",
+    unit: "mmol/L",
+    ref_low: 94,
+    ref_high: 108,
+    ref_text: "94-108 mmol/L",
+    decimals: 2,
+  },
+  {
+    key: "ica",
+    test: "Ionized Calcium",
+    unit: "mmol/L",
+    ref_low: 1.1,
+    ref_high: 1.4,
+    ref_text: "1.1 - 1.4 mmol/L",
+    decimals: 2,
+  },
+  {
+    key: "tca",
+    test: "Total Calcium",
+    unit: "mmol/L",
+    ref_low: 2.2,
+    ref_high: 2.9,
+    ref_text: "2.2 - 2.9 mmol/L",
+    decimals: 2,
+  },
+  { key: "ph", test: "pH", decimals: 2 },
+]);
+
+/**
+ * Glyco-Haemoglobin (HbA1c) — the result and the run's normal control are both entered; the
+ * reference ranges are printed below. Specimen source defaults to Serum, as on the lab's report.
+ */
+export const glycoHaemoglobinTemplate = {
+  name: "Glyco - Haemoglobin",
+  version: 1,
+  locked: true,
+  sections: [
+    {
+      type: "patient_info",
+      fields: ["name", "age", "gender", "referred_by", "specimen_no", "datetime", "source"],
+      defaultSource: "Serum",
+    },
+    { type: "static", heading: true, text: "Glyco - Haemoglobin" },
+    {
+      type: "results_table",
+      style: "list",
+      listHeader: { left: "TEST", right: "RESULT" },
+      rows: [
+        { key: "hba1c", test: "Glyco - Haemoglobin", unit: "%", decimals: 2 },
+        { key: "control", test: "Normal Control", unit: "%", decimals: 1 },
+      ],
+    },
+    { type: "static", subheading: true, text: "Reference Range:" },
+    { type: "static", text: "Less than 5.7%  -  Normal" },
+    { type: "static", text: "5.7% to 6.4%  -  Impaired" },
+    { type: "static", text: "6.5% or higher  -  High" },
+    { type: "signature", label: "Verified by", subtitle: "Medical Laboratory Technologist · SLMC Reg." },
+  ],
+} satisfies Template;
+
+/**
  * Blood Grouping & Rh — a qualitative report: a single "list" result whose value is text
  * (e.g. "B Positive"), no reference range or flag.
  */
@@ -649,3 +836,33 @@ export const bloodGroupingTemplate = {
     { type: "signature", label: "Verified by", subtitle: "Medical Laboratory Technologist · SLMC Reg." },
   ],
 } satisfies Template;
+
+/**
+ * Search keywords for the "choose a report" picker: the short names the lab actually types
+ * (PPBS, LFT, HbA1c…), keyed by template name. Applied to each seeded template as `aliases`.
+ */
+export const TEMPLATE_ALIASES: Record<string, string[]> = {
+  "Full Blood Count": ["FBC", "CBC"],
+  "Fasting Blood Sugar": ["FBS", "fasting sugar"],
+  "Random Blood Sugar": ["RBS", "random sugar"],
+  "Postprandial Blood Sugar": ["PPBS", "PPBG", "post prandial"],
+  "Blood Sugar Series Test": ["BSS", "sugar series"],
+  "Glyco - Haemoglobin": ["HbA1c", "A1c", "glycated", "glycosylated"],
+  "Serum Creatinine": ["SCr", "eGFR", "creatinine"],
+  "Urine Microalbumin": ["UACR", "ACR", "microalbumin"],
+  "Urine Full Report": ["UFR", "urine"],
+  "Lipid Profile": ["lipids", "LDL", "HDL", "triglycerides"],
+  Cholesterol: ["TC", "total cholesterol"],
+  "Liver Profile Test": ["LFT", "liver"],
+  "Renal Function Test": ["RFT", "renal", "kidney"],
+  ESR: ["sed rate", "sedimentation"],
+  "SGOT (AST)": ["AST", "SGOT"],
+  "Gamma GT": ["GGT", "GGTP"],
+  "Alkaline Phosphatase": ["ALP"],
+  Electrolytes: ["Na", "K", "sodium", "potassium", "chloride"],
+  "Total Protein": ["TP", "albumin", "globulin", "A/G"],
+  Bilirubin: ["SBR", "TBil"],
+  "Uric Acid": ["UA", "urate"],
+  Amylase: ["serum amylase"],
+  "Blood Grouping & Rh": ["ABO", "blood group"],
+};

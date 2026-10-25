@@ -2,7 +2,8 @@
  * Seed the lab's house-style report templates (Unawatuna Medical Centre format):
  * Fasting Blood Sugar, Blood Grouping & Rh, Full Blood Count, Serum Creatinine, Urine Microalbumin, Lipid Profile, Urine Full Report, Cholesterol, ESR,
  * Renal Function Test, Blood Sugar Series Test, Liver Profile Test, Random Blood Sugar, and
- * Postprandial Blood Sugar.
+ * Postprandial Blood Sugar, SGOT (AST), Amylase, Uric Acid, Gamma GT, Alkaline Phosphatase,
+ * Electrolytes, Glyco - Haemoglobin, Bilirubin, and Total Protein.
  *
  *   npm run seed:templates
  *   npm run seed:templates -- --replace "Full Blood Count"
@@ -31,8 +32,18 @@ import {
   renalFunctionTemplate,
   bloodSugarSeriesTemplate,
   liverProfileTemplate,
+  TEMPLATE_ALIASES,
   randomBloodSugarTemplate,
   postprandialBloodSugarTemplate,
+  sgotTemplate,
+  amylaseTemplate,
+  uricAcidTemplate,
+  gammaGtTemplate,
+  alkalinePhosphataseTemplate,
+  electrolytesTemplate,
+  glycoHaemoglobinTemplate,
+  bilirubinTemplate,
+  totalProteinTemplate,
 } from "../src/lib/report-engine/examples";
 import { parseTemplate, type Template } from "../src/lib/report-engine";
 
@@ -83,7 +94,16 @@ async function main() {
       liverProfileTemplate,
       randomBloodSugarTemplate,
       postprandialBloodSugarTemplate,
-    ].map((t) => parseTemplate({ ...t, locked: true })); // fail loudly on an invalid seed
+      sgotTemplate,
+      amylaseTemplate,
+      uricAcidTemplate,
+      gammaGtTemplate,
+      alkalinePhosphataseTemplate,
+      electrolytesTemplate,
+      glycoHaemoglobinTemplate,
+      bilirubinTemplate,
+      totalProteinTemplate,
+    ].map((t) => parseTemplate({ ...t, locked: true, aliases: TEMPLATE_ALIASES[t.name] })); // fail loudly on an invalid seed
     for (const tpl of seeds) {
       const current = have.get(tpl.name);
       if (current && tpl.name === replaceName) {
@@ -105,12 +125,15 @@ async function main() {
         console.log(`~ replaced "${tpl.name}" → v${version} (${current.id})`);
         continue;
       }
-      if (current && !(current.schema as Template).locked) {
-        // Lock in place — the content (and so the version) is unchanged.
+      const stored = current?.schema as Template | undefined;
+      const staleAliases =
+        !!tpl.aliases?.length && JSON.stringify(stored?.aliases ?? []) !== JSON.stringify(tpl.aliases);
+      if (current && (!stored?.locked || staleAliases)) {
+        // Lock + refresh search keywords in place — the report content (and so the version) is unchanged.
         await db.transaction(async (tx) => {
           await tx
             .update(reportTemplates)
-            .set({ schema: { ...(current.schema as Template), locked: true } })
+            .set({ schema: { ...stored!, locked: true, ...(tpl.aliases ? { aliases: tpl.aliases } : {}) } })
             .where(and(eq(reportTemplates.id, current.id), eq(reportTemplates.clinicId, clinic.id)));
           await tx.insert(auditLogs).values({
             clinicId: clinic.id,
@@ -118,10 +141,10 @@ async function main() {
             action: "template.update",
             entityType: "template",
             entityId: current.id,
-            metadata: { version: current.version, locked: true, seeded: true },
+            metadata: { version: current.version, locked: true, aliases: tpl.aliases ?? [], seeded: true },
           });
         });
-        console.log(`🔒 locked "${tpl.name}" (v${current.version}, content unchanged)`);
+        console.log(`🔒 locked/keywords "${tpl.name}" (v${current.version}, content unchanged)`);
         continue;
       }
       if (current) {
