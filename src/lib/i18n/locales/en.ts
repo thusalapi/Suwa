@@ -25,6 +25,7 @@ export const en = {
     invalidEmail: "Enter a valid email address.",
     required: "This field is required.",
     invalidCredentials: "Incorrect email or password.",
+    tooManyAttempts: "Too many failed sign-in attempts. Please wait 15 minutes and try again.",
     unexpectedError: "Something went wrong. Please try again.",
   },
   roles: {

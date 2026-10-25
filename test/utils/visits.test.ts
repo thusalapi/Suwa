@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { groupVisits, localDay, reportVisitDay } from "@/lib/visits";
 
-const at = (y: number, m: number, d: number, h = 10) => new Date(y, m - 1, d, h, 0);
+// h:00 on that day in Sri Lanka (UTC+05:30), as an explicit instant.
+const at = (y: number, m: number, d: number, h = 10) => new Date(Date.UTC(y, m - 1, d, h) - 5.5 * 3600 * 1000);
 
 describe("visits", () => {
   it("puts a report on its specimen day, even when it was finished the next day", () => {
@@ -36,7 +37,8 @@ describe("visits", () => {
     expect(visits[2]).toMatchObject({ date: "2026-10-20", bills: [], billed: 0 });
   });
 
-  it("uses the local calendar day", () => {
-    expect(localDay(new Date(2026, 0, 5, 23, 59))).toBe("2026-01-05");
+  it("uses the clinic's calendar day", () => {
+    expect(localDay(at(2026, 1, 5, 23))).toBe("2026-01-05");
+    expect(localDay(new Date("2026-01-05T18:30:00Z"))).toBe("2026-01-06"); // clinic midnight
   });
 });

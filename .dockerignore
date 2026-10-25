@@ -1,0 +1,23 @@
+# Keep secrets, data and local build output out of the image build context.
+.env
+.env.*
+!.env.example
+**/.env
+node_modules
+.next
+coverage
+playwright-report
+test-results
+blob-report
+.playwright
+backups
+logs
+.git
+.claude
+.design-sync
+.ds-sync
+ds-bundle
+_pr-*
+*.bundle
+*.log
+liquibase/liquibase.properties

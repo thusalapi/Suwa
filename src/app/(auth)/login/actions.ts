@@ -1,5 +1,6 @@
 "use server";
 
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
@@ -7,6 +8,7 @@ import { users } from "@/lib/db/schema";
 import { hashPassword, verifyPassword, setSessionCookie } from "@/lib/auth";
 import { recordAudit } from "@/lib/audit";
 import { loginSchema } from "@/lib/schema/auth";
+import { clientIp, loginBlocked, recordLoginAttempt } from "@/lib/auth/rate-limit";
 
 /** Result surfaced back to the login form via `useActionState`. Messages are i18n keys. */
 export interface LoginState {
@@ -32,6 +34,13 @@ export async function loginAction(_prev: LoginState, formData: FormData): Promis
   }
 
   const { email, password } = parsed.data;
+  const normalizedEmail = email.toLowerCase();
+  const ip = clientIp(await headers());
+
+  // Too many recent failures for this email or IP: refuse before touching the password.
+  if (await loginBlocked(normalizedEmail, ip)) {
+    return { error: "auth.tooManyAttempts" };
+  }
 
   const rows = await db
     .select({
@@ -41,7 +50,7 @@ export async function loginAction(_prev: LoginState, formData: FormData): Promis
       passwordHash: users.passwordHash,
     })
     .from(users)
-    .where(eq(users.email, email.toLowerCase()))
+    .where(eq(users.email, normalizedEmail))
     .limit(1);
 
   const user = rows[0];
@@ -50,13 +59,17 @@ export async function loginAction(_prev: LoginState, formData: FormData): Promis
   // can't distinguish "no such user" from "wrong password" by timing.
   if (!user) {
     await hashPassword(password).catch(() => undefined);
+    await recordLoginAttempt(normalizedEmail, ip, false);
     return { error: "auth.invalidCredentials" };
   }
 
   const ok = await verifyPassword(user.passwordHash, password).catch(() => false);
   if (!ok) {
+    await recordLoginAttempt(normalizedEmail, ip, false);
     return { error: "auth.invalidCredentials" };
   }
+
+  await recordLoginAttempt(normalizedEmail, ip, true);
 
   await setSessionCookie({ id: user.id, clinicId: user.clinicId, role: user.role });
   await recordAudit({

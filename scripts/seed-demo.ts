@@ -17,7 +17,6 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { eq, sql } from "drizzle-orm";
 import {
-  clinics,
   users,
   services,
   patients,
@@ -30,6 +29,7 @@ import {
 } from "../src/lib/db/schema";
 import { fbcTemplate, fastingBloodSugarTemplate, bloodGroupingTemplate } from "../src/lib/report-engine/examples";
 import { computeResults, validateReportData, type Template, type ReportData } from "../src/lib/report-engine";
+import { pickClinic } from "./lib/clinic";
 
 process.loadEnvFile(".env");
 
@@ -171,8 +171,7 @@ async function main() {
   const sql_ = postgres(databaseUrl!, { max: 1 });
   const db = drizzle(sql_);
   try {
-    const [clinic] = await db.select({ id: clinics.id, name: clinics.name }).from(clinics).limit(1);
-    if (!clinic) throw new Error("No clinic found — run `npm run seed:owner` first.");
+    const clinic = await pickClinic(db);
 
     const [owner] = await db.select({ id: users.id }).from(users).where(eq(users.clinicId, clinic.id)).limit(1);
     if (!owner) throw new Error(`No user found for clinic "${clinic.name}".`);

@@ -6,8 +6,10 @@
  *   back to the day the report was created — so results finished the next day stay with the visit.
  * - A bill belongs to the day it was made.
  *
- * Days are on the local clock (the clinic PC's), as "YYYY-MM-DD".
+ * Days are on the clinic's clock (APP_TIMEZONE), as "YYYY-MM-DD".
  */
+
+import { zonedDay } from "@/lib/time";
 
 export interface VisitReport {
   id: string;
@@ -35,10 +37,9 @@ export interface Visit<R extends VisitReport, B extends VisitBill> {
   outstanding: number;
 }
 
-/** A Date as "YYYY-MM-DD" on the local clock. */
+/** A Date as "YYYY-MM-DD" on the clinic's clock (APP_TIMEZONE). */
 export function localDay(d: Date): string {
-  const p = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+  return zonedDay(d);
 }
 
 /** The visit day of a report: its specimen date when entered, else the day it was created. */

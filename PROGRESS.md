@@ -4,19 +4,14 @@
 > what's next, so work continues cleanly across sessions. Keep it updated as you build —
 > tick items off, move "Next up" items into "Done", and note any decisions/gotchas.
 
-**Last updated:** 2026-10-10
-**Current stage:** Stage 5 — Polish + real-data trial, **code-complete**. Done: payment
-overpayment guard; audit coverage verified complete; backup/restore review (+ `BACKUP_KEEP`
--NaN prune-wipe fix); Stage 4 dashboard/revenue aggregates verified live against the Docker
-DB (rollback-tx test, all numbers correct); and the **backup + restore drill run end-to-end**
-(real pg_dump → app encrypt/decrypt with byte-identical sha256 → pg_restore into a throwaway
-DB, row counts matched). Remaining is **operational, clinic-PC only**: install pg client
-tools + rclone on the host PATH, configure the Drive remote, schedule the nightly job, and
-run the real-data trial in the browser. DB runs in Docker (suwa-db).
-**Build status:** ✅ `npm run typecheck`, `npm run lint` (ESLint, clean), and `npm run build`
-pass; tests green — `npm run test` (unit) and `npm run test:integration` (against a throwaway
-`suwa_test` DB). Code formatted via `npm run format` (Prettier). Backup→restore drill verified
-live on the Docker DB.
+**Last updated:** 2026-10-25
+**Current stage:** **Pilot live-data build-out done** — the design-partner clinic's 23 report
+types are built as locked templates matching its printed reports (with calculated results),
+plus POS receipts, visits, a clinic footer line, and patient age entry. **Next: hosted
+production** — the plan and its blockers are in **`docs/production-plan.md`**.
+**Build status:** ✅ `npm run typecheck`, `npm run lint`, and **144 unit tests / 17 files**
+(`npm run test`) pass. Integration tests (`npm run test:integration`) need a Postgres role
+allowed to create the throwaway `suwa_test` DB — not available on the current dev machine.
 
 **Tooling:** ESLint (flat config, `eslint-config-next` native + `eslint-config-prettier`) and
 Prettier (`printWidth 120`, matching the existing style). Scripts: `lint` / `lint:fix` /
@@ -48,6 +43,49 @@ npm run seed:owner -- --clinic "Suwa Medical Centre" \
   `docs/report-engine.md`, `docs/roadmap.md`, `docs/requirements.md`
 
 ## Done
+
+### 2026-10-25 — Hosting on AWS + Tailscale (code ready, not yet deployed) 🚧
+Plan: [docs/production-plan.md](docs/production-plan.md); setup: [deploy/aws/README.md](deploy/aws/README.md).
+- [x] **Clinic time zone** — `APP_TIMEZONE` (default Asia/Colombo, `src/lib/time.ts`) drives "today",
+  date/time formatting, ages, visits, dashboard and analytics ranges; tests pass under TZ=UTC.
+- [x] **Sign-in rate limiting** — `login_attempts` table (changeset 006), 5 failures per email /
+  20 per IP in 15 min (`src/lib/auth/rate-limit.ts`).
+- [x] **Multi-clinic provisioning** — `npm run clinic:create`; `seed:templates`/`seed:demo` take
+  `--clinic`, `seed:templates` also `--all-clinics`.
+- [x] **Tenant isolation** — `createBill` rejects another clinic's patient or service ids.
+- [x] **Container-ready** — lazy DB client (build needs no database), `/api/health`, `Dockerfile`
+  (app + tools images), `deploy/aws/` (compose with Tailscale serve, ACL policy, backup timer).
+- [ ] Provision AWS + tailnet, restore drill, move the pilot (see the plan's rollout).
+
+### 2026-10-25 — Pilot clinic report types, receipts, visits ✅
+Built from photos of the clinic's real printed reports; every calculated value was checked
+against those printouts through the engine (verification sheet shared with the clinic).
+- [x] **23 locked templates** (`report-engine/examples.ts`, `npm run seed:templates`): Full Blood
+      Count, Fasting / Random / Postprandial Blood Sugar, Blood Sugar Series, Glyco-Haemoglobin,
+      Serum Creatinine (eGFR), Urine Microalbumin, Urine Full Report, Lipid Profile, Cholesterol,
+      Liver Profile, Total Protein, Bilirubin, Renal Function, Electrolytes, ESR, SGOT, Amylase,
+      Uric Acid, Gamma GT, Alkaline Phosphatase, Blood Grouping & Rh.
+- [x] **Formula engine** (`formula.ts`) — safe parser (no eval): `+ - * / ^`, `min`/`max`/`trunc`,
+      patient `age`/`male`/`female` from the record; validated for unknown keys + cycles; evaluated
+      in dependency order on rounded values; stored at entry. Rows: `formula`, `formula2`,
+      `decimals`. eGFR = CKD-EPI 2021. mmol/l (`factor2`) now cuts off to 1 dp like the lab.
+- [x] **Layout features** — `results_table` styles `dual` + `ranged` (REMARKS column, second-unit
+      column), `ref_text`, `table` block (risk chart), static `subheading` / `note` (hanging-indent
+      footnote), `suggestions` for text results, `defaultSource`, raised powers in units (m², 10⁹)
+      and charges in names (Na⁺), sex title-cased, no flag/remark for rows without a range, no
+      mid-word hyphenation in PDFs.
+- [x] **Locked templates** — read-only preview in the UI, server refuses updates, lock can't be
+      set or carried by the editor; seeding locks + refreshes keywords in place, `--replace` for
+      content changes. Template `aliases` power the **searchable report picker** (PPBS, LFT, HbA1c).
+- [x] **Patients** — "Age (years)" when the birth date is unknown, stored as an estimated dob
+      (`dob_estimated`, migration **004**) so it keeps counting up.
+- [x] **Printing** — **80 mm POS receipt** (`BillReceipt`, page sized to content); bills show
+      date + time; report specimen Date & Time defaults to now and prints as 24/10/2026 11:16;
+      the verifier name and app branding are no longer printed; every document ends with the
+      clinic's **Footer text** (Settings, `footer_note`, migration **005**); multi-line address.
+- [x] **Visits** — patient page groups reports + bills by day (`lib/visits.ts`, derived, no table).
+- [x] Tests: 85 → 144 unit tests (formulas, every template's printed numbers, display, visits,
+      dates, search, builder round-trips).
 
 ### End-to-end UI journeys ✅ (Playwright — watchable user flows)
 - [x] **10 browser journeys / 6 specs** in `e2e/`, all green: auth (reject + sign in/out), patient
@@ -455,24 +493,21 @@ once the clinic-PC DB is up.
 
 ## Next up (ordered)
 
-Stages 0–5 code is complete and the whole flow has been exercised live. Remaining before the
-pilot clinic goes live:
+Production moves off the clinic PC to hosted infrastructure. Full plan:
+**`docs/production-plan.md`**. In order:
 
-1. **Run `scripts/install.ps1` on a spare machine or VM end to end.** It is syntax-checked and
-   its risky parts were dry-run, but it has never been executed start to finish — do not let
-   the first real run be in front of the client.
-2. **Run the restore drill on the clinic PC** (`docs/backups.md`) — still the one
-   non-negotiable that has not been exercised on the target hardware.
-3. Decide what the clinic sees for the **audit log**: every mutation is recorded, but there is
-   no screen to read it. Don't promise it in a demo until there is.
-4. Run real patients / bills / reports through the app on the clinic PC; fix friction points.
+1. **Confirm the open calculation questions** with the clinic (RBC = PCV ÷ 9, cut-off vs
+   rounding, a value exactly on a "<" limit, LDL when TG > 400).
+2. **Blockers before hosting** (production-plan §4): explicit clinic time zone (cloud servers
+   run UTC), login rate limiting, clinic provisioning + per-clinic template seeding, audit log
+   viewer.
+3. **Stand up staging**, run the restore drill there, then move the pilot clinic's data across
+   (production-plan §8).
+4. Until then the pilot keeps running on the clinic PC (runbook.md). On every update there:
+   `npm run db:deploy` and `npm run seed:templates`.
 
-**Pilot deployment is one PC** (app + PostgreSQL on the same Windows machine, bound to
-localhost). That removes TLS, firewall and LAN-auth concerns, and makes backups-off-the-machine
-plus BitLocker the entire data-safety story.
-
-**Local dev DB** is a native PostgreSQL 17 install (`suwa` role/database, schema via
-`npm run db:deploy`, owner + demo data seeded). Docker remains a fine alternative — see README.
+**Local dev DB** is a native PostgreSQL 17 install (`suwa` role/database). Dev login:
+`owner@suwa.demo`.
 
 ## Decisions & gotchas
 
@@ -483,4 +518,10 @@ plus BitLocker the entire data-safety story.
   without touching components. Add new keys to `en`.
 - Brand palette has a single origin in `brand.ts`; don't put raw hex in components — use
   `bg-primary` / `text-ink` etc.
-- No shadcn, no Clerk, no Vercel. Build from atoms up; mutations re-check role server-side.
+- No shadcn, no Clerk. Build from atoms up; mutations re-check role server-side.
+- **Templates the team builds are locked** (`seed:templates`); clinic-made templates stay editable.
+- **Calculated values are stored at entry** (like flags) — the PDF never recomputes.
+- **Dates use the server's local clock** — fine on the clinic PC, must be made explicit before
+  hosting (production-plan.md).
+- **Visits are derived by day**, not stored.
+- **Nothing app-branded is printed**; documents carry the clinic's header and Footer text.

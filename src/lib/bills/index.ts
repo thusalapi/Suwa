@@ -1,7 +1,7 @@
 import "server-only";
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { db, type Tx } from "@/lib/db";
-import { bills, billItems, payments, patients, type BillStatus, type PaymentMethod } from "@/lib/db/schema";
+import { bills, billItems, payments, patients, services, type BillStatus, type PaymentMethod } from "@/lib/db/schema";
 import { recordAudit } from "@/lib/audit";
 import { getClinic } from "@/lib/clinic";
 
@@ -92,6 +92,23 @@ export async function createBill(
   input: CreateBillInput,
 ): Promise<{ id: string; billNumber: number }> {
   if (input.items.length === 0) throw new BillError("A bill needs at least one item.", "empty");
+
+  // Tenant isolation: the patient and any catalog services named in the form must belong to this
+  // clinic (one database serves several clinics; ids from the client are never trusted).
+  const [patient] = await db
+    .select({ id: patients.id })
+    .from(patients)
+    .where(and(eq(patients.id, input.patientId), eq(patients.clinicId, clinicId)))
+    .limit(1);
+  if (!patient) throw new BillError("Patient not found.", "not_found");
+  const serviceIds = [...new Set(input.items.map((i) => i.serviceId).filter((s): s is string => !!s))];
+  if (serviceIds.length) {
+    const owned = await db
+      .select({ id: services.id })
+      .from(services)
+      .where(and(inArray(services.id, serviceIds), eq(services.clinicId, clinicId)));
+    if (owned.length !== serviceIds.length) throw new BillError("Service not found.", "not_found");
+  }
 
   const clinic = await getClinic(clinicId);
   const taxRate = clinic?.taxRate ?? 0; // basis points

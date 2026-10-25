@@ -1,3 +1,4 @@
+import { appTimeZone, zonedParts } from "@/lib/time";
 import { en } from "./locales/en";
 import { DEFAULT_LOCALE, type Locale } from "./types";
 
@@ -40,24 +41,32 @@ export function formatMoney(minorUnits: number, locale: Locale = DEFAULT_LOCALE,
 }
 
 export function formatDate(date: Date | string, locale: Locale = DEFAULT_LOCALE): string {
+  // A bare "YYYY-MM-DD" is a calendar day, not an instant: format it as that day.
+  if (typeof date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    return new Intl.DateTimeFormat(localeTag[locale], { dateStyle: "medium", timeZone: "UTC" }).format(
+      new Date(`${date}T00:00:00Z`),
+    );
+  }
   const d = typeof date === "string" ? new Date(date) : date;
-  return new Intl.DateTimeFormat(localeTag[locale], { dateStyle: "medium" }).format(d);
+  return new Intl.DateTimeFormat(localeTag[locale], { dateStyle: "medium", timeZone: appTimeZone() }).format(d);
 }
 
 /**
- * Date and time as the lab prints it — "24/10/2026 11:16" (day/month/year, 24-hour, local clock).
- * The app runs on the clinic's own PC, so the local clock is the clinic's time.
+ * Date and time as the lab prints it — "24/10/2026 11:16" (day/month/year, 24-hour), on the
+ * clinic's clock (APP_TIMEZONE), whatever zone the server itself runs in.
  */
 export function formatDateTime(date: Date | string): string {
   const d = typeof date === "string" ? new Date(date) : date;
+  const z = zonedParts(d);
   const p = (n: number) => String(n).padStart(2, "0");
-  return `${p(d.getDate())}/${p(d.getMonth() + 1)}/${d.getFullYear()} ${p(d.getHours())}:${p(d.getMinutes())}`;
+  return `${p(z.day)}/${p(z.month)}/${z.year} ${p(z.hour)}:${p(z.minute)}`;
 }
 
-/** "Now" as a datetime-local input value ("2026-10-25T13:16"), on the local clock. */
+/** "Now" on the clinic's clock as a datetime-local input value ("2026-10-25T13:16"). */
 export function nowForDateTimeInput(now: Date = new Date()): string {
+  const z = zonedParts(now);
   const p = (n: number) => String(n).padStart(2, "0");
-  return `${now.getFullYear()}-${p(now.getMonth() + 1)}-${p(now.getDate())}T${p(now.getHours())}:${p(now.getMinutes())}`;
+  return `${z.year}-${p(z.month)}-${p(z.day)}T${p(z.hour)}:${p(z.minute)}`;
 }
 
 export { DEFAULT_LOCALE, type Locale } from "./types";

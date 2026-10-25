@@ -11,7 +11,19 @@
  *  - Financial/clinical rows use status, never hard-delete.
  *  - JSONB for flexible structure; real columns for queryable facts.
  */
-import { pgTable, uuid, text, integer, boolean, date, timestamp, jsonb, unique, index } from "drizzle-orm/pg-core";
+import {
+  pgTable,
+  uuid,
+  text,
+  integer,
+  boolean,
+  date,
+  timestamp,
+  jsonb,
+  unique,
+  index,
+  bigserial,
+} from "drizzle-orm/pg-core";
 
 const createdAt = timestamp("created_at", { withTimezone: true }).notNull().defaultNow();
 
@@ -207,6 +219,22 @@ export const reports = pgTable(
     unique("reports_clinic_number_key").on(t.clinicId, t.reportNumber),
     index("reports_clinic_idx").on(t.clinicId),
     index("reports_patient_idx").on(t.patientId),
+  ],
+);
+
+/** Sign-in attempts for rate limiting (see lib/auth/rate-limit.ts). Not tenant data. */
+export const loginAttempts = pgTable(
+  "login_attempts",
+  {
+    id: bigserial("id", { mode: "number" }).primaryKey(),
+    email: text("email").notNull(),
+    ip: text("ip").notNull(),
+    succeeded: boolean("succeeded").notNull(),
+    createdAt,
+  },
+  (t) => [
+    index("login_attempts_email_idx").on(t.email, t.createdAt),
+    index("login_attempts_ip_idx").on(t.ip, t.createdAt),
   ],
 );
 

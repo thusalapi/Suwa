@@ -1,0 +1,12 @@
+[Unit]
+Description=Suwa nightly encrypted database backup to S3
+Wants=network-online.target docker.service
+After=network-online.target docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/suwa/deploy/aws
+ExecStart=/usr/bin/docker compose --profile tools run --rm tools npm run backup
+# Fail loudly in the journal; pair with a CloudWatch alarm or uptime check on the S3 object age.
+StandardOutput=journal
+StandardError=journal
