@@ -22,20 +22,23 @@ Roles are enforced on every API route, not just hidden in the UI.
 - Patient registry (shared by billing and reports)
 - Service / price catalog
 - Billing: itemized bills, discounts, tax, partial payments
-- Branded PDF invoices / receipts
+- Branded PDF invoices (A4) and **80 mm POS receipts**; bills carry their date and time
 - Report engine (JSON-schema driven):
-  - Hand-built templates created with the clinic (Phase 1)
-  - Auto-generated data-entry forms from a template
+  - The clinic's own report types as **locked system templates** (23 at the pilot), plus a
+    visual builder for clinic-made templates
+  - Auto-generated data-entry forms from a template, with a searchable report picker
   - Results tables with units + reference ranges + **auto High/Low/Critical flagging**
+  - **Calculated results** (eGFR, LDL/VLDL, absolute counts, RBC indices, globulin, A/G,
+    mmol/l…) from formulas, using the patient's age and sex where needed
   - Doctor verification / sign-off before release
   - Branded PDF reports with report number
+- Patient **visits**: reports and bills grouped by the day the patient came in
 - Dashboard: today's revenue, bills, pending reports, outstanding balances
 - Reports/exports: revenue by date range, breakdown by service, outstanding payments (PDF/CSV)
 - Audit log of who created / edited / verified bills and reports
 - Authentication with role-based access
 
 ### Out of scope (deliberately deferred)
-- Drag-and-drop template builder (Phase 3 — engine ships first)
 - Appointments / scheduling
 - Prescriptions
 - Full electronic medical records / diagnoses history
@@ -43,13 +46,15 @@ Roles are enforced on every API route, not just hidden in the UI.
 - SMS reminders
 - Insurance claims
 - Multi-branch
-- Age/gender-specific reference ranges (schema allows it; implement later)
+- Age/gender-specific reference **ranges** (formulas already use age and sex; ranges are
+  still one per row — sex/age ranges are printed as text, e.g. ESR)
 
 ## 4. Functional requirements
 
 ### 4.1 Patients
-- Add, search, edit patients (name, phone, gender, DOB optional, address optional, notes)
-- View a patient's full history (bills + reports) in one place
+- Add, search, edit patients (name, phone, gender, DOB **or age** if the birth date is
+  unknown, address optional, notes)
+- View a patient's full history grouped into **visits** (reports + bills per day)
 - Minimal PII at MVP; no clinical diagnosis storage in v1
 
 ### 4.2 Billing
@@ -59,13 +64,15 @@ Roles are enforced on every API route, not just hidden in the UI.
 - Apply discount and tax; auto-calculate subtotal and total
 - Record full or partial payments with method (cash / card / bank / other)
 - Gap-free sequential **bill number** per clinic
-- Generate a branded PDF invoice / receipt
+- Generate a branded A4 invoice / receipt PDF and an 80 mm POS receipt
 - Bills are never hard-deleted — use status (`draft|finalized|paid|cancelled`)
 
 ### 4.3 Report engine
 - A template defines sections/blocks via a JSON schema (see report-engine.md)
 - Creating a report from a template auto-generates the data-entry form
-- `results_table` blocks compute a flag (Normal / High / Low / Critical) per row
+- `results_table` blocks compute a flag (Normal / High / Low / Critical) per row; rows can be
+  **calculated** by formula (never typed)
+- The specimen Date & Time defaults to now
 - A report must be **verified** by a doctor/verifier before it is finalized/released
 - Each report freezes a **snapshot** of the template schema used (reproducibility)
 - Generate a branded PDF with a unique report number (and optional QR code)
@@ -80,7 +87,7 @@ Roles are enforced on every API route, not just hidden in the UI.
 
 | Area | Requirement |
 |------|-------------|
-| **Security** | HTTPS only; hashed passwords; role checks on every API route |
+| **Security** | HTTPS in production; hashed passwords; role checks on every API route |
 | **Auditability** | Every create/edit/verify on bills and reports logged with user + timestamp |
 | **Reproducibility** | Bills and reports re-render exactly as issued, forever |
 | **Data safety** | Automated database backups enabled from day one |
@@ -93,6 +100,8 @@ Roles are enforced on every API route, not just hidden in the UI.
 
 - Currency and tax rate are per-clinic settings (single currency at MVP).
 - Single-clinic per account at MVP (multi-branch deferred).
-- **Open:** exact fields (tests, units, reference ranges) of the clinic's top 3–5
-  report types — to be captured from the design-partner clinic before building Stage 2.
-- **Open:** local payment methods / receipt format expectations — confirm with clinic.
+- **Resolved:** the pilot clinic's report types were captured from its printed reports and
+  built as 23 locked templates. Open points on calculations (RBC estimate, rounding vs cut-off,
+  limits exactly on a "<" range) are being confirmed with the clinic.
+- **Resolved:** receipts print on 80 mm POS paper; A4 invoices remain available.
+- **Open:** production hosting and data-residency obligations — see production-plan.md.

@@ -3,11 +3,12 @@
 Approach: **ship the engine before the editor**, validate continuously with the
 design-partner clinic, and reach a chargeable product before adding breadth.
 
-**Deployment philosophy:** the MVP runs entirely on the **clinic's own PC** — no cloud
-provider, no Vercel. Postgres runs locally; the only outbound dependency is a nightly
-**database backup to Google Drive**. This keeps the MVP cheap, private, and fully under
-the clinic's control. Once validated, the same app + database can be lifted to a cloud
-provider with no code rewrite (see "Migration path" below).
+**Deployment:** the **pilot** ran on the clinic's own PC (local Postgres, nightly encrypted
+backup to Google Drive) to validate the product cheaply. **Production moves to hosted,
+multi-clinic infrastructure** — one install per clinic PC does not scale to more customers,
+remote support, or reliable backups. The plan and the code changes it needs are in
+[production-plan.md](production-plan.md). The stack was built cloud-agnostic, so this is
+configuration + data, not a rewrite.
 
 ## Stack decisions (locked for MVP)
 
@@ -18,7 +19,7 @@ provider with no code rewrite (see "Migration path" below).
 | Auth | **Self-hosted credentials auth** | **No Clerk.** Email/username + password, hashed (argon2/bcrypt), HTTP-only session cookies, server-side role checks. |
 | DB migrations | **Liquibase** | Versioned changelogs, runs against local Postgres. **Not** Drizzle/Prisma migrate. |
 | Patient identity | **Phone number is the lookup key** | Unique per clinic. **NIC is optional.** UUID stays as the internal PK. |
-| Hosting | **Client's PC (self-hosted)** | Next.js standalone server + local PostgreSQL. No Vercel. |
+| Hosting | **Pilot: client's PC → production: hosted** | Next.js standalone server + PostgreSQL; see production-plan.md |
 | Backups | **Nightly Google Drive upload** | `pg_dump` → encrypted dump → Google Drive (rclone or Drive API), via Windows Task Scheduler. |
 
 ## Build sequence (~6 weeks to MVP)
@@ -82,16 +83,21 @@ provider with no code rewrite (see "Migration path" below).
 - Tighten audit logging and edge cases
 - **Verify the Google Drive backup + restore drill end-to-end**
 
-## Migration path (post-MVP, when scaling beyond one PC)
+## Done since the MVP stages (pilot clinic, Oct 2026)
 
-The app is built cloud-agnostic on purpose. To scale later:
-1. Stand up a managed PostgreSQL (any provider) and **restore the latest dump** into it.
-2. Point the app's connection string at the managed DB; **Liquibase changelogs replay
-   identically** — no schema rewrite.
-3. Host the Next.js standalone server on any Node host / container (not tied to Vercel).
-4. Repurpose the Google Drive backup job, or switch to the provider's managed backups.
+- The clinic's 23 report types as **locked templates** matching its printed reports, with
+  **calculated results** (formula engine), REMARKS columns, notes, risk tables, and a
+  searchable report picker (short names like PPBS, LFT, HbA1c)
+- Patient **age** entry when the birth date is unknown (eGFR uses age + sex)
+- **80 mm POS receipts**; date + time on bills; specimen time defaults to now
+- Clinic **footer line** on every printed document; no app branding printed
+- Patient **visits** (reports + bills grouped by day)
 
-Because there is no Vercel/Clerk lock-in, migration is config + data, not a rebuild.
+## Next: hosted production
+
+See [production-plan.md](production-plan.md): hosting choice, the code changes needed first
+(time zone, multi-clinic provisioning, login rate limiting, audit log viewer…), backups,
+monitoring, data protection, and moving the pilot clinic's data across.
 
 ## Post-MVP (after first revenue)
 
@@ -99,18 +105,21 @@ Because there is no Vercel/Clerk lock-in, migration is config + data, not a rebu
   (pulled forward): visual `TemplateBuilder` replaced the Phase-1 JSON editor.
 - ~~**Phase 3 report builder** — drag-and-drop canvas (`dnd-kit`)~~ — **done** (pulled forward):
   dnd-kit drag-to-reorder for blocks and results-table rows.
-- Cloud migration (see above) for multi-PC / remote access
+- Hosted production (see production-plan.md)
+- Real visit records (separate same-day visits, move a report between visits)
+- Audit log viewer for the owner
 - SMS / email notifications
 - Appointments & scheduling
-- Age/gender-specific reference ranges
+- Age/gender-specific reference ranges (per-row ranges by sex/age)
 - Multi-branch / multi-clinic
 - Prescriptions, fuller medical records
 - Inventory
 
 ## Explicitly out of scope for MVP
 
-Cloud deployment, drag-and-drop builder, appointments, prescriptions, full EMR/diagnoses,
-inventory, SMS, insurance claims, multi-branch, variable reference ranges.
+Appointments, prescriptions, full EMR/diagnoses, inventory, SMS, insurance claims,
+multi-branch, variable reference ranges. (The drag-and-drop builder was pulled forward and is
+done; hosting is now the next step, not out of scope.)
 (See requirements.md.)
 
 ## Non-negotiables (carry through every stage)
@@ -122,7 +131,7 @@ inventory, SMS, insurance claims, multi-branch, variable reference ranges.
 5. **Money as integers**; gap-free sequential bill/report numbers
 6. **Role checks server-side** on every mutation
 7. **Phone number as the patient lookup key**; NIC optional
-8. **No cloud lock-in** — runs on the clinic PC, portable to any provider later
+8. **No cloud lock-in** — plain Node + PostgreSQL; the hosting provider stays replaceable
 9. **Centralized branding & translations** — no hard-coded brand name or user-facing
    string; everything via `lib/branding` + `lib/i18n` (English-only at launch, multi-locale
    file pattern kept so more languages drop in later)
@@ -135,6 +144,6 @@ inventory, SMS, insurance claims, multi-branch, variable reference ranges.
 
 ## Immediate next action
 
-Capture the exact fields (tests, units, reference ranges) of the clinic's top 3–5
-report types. Then begin Stage 0 scaffolding (local Postgres + Liquibase + atomic
-Tailwind components + self-hosted auth).
+1. Confirm the open calculation questions with the clinic (verification sheet).
+2. Make the time zone explicit and add login rate limiting (production-plan.md §4, blockers).
+3. Stand up staging, then move the pilot clinic onto hosted production.
