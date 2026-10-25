@@ -27,6 +27,8 @@ address         text
 phone           text
 fax             text          -- shown in the report PDF header (Tel/Fax/Email)
 email           text          -- shown in the report PDF header
+footer_note     text          -- the clinic's footer line on every printed document
+                              -- (e.g. "Our Facilities : Laboratory, ECG, …"); no app branding
 logo_url        text
 currency        text          -- e.g. "LKR"
 tax_rate        integer       -- basis points, e.g. 800 = 8.00%
@@ -60,6 +62,8 @@ phone           text          -- primary lookup key; required
 nic             text          nullable  -- national ID, optional
 gender          text          -- male | female | other
 dob             date          nullable
+dob_estimated   boolean       -- true when dob was derived from an entered age (shown as
+                              -- "67 years (from entered age)", never as a birth date)
 address         text          nullable
 notes           text          nullable
 created_at      timestamptz
@@ -124,7 +128,8 @@ id              uuid pk
 clinic_id       uuid fk -> clinics
 name            text          -- e.g. "Full Blood Count"
 version         integer       -- bumped on edit
-schema          jsonb         -- the template definition
+schema          jsonb         -- the template definition, incl. `locked` (system template,
+                              -- read-only in the UI) and `aliases` (search keywords)
 active          boolean
 created_by      uuid fk -> users
 created_at      timestamptz
@@ -147,6 +152,19 @@ created_by        uuid fk -> users
 created_at        timestamptz
 unique (clinic_id, report_number)
 ```
+
+### Visits (derived — no table)
+
+A **visit** is a patient's day at the clinic. It is computed, not stored, so staff have no
+extra step and every existing record groups correctly (`src/lib/visits.ts`):
+
+- a **report** belongs to the day of its specimen Date & Time (`data.patient_info.datetime`),
+  else the day it was created — results finished the next day stay with the visit;
+- a **bill** belongs to the day it was created.
+
+The patient page lists visits newest first with the day's reports, bills, billed total and
+amount due (cancelled bills listed but not counted). Two visits on the same day show as one;
+separate same-day visits would need a real `visits` table.
 
 ### audit_logs
 ```
@@ -189,5 +207,9 @@ created_at      timestamptz
    per clinic and is how staff search and dedupe patients. `nic` is optional metadata,
    never required to register a patient.
 
-9. **Self-hosted credentials.** No external identity provider — `users.password_hash`
+9. **Dates are the clinic's local day.** "Today", visit days, dashboard day bounds and printed
+   times use the server's local clock, which on the clinic PC is the clinic's time. A hosted
+   deployment must pin the time zone explicitly (see production-plan.md).
+
+10. **Self-hosted credentials.** No external identity provider — `users.password_hash`
    holds an argon2/bcrypt hash; sessions are server-side, role checks server-side.

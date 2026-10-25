@@ -1,5 +1,8 @@
 # Clinic PC runbook
 
+> This runbook is for the **pilot** (app + PostgreSQL on one clinic PC). Production is moving
+> to hosted infrastructure — see [production-plan.md](production-plan.md).
+
 How to install, run, back up, and recover **Suwa** on the clinic's own Windows PC. This is
 the operational companion to the architecture docs — it assumes the app is already built and
 focuses on standing it up and keeping it running.
@@ -141,9 +144,16 @@ already exists). Use a **real strong password**:
 npm run seed:owner -- --clinic "Clinic Name" --name "Owner Name" --email owner@clinic.lk --password "a-strong-password"
 ```
 
+Then load the lab's report templates (all locked — read-only in the app):
+
+```powershell
+npm run seed:templates
+```
+
 The owner then invites staff/doctor accounts from the **Team** page (each sets their own
-password on first login). Owner clinic identity, currency, and tax rate are set on the
-**Settings** page.
+password on first login). On the **Settings** page set the clinic identity used on every
+printed document: name, multi-line address, phone, fax, email, **Footer text** (e.g. "Our
+Facilities : Laboratory, ECG, …"), plus currency and tax rate.
 
 ### 2.6 Build
 
@@ -229,7 +239,7 @@ dropdb suwa_restore_test
 ```
 
 `npm run restore` requires `--yes` (it is destructive). A real restore into the live DB:
-`npm run restore -- --file backups\<dump>.dump.enc --yes`, then `npm run db:status`.
+`npm run restore -- --file backups\<dump>.dump.enc --yes`, then `npm run db:deploy -- --status`.
 
 ---
 
@@ -239,12 +249,24 @@ dropdb suwa_restore_test
 schtasks /End /TN "Suwa App"     # stop the running server
 git pull                          # or copy the new project files over
 npm install                       # in case dependencies changed
-npm run db:migrate                # apply any new schema changesets
+npm run db:deploy                 # apply any new schema changesets (Node runner, no Liquibase)
+npm run seed:templates            # add new report templates / refresh search keywords
 npm run build
 schtasks /Run /TN "Suwa App"      # start again
 ```
 
 Always **back up first** (`npm run backup`) before a migration or update.
+
+If an update changes an existing locked template's content, the release notes will say to run
+`npm run seed:templates -- --replace "<Template name>"` (issued reports keep their frozen copy).
+
+### Printing
+
+- **Reports and A4 invoices:** open the PDF and print on A4.
+- **POS receipts:** on a bill, use **Print receipt (80 mm)**. In the print dialog pick the
+  receipt printer, paper **80 mm**, scale **100% / Actual size**.
+- Times on reports, bills and receipts come from this PC's clock — keep it correct (Windows
+  Settings → Time → Set time automatically).
 
 ---
 
@@ -253,8 +275,9 @@ Always **back up first** (`npm run backup`) before a migration or update.
 | Check | Command / action | Expected |
 |-------|------------------|----------|
 | DB reachable | `psql postgresql://suwa:<pw>@localhost:5432/suwa -c "select 1;"` | `1` |
-| Schema current | `npm run db:status` | "up to date" / no pending |
+| Schema current | `npm run db:deploy -- --status` | no pending changesets |
 | App responds | open <http://localhost:3000> | redirects to `/login` |
+| Health endpoint | open <http://localhost:3000/api/health> | `{"status":"ok"}` (503 if the DB is down) |
 | Login works | sign in as owner | reaches the dashboard |
 | Backup runs | `npm run backup` | new `.dump.enc` in `backups\` |
 | Restore works | the §4 drill | row counts match source |
@@ -274,6 +297,10 @@ Always **back up first** (`npm run backup`) before a migration or update.
 | Staff PCs can't reach it | Bound to localhost / firewall | Start with `-H 0.0.0.0`; allow the port in Windows Firewall. |
 | `An owner already exists` on seed | Owner already created | Expected — seeding is one-time. Add people via the **Team** page. |
 | Restore exits with errors | Genuine restore failure | Read the pg_restore output; ensure the target DB exists and the dump isn't corrupt. |
+| Wrong date/time on reports or bills | PC clock or time zone wrong | Set Windows time zone to (UTC+05:30) Sri Jayawardenepura and "Set time automatically". |
+| Receipt printed tiny or cut off | Print scaling | Print at 100% / Actual size on 80 mm paper. |
+| A report type is missing | Templates not seeded | `npm run seed:templates`. |
+| "Too many failed sign-in attempts" | 5 wrong passwords for that email (or 20 from one PC) in 15 min | Wait 15 minutes; a correct sign-in afterwards clears it. |
 
 ---
 
@@ -285,7 +312,7 @@ Always **back up first** (`npm run backup`) before a migration or update.
    ```powershell
    npm run restore -- --from-remote suwa-<ts>.dump.enc --yes
    ```
-4. `npm run db:status` to confirm the schema, `npm install && npm run build`, then start (§3).
+4. `npm run db:deploy -- --status` to confirm the schema, `npm install && npm run build`, then start (§3).
 
 Because there's no cloud/provider lock-in, the same encrypted dump also restores into any
 managed PostgreSQL when scaling beyond one PC (see `docs/roadmap.md` migration path).

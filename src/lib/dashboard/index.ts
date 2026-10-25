@@ -1,4 +1,5 @@
 import "server-only";
+import { todayInZone, zonedDayEnd, zonedDayStart } from "@/lib/time";
 import { and, eq, gt, gte, lt, ne, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { bills, payments, reports } from "@/lib/db/schema";
@@ -21,12 +22,10 @@ export interface DashboardStats {
 
 const n = (v: unknown): number => Number(v ?? 0);
 
-/** Start of today / start of tomorrow in the server's local time (the clinic PC's clock). */
+/** Start of today / start of tomorrow on the clinic's clock (APP_TIMEZONE), not the server's. */
 function todayBounds(): { start: Date; end: Date } {
-  const now = new Date();
-  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const end = new Date(start.getTime() + 24 * 60 * 60 * 1000);
-  return { start, end };
+  const today = todayInZone();
+  return { start: zonedDayStart(today), end: zonedDayEnd(today) };
 }
 
 /** Aggregate today's figures and current outstanding totals for one clinic. */

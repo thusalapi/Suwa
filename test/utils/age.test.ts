@@ -3,7 +3,8 @@ import { ageFromDob, estimatedDobFromAge } from "@/lib/utils/age";
 import { patientSchema } from "@/lib/schema/patient";
 
 describe("age helpers", () => {
-  const today = new Date(2026, 9, 25); // 25 Oct 2026
+  // Noon in Sri Lanka (06:30 UTC) — explicit instants, so the machine's own zone doesn't matter.
+  const today = new Date("2026-10-25T06:30:00Z"); // 25 Oct 2026
 
   it("an estimated dob gives back the entered age today", () => {
     expect(estimatedDobFromAge(67, today)).toBe("1959-10-25");
@@ -11,11 +12,11 @@ describe("age helpers", () => {
   });
 
   it("keeps counting up a year later", () => {
-    expect(ageFromDob(estimatedDobFromAge(67, today), new Date(2027, 9, 25))).toBe(68);
+    expect(ageFromDob(estimatedDobFromAge(67, today), new Date("2027-10-25T06:30:00Z"))).toBe(68);
   });
 
   it("clamps 29 Feb to 28 Feb in a non-leap birth year", () => {
-    expect(estimatedDobFromAge(3, new Date(2028, 1, 29))).toBe("2025-02-28");
+    expect(estimatedDobFromAge(3, new Date("2028-02-29T06:30:00Z"))).toBe("2025-02-28");
   });
 });
 

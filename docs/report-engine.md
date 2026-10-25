@@ -1,145 +1,175 @@
 # Report Engine
 
-The core differentiator. A clinic can define its own report types (blood, urine, etc.)
-that drive **three outputs from one schema**:
+The core differentiator. A clinic's report types are **JSON templates**, and one template
+drives **three outputs**:
 
-1. A **data-entry form** (auto-generated)
-2. A **PDF report** (branded, verified)
+1. A **data-entry form** (auto-generated, with live calculation and flagging)
+2. A **PDF report** (the lab's own printed layout)
 3. A stored **record** (queryable JSON data)
 
-> **Key insight:** the hard part is not drag-and-drop — it's the **schema + renderer**.
-> Drag-and-drop is just a nicer editor producing the same schema, so it ships last.
+Code: `src/lib/report-engine/` (pure, Zod-only — shared by Server Actions, the form, and the
+PDF). The 23 templates the pilot clinic uses live in `examples.ts` and are seeded with
+`npm run seed:templates`.
 
-## What a medical report actually is
+## What a lab report is
 
-Most lab reports are **tables of analytes** with reference ranges, not free-form text:
+Most lab reports are **tables of analytes** with reference ranges. The template defines the
+rows (tests, units, ranges); staff type only the results; the engine computes the flag
+(Normal / Low / High) and any **calculated** values (eGFR, LDL, absolute counts…).
 
-| Test | Result | Unit | Reference Range | Flag |
-|------|--------|------|-----------------|------|
-| Hemoglobin | 14.2 | g/dL | 13.0–17.0 | Normal |
-| WBC | 12.1 | ×10³/µL | 4.0–11.0 | **High** |
+## Template shape
 
-The template defines the **rows** (which tests, their units, their reference ranges).
-Data entry fills only the **Result** column. The engine **auto-computes the flag** by
-comparing the entered value to the range.
-
-## Block types
-
-| Type | Purpose | Notes |
-|------|---------|-------|
-| `static` | Headings, labels, fixed text | Not editable at data entry |
-| `patient_info` | Auto-filled patient fields | name, age, gender, referring doctor |
-| `field` | Single value | text / number / date / select |
-| `results_table` | The star — analyte rows | units + reference ranges + auto-flag |
-| `textarea` | Comments / impression / interpretation | free text |
-| `signature` | Verifier sign-off block | who verified, when |
-
-## Template schema (stored as JSONB)
-
-```json
+```ts
 {
-  "name": "Full Blood Count",
-  "version": 3,
-  "sections": [
-    {
-      "type": "patient_info",
-      "fields": ["name", "age", "gender", "ref_doctor"]
-    },
-    {
-      "type": "results_table",
-      "title": "Full Blood Count (FBC)",
-      "rows": [
-        { "key": "hb",  "test": "Hemoglobin", "unit": "g/dL",      "ref_low": 13.0, "ref_high": 17.0 },
-        { "key": "wbc", "test": "WBC",        "unit": "x10^3/uL",  "ref_low": 4.0,  "ref_high": 11.0 }
-      ]
-    },
-    { "type": "textarea",  "key": "comments", "label": "Comments" },
-    { "type": "signature", "label": "Verified by" }
-  ]
+  name: "Lipid Profile",
+  version: 1,
+  locked: true,                 // system template: read-only in the UI (see "Locked templates")
+  aliases: ["lipids", "LDL"],   // extra search keywords for the report picker
+  layout: "flow",               // or "canvas" (blocks placed by pos {x,y,w} in %)
+  sections: [ /* blocks */ ],
 }
 ```
 
-### Filled report data (JSONB on the report)
+### Block types
+
+| Type | Purpose | Notable options |
+|------|---------|-----------------|
+| `patient_info` | Patient + specimen block (two-column "Label : Value") | `fields` from: `name` `age` `gender` (from the patient record, read-only) and `referred_by` `requested_by` `ref_doctor` `specimen_no` `datetime` `source` (typed per report). `defaultSource` prefills Source of Specimen (e.g. "Urine"; default "Blood"). |
+| `static` | Fixed text | `heading`, `subheading` (small bold line), `note` (footnote: set apart below the content, "Note:" label + hanging-indented numbered points) |
+| `results_table` | The analyte rows | `style`, `title`, `listHeader {left,right}`, `rangeHeader`, `remarksHeader` — see styles below |
+| `table` | A fixed text table (e.g. the lipid risk chart) | `columns`, `rows` (cells may contain `\n`), optional relative `widths` |
+| `field` | A single typed value | `inputType` text / number / date / select |
+| `textarea` | Free text (comments) | |
+| `signature` | Verifier block | Kept in templates, **not printed** (the clinic signs/stamps the paper) |
+
+### `results_table` styles
+
+| Style | PDF layout | Used by |
+|-------|-----------|---------|
+| `table` (default) | Test · Result · Unit · Reference range · Flag | generic / user-built templates |
+| `list` | Test — Result (result shows value, unit, and any second unit) | FBS, PPBS, Urine Full Report, HbA1c, ESR |
+| `dual` | Test · value unit · second value unit | FBC differential % beside absolute count |
+| `ranged` | Test · value · unit · REF.RANGE [· REMARKS] [· second unit] | most chemistry reports |
+
+`ranged` adds a **REMARKS** column when `remarksHeader` is set (Normal / Low / High in words,
+from the stored flag) and a second-unit column when any row has `unit2` (e.g. mmol/l).
+
+### Result rows
+
+| Field | Meaning |
+|-------|---------|
+| `key`, `test`, `unit` | Identifier (snake_case), printed name, unit |
+| `value_type` | `"number"` (default, flagged) or `"text"` (qualitative, e.g. "Nil", "B Positive") |
+| `suggestions` | Typing suggestions for text rows (Nil / Trace / + …); free text still allowed |
+| `ref_low`, `ref_high`, `critical_low`, `critical_high` | Numeric bounds used for flagging |
+| `ref_text` | The range **as printed** ("120-200 mg/dl", "<130 mg/dl", "(3.0-5.0)"). Display only |
+| `formula` | **Calculated row** — the value is computed, never typed (see Formulas) |
+| `formula2` + `unit2` | A calculated **second value** (e.g. absolute count `wbc * neut / 100`) |
+| `factor2` + `unit2` | Second value = value × factor, **cut off** to 1 decimal (mg/dl → mmol/l: × 0.0555) |
+| `decimals` / `decimals2` | Decimal places: calculated values are rounded to this, and every value is **shown** with exactly this many (57.5 → "57.50") |
+
+Names and units are display-formatted, never stored formatted:
+- Units raise powers: `ml/min/1.73 m2` → m², `x10^9/L` → 10⁹.
+- Test names raise explicit carets only: `Serum Na^+` → Na⁺.
+
+## Formulas
+
+`formula.ts` parses a tiny arithmetic language — **never `eval`'d**, so a template can't run
+code:
+
+- numbers, row keys, `+ - * / ^`, parentheses, unary minus
+- functions `min(a, b, …)`, `max(a, b, …)`, `trunc(x, places)` (cut off, don't round)
+- patient variables `age` (years), `male` / `female` (1 or 0), taken from the **patient
+  record**, never from the form
+
+Rules:
+- A formula may only reference numeric rows; templates are validated for syntax, unknown keys
+  and cycles.
+- Calculated rows are evaluated in dependency order and see the **rounded** values of earlier
+  rows, so the printed numbers agree with each other (MCV uses the printed RBC).
+- A calculated value is blank until every input exists (or on divide-by-zero).
+- Values are computed on entry and **stored** with the report; the PDF never recomputes.
+
+The formulas in use (worked examples in the clinic verification sheet):
+
+| Report | Calculation |
+|--------|-------------|
+| Full Blood Count | absolute = WBC × % ÷ 100; RBC = PCV ÷ 9; MCHC = Hb × 100 ÷ PCV; MCH = Hb × 10 ÷ RBC; MCV = PCV × 10 ÷ RBC |
+| Serum Creatinine | eGFR, CKD-EPI 2021: `142 × min(Scr/κ,1)^α × max(Scr/κ,1)^−1.2 × 0.9938^age × 1.012 [female]`, κ 0.7/0.9, α −0.241/−0.302 |
+| Urine Microalbumin | ACR (mg/g) = microalbumin (mg/l) ÷ creatinine (mg/dl) × 100 |
+| Lipid Profile | VLDL = TG ÷ 5; LDL = TC − HDL − VLDL; ratio = TC ÷ HDL |
+| Liver Profile / Total Protein | Globulin = Total Protein − Albumin; A/G = Albumin ÷ Globulin, cut off to 2 dp |
+| Bilirubin | Indirect = Total − Direct |
+| FBS / RBS / PPBS | mmol/l = mg/dl × 0.0555, cut off to 1 dp |
+
+## Flagging
+
+```
+value <= critical_low              -> "critical_low"
+value >= critical_high             -> "critical_high"
+value <  ref_low                   -> "low"
+value >  ref_high                  -> "high"
+otherwise                          -> "normal"
+```
+
+A value **equal to a limit is Normal**. A row with **no bounds shows no flag or remark**
+(e.g. pH, Indirect Bilirubin) even though a placeholder flag is stored. Flags are stored at
+entry, never recomputed at render. Abnormal values print bold red; REMARKS says Low / High.
+
+## Filled report data (JSONB on `reports.data`)
 
 ```json
 {
-  "patient_info": { "name": "...", "age": 34, "gender": "male", "ref_doctor": "Dr. X" },
+  "patient_info": { "name": "…", "age": 67, "gender": "male", "datetime": "2026-10-24T11:16", "source": "Blood" },
   "results": {
-    "hb":  { "value": 14.2, "flag": "normal" },
-    "wbc": { "value": 12.1, "flag": "high" }
-  },
-  "comments": "Mild leukocytosis."
+    "scr":  { "value": 1.32,  "flag": "high" },
+    "egfr": { "value": 59.12, "flag": "low" },
+    "fbs":  { "value": 101,   "flag": "normal", "value2": 5.6 },
+    "colour": { "value": "Straw" }
+  }
 }
 ```
 
-## Flagging logic
-
-```
-value < ref_low                       -> "low"
-value > ref_high                      -> "high"
-value <= critical_low (if defined)    -> "critical_low"
-value >= critical_high (if defined)   -> "critical_high"
-otherwise                             -> "normal"
-```
-
-Flags are computed on entry and **stored** with the value (don't recompute at render —
-the issued report must be reproducible). Display: normal = plain, high/low = bold,
-critical = bold + highlighted.
+`datetime` (the specimen Date & Time) is **prefilled with now** on a new report and decides
+which **visit** the report belongs to (see data-model.md).
 
 ## Lifecycle & reproducibility
 
 ```
-choose template ─► load schema ─► auto-build form
-       │                               │
-       │                       staff enter values
-       ▼                               ▼
-freeze template_snapshot ─────► save report (draft)
-       │
-       ▼
-doctor verifies ─► status = verified ─► render PDF from (snapshot + data)
+choose template ─► form (live calc + flags) ─► save draft (snapshot frozen, values stored)
+                                                  │
+                                    edit draft (re-calculated against the SAME snapshot)
+                                                  │
+                                     verify ─► verified (immutable) ─► PDF
 ```
 
-- On report creation, **freeze the full template schema** into
-  `reports.template_snapshot`. Later template edits (new range, extra test) must not
-  change already-issued reports.
-- Editing a template bumps `report_templates.version`; new reports use the new version,
-  old reports keep their snapshot.
-- A report is only released after **doctor/verifier sign-off** (`status = verified`).
-- Each report gets a unique, gap-free `report_number` (optionally encoded as a QR code
-  on the PDF for authenticity).
+- On creation the **full template is frozen** into `reports.template_snapshot`; later template
+  edits never change an issued report.
+- Editing a template bumps its version; old reports keep their snapshot.
+- A report is released only after **verification** (`status = verified`); unverified PDFs carry
+  a DRAFT banner.
+- `report_number` is gap-free per clinic.
 
-## Renderer responsibilities
+## Locked templates
 
-A single renderer interprets the schema for two targets:
+Every template seeded from `examples.ts` is **locked**: the edit page shows a read-only
+preview and the server refuses updates (`TemplateLockedError`). Only `seed:templates` changes
+them. The UI can neither set nor carry the `locked` flag, so clinic-built templates are always
+editable. `seed:templates` is idempotent: it creates missing templates, and locks + refreshes
+search keywords on existing ones in place (no version bump); `--replace "<name>"` overwrites a
+template's content as a new version.
 
-1. **Form renderer** (`src/components/forms/`) — walks `sections`, emits inputs:
-   - `patient_info` → prefilled, mostly read-only fields
-   - `results_table` → a row per analyte with a single editable Result input + live flag
-   - `field` / `textarea` → standard inputs
-   - validated with **Zod** schemas derived from the template
+## Renderers
 
-2. **PDF renderer** (`src/components/pdf/`) — same schema walk, emits
-   `@react-pdf/renderer` elements: clinic header (logo/name/address), patient block,
-   results table(s) with flags, comments, signature, report number/QR, footer.
+- **Form** — `components/forms/ReportFormRenderer.tsx`: inputs for typed rows, read-only live
+  values for calculated rows, typing suggestions, live flags.
+- **View** — `components/organisms/ReportView.tsx` (+ `FixedTable`).
+- **PDF** — `components/pdf/ReportDocument.tsx`: clinic header from Settings, patient block, the
+  blocks above, and the clinic's **footer line** (Settings → Footer text) on every page. No app
+  branding is printed.
 
-## Phasing
+## Template builder
 
-| Phase | What | When |
-|-------|------|------|
-| **1 — Engine** | Schema + form renderer + PDF renderer + flagging. Templates hand-built **with** the clinic and stored as JSON. | MVP / first revenue |
-| **2 — Form editor** | A UI to add sections, rows, ranges — staff create their own templates (no drag-drop). | Post-revenue |
-| **3 — Drag-and-drop** | Visual canvas builder (`dnd-kit`) with live preview. Same schema underneath. | Selling/UX upgrade |
-
-Most business value lands in Phase 1–2. Phase 3 is polish, not a prerequisite.
-
-## First data-gathering task (before building Phase 1)
-
-Sit with the design-partner clinic and capture the **exact** definition of their top
-3–5 report types:
-- every test/analyte name
-- its unit
-- its reference range (note if it varies by gender/age — schema allows it, implement later)
-- any standard comments/interpretation text
-- what their current printed report looks like (match or beat it)
-
-This real data is what the schema is validated against.
+`app/(app)/templates/TemplateBuilder.tsx` lets an owner build templates visually (blocks,
+rows, flow or canvas layout, drag to reorder). It carries every advanced field it has no editor
+for (formulas, styles, suggestions, tables, aliases) through an edit-save unchanged.

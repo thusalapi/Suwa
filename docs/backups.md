@@ -89,7 +89,7 @@ npm run restore -- --file backups/<dump>.dump.enc \
 dropdb suwa_restore_test
 ```
 
-After a real restore, run `npm run db:status` to confirm the Liquibase schema state.
+After a real restore, run `npm run db:deploy -- --status` to confirm no changesets are pending.
 
 ## Cloud-migration note
 

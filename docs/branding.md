@@ -87,5 +87,6 @@ Rules:
 - [ ] No literal user-facing string — use `t("namespace.key")`.
 - [ ] New strings added to `en.ts` (the only locale at launch).
 - [ ] Money/date/number rendered via locale-aware formatters.
-- [ ] Document (PDF) chrome uses **clinic identity** from the DB, product brand from
-      `brand.*`.
+- [ ] Printed documents (reports, invoices, receipts, revenue PDF) carry **only the clinic's
+      identity** from the DB — header from Settings, footer from Settings → Footer text. The
+      product brand (Suwa) is **not printed** on anything a patient receives.

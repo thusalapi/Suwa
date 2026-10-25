@@ -104,7 +104,7 @@ export default async function PatientDetailPage({ params }: { params: Promise<{ 
               <li key={v.date} className="rounded-lg border border-border bg-surface-raised">
                 <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-border px-4 py-2.5">
                   <h3 className="font-semibold text-ink">
-                    {formatDate(`${v.date}T00:00:00`, locale)}
+                    {formatDate(v.date, locale)}
                     {v.date === today ? (
                       <Badge tone="success" className="ml-2 align-middle">
                         {t("patients.visitToday")}

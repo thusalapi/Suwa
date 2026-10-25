@@ -1,0 +1,34 @@
+// Tailscale access policy for Suwa — paste into the admin console (Access controls) and adjust.
+// Model: clinic PCs can reach ONLY the Suwa app on 443. Admins reach everything.
+// Add one tag per clinic (tag:clinic-<name>) and one auto-approved, tagged auth key per clinic.
+{
+  "groups": {
+    // People who administer Suwa (your Tailscale login emails).
+    "group:admins": ["you@example.com"],
+  },
+
+  "tagOwners": {
+    "tag:suwa-app": ["group:admins"],
+    "tag:clinic-unawatuna": ["group:admins"],
+    // "tag:clinic-<next-clinic>": ["group:admins"],
+  },
+
+  "acls": [
+    // Clinic front-desk PCs → the Suwa app over HTTPS only.
+    { "action": "accept", "src": ["tag:clinic-unawatuna"], "dst": ["tag:suwa-app:443"] },
+
+    // Owners/doctors on personal devices (add their logins to this list) → the app only.
+    // { "action": "accept", "src": ["owner@clinic.lk"], "dst": ["tag:suwa-app:443"] },
+
+    // Admins → everything on the tailnet.
+    { "action": "accept", "src": ["group:admins"], "dst": ["*:*"] },
+  ],
+
+  // Server shell access is via AWS SSM Session Manager (Tailscale runs inside a container here,
+  // so Tailscale SSH would land in that container, not on the instance). Port 22 stays closed.
+
+  // Clinics must never be able to reach each other's devices: no clinic→clinic rule exists.
+  "tests": [
+    { "src": "tag:clinic-unawatuna", "accept": ["tag:suwa-app:443"], "deny": ["tag:suwa-app:22"] },
+  ],
+}
