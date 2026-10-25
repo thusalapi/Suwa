@@ -7,6 +7,14 @@ import {
   serumCreatinineTemplate,
   urineMicroalbuminTemplate,
   lipidProfileTemplate,
+  urineFullReportTemplate,
+  cholesterolTemplate,
+  esrTemplate,
+  renalFunctionTemplate,
+  bloodSugarSeriesTemplate,
+  liverProfileTemplate,
+  randomBloodSugarTemplate,
+  postprandialBloodSugarTemplate,
 } from "@/lib/report-engine/examples";
 
 describe("formula parser", () => {
@@ -159,5 +167,106 @@ describe("table block validation", () => {
     expect(templateSchema.safeParse(tpl({ type: "table", columns: ["A", "B"], rows: [["x", "y"]] })).success).toBe(
       true,
     );
+  });
+});
+
+describe("Urine Full Report", () => {
+  it("is a valid template whose rows are all free text", () => {
+    expect(templateSchema.safeParse(urineFullReportTemplate).success).toBe(true);
+    const rows = urineFullReportTemplate.sections.flatMap((s) => (s.type === "results_table" ? s.rows : []));
+    expect(rows.every((r) => r.value_type === "text")).toBe(true);
+  });
+
+  it("stores entries verbatim (trimmed), keeps 1.030's zero, and skips blanks", () => {
+    const out = computeResults(urineFullReportTemplate, {
+      colour: " Straw ",
+      sg: "1.030",
+      pus: "1 to 2",
+      crystals: "",
+    });
+    expect(out.colour).toEqual({ value: "Straw" });
+    expect(out.sg).toEqual({ value: "1.030" });
+    expect(out.pus).toEqual({ value: "1 to 2" });
+    expect(out.crystals).toBeUndefined();
+    expect(validateReportData(urineFullReportTemplate, { results: out }).success).toBe(true);
+  });
+});
+
+describe("Cholesterol", () => {
+  it("flags against 150-200 for the REMARKS column, showing 1 decimal (190.0)", () => {
+    expect(computeResults(cholesterolTemplate, { tc: "190" }).tc).toEqual({ value: 190, flag: "normal" });
+    expect(computeResults(cholesterolTemplate, { tc: "215" }).tc.flag).toBe("high");
+    expect(computeResults(cholesterolTemplate, { tc: "140" }).tc.flag).toBe("low");
+    expect(formatResult(190, { decimals: 1 })).toBe("190.0");
+  });
+});
+
+describe("ESR, Renal Function Test, Blood Sugar Series", () => {
+  it("are valid templates", () => {
+    for (const t of [esrTemplate, renalFunctionTemplate, bloodSugarSeriesTemplate]) {
+      expect(templateSchema.safeParse(t).success).toBe(true);
+    }
+  });
+
+  it("flags the renal profile from the printed report against its ranges", () => {
+    const out = computeResults(renalFunctionTemplate, {
+      urea: 26,
+      scr: 1.48,
+      uric: 6.7,
+      ca: 2.06,
+      phos: 2.6,
+      na: 139.94,
+      k: 4.09,
+      cl: 99.21,
+    });
+    expect(out.scr.flag).toBe("high");
+    expect(out.ca.flag).toBe("low");
+    expect([out.urea, out.uric, out.phos, out.na, out.k, out.cl].every((e) => e.flag === "normal")).toBe(true);
+    expect(formatResult(4.09, { decimals: 2 })).toBe("4.09");
+  });
+
+  it("only flags the fasting value in the blood sugar series", () => {
+    const out = computeResults(bloodSugarSeriesTemplate, { fbs: 130, pp_breakfast: 250 });
+    expect(out.fbs.flag).toBe("high");
+    expect(out.pp_breakfast.flag).toBe("normal"); // no range → never flagged
+  });
+});
+
+describe("Liver Profile Test", () => {
+  it("calculates globulin = total protein − albumin, and flags the printed results", () => {
+    const out = computeResults(liverProfileTemplate, {
+      tbil: 2.59,
+      alp: 86.8,
+      ast: 19.4,
+      alt: 33,
+      ggt: 88.5,
+      tp: 5.4,
+      alb: 4.5,
+    });
+    expect(out.glob).toEqual({ value: 0.9, flag: "normal" }); // no range on the paper → never flagged
+    expect(out.tbil.flag).toBe("high");
+    expect(out.ggt.flag).toBe("high");
+    expect(out.tp.flag).toBe("low");
+    expect([out.alp, out.ast, out.alt, out.alb].every((e) => e.flag === "normal")).toBe(true);
+  });
+
+  it("ignores a typed globulin and leaves it blank until both proteins are entered", () => {
+    expect(computeResults(liverProfileTemplate, { tp: 7, glob: 99 }).glob).toBeUndefined();
+  });
+});
+
+describe("Random and Postprandial Blood Sugar", () => {
+  it("matches the printed reports: RBS 111.0 → 6.1 mmol/l, PPBS 125.0 → 6.9 mmol/l + urine sugar Nil", () => {
+    const rbs = computeResults(randomBloodSugarTemplate, { rbs: "111" });
+    expect(rbs.rbs).toEqual({ value: 111, flag: "normal", value2: 6.1 });
+    expect(formatResult(111, { decimals: 1 })).toBe("111.0");
+
+    const pp = computeResults(postprandialBloodSugarTemplate, { ppbs: "125", ppus: "Nil" });
+    expect(pp.ppbs.value2).toBe(6.9);
+    expect(pp.ppus).toEqual({ value: "Nil" });
+  });
+
+  it("flags random blood sugar against 65-140", () => {
+    expect(computeResults(randomBloodSugarTemplate, { rbs: 180 }).rbs.flag).toBe("high");
   });
 });

@@ -7,9 +7,9 @@ import { Input } from "@/components/atoms/Input";
 import { Label } from "@/components/atoms/Label";
 import { Button } from "@/components/atoms/Button";
 import { Badge } from "@/components/atoms/Badge";
-import { Unit } from "@/components/atoms/Unit";
+import { TestName, Unit } from "@/components/atoms/Unit";
 import { FixedTable } from "@/components/organisms/FixedTable";
-import { formatPatientValue } from "@/lib/report-engine/display";
+import { formatPatientValue, plainName } from "@/lib/report-engine/display";
 import { Spinner } from "@/components/atoms/Spinner";
 import { cn } from "@/lib/utils/cn";
 import { getT } from "@/lib/i18n";
@@ -116,7 +116,7 @@ export function ReportFormRenderer({
   const resultInput = (row: ResultRow, className: string) =>
     row.formula != null ? (
       <div
-        aria-label={`${row.test} ${t("reports.result")}`}
+        aria-label={`${plainName(row.test)} ${t("reports.result")}`}
         title={t("reports.calculated")}
         className={cn(
           "flex h-9 w-full items-center rounded-md border border-dashed border-border bg-surface px-3 text-sm text-ink",
@@ -130,16 +130,27 @@ export function ReportFormRenderer({
         )}
       </div>
     ) : (
-      <Input
-        name={`res.${row.key}`}
-        type={row.value_type === "text" ? "text" : "number"}
-        step={row.value_type === "text" ? undefined : "any"}
-        inputMode={row.value_type === "text" ? undefined : "decimal"}
-        aria-label={`${row.test} ${t("reports.result")}`}
-        value={resultValues[row.key] ?? ""}
-        onChange={(e) => setResultValues((prev) => ({ ...prev, [row.key]: e.target.value }))}
-        className={cn("h-9", className)}
-      />
+      <>
+        <Input
+          name={`res.${row.key}`}
+          type={row.value_type === "text" ? "text" : "number"}
+          step={row.value_type === "text" ? undefined : "any"}
+          inputMode={row.value_type === "text" ? undefined : "decimal"}
+          list={row.suggestions?.length ? `sug_${row.key}` : undefined}
+          autoComplete="off"
+          aria-label={`${plainName(row.test)} ${t("reports.result")}`}
+          value={resultValues[row.key] ?? ""}
+          onChange={(e) => setResultValues((prev) => ({ ...prev, [row.key]: e.target.value }))}
+          className={cn("h-9", className)}
+        />
+        {row.suggestions?.length ? (
+          <datalist id={`sug_${row.key}`}>
+            {row.suggestions.map((s) => (
+              <option key={s} value={s} />
+            ))}
+          </datalist>
+        ) : null}
+      </>
     );
 
   return (
@@ -154,6 +165,10 @@ export function ReportFormRenderer({
               <h2 key={i} className="text-lg font-semibold text-ink">
                 {section.text}
               </h2>
+            ) : section.note ? (
+              <p key={i} className="mt-8 whitespace-pre-line text-xs text-muted">
+                {section.text}
+              </p>
             ) : section.subheading ? (
               <p key={i} className="text-sm font-semibold text-ink">
                 {section.text}
@@ -203,7 +218,9 @@ export function ReportFormRenderer({
                         key={row.key}
                         className="flex items-center gap-3 border-b border-border px-3 py-2 last:border-0"
                       >
-                        <span className="flex-1 text-ink">{row.test}</span>
+                        <span className="flex-1 text-ink">
+                          <TestName name={row.test} />
+                        </span>
                         <div className="flex w-1/2 items-center gap-2">
                           {resultInput(row, "max-w-[12rem]")}
                           {row.unit ? (
@@ -254,7 +271,9 @@ export function ReportFormRenderer({
                         const flag = flagFor(row);
                         return (
                           <tr key={row.key} className="border-b border-border last:border-0">
-                            <td className="px-3 py-2 text-ink">{row.test}</td>
+                            <td className="px-3 py-2 text-ink">
+                              <TestName name={row.test} />
+                            </td>
                             <td className="px-3 py-2">{resultInput(row, "max-w-[8rem]")}</td>
                             <td className="px-3 py-2 text-muted">{row.unit ? <Unit unit={row.unit} /> : "—"}</td>
                             <td className="px-3 py-2 text-muted">{rangeLabel(row)}</td>

@@ -24,6 +24,12 @@ export const fbcTemplate = {
   ],
 } satisfies Template;
 
+/** The lab's standard footnote, printed (as a `note`) on several of its reports. */
+const LAB_NOTE =
+  "Note:  1. The values will vary from one laboratory to another.\n" +
+  "          2. Laboratory values depend on the age, sex and time of collecting the samples, and may vary accordingly.\n" +
+  "          3. Laboratory reports should not be interpreted in isolation. They should always be correlated with clinical findings and other medical reports.";
+
 /**
  * Fasting Blood Sugar — modelled on Unawatuna Medical Centre's house format: a two-column
  * patient/specimen block, a compact "list" result with dual units (mg/dl + auto-derived mmol/l),
@@ -40,19 +46,48 @@ export const fastingBloodSugarTemplate = {
       style: "list",
       title: "Fasting Blood Sugar",
       listHeader: { left: "Chemistry", right: "Result" },
-      rows: [{ key: "fbs", test: "Fasting Blood Sugar", unit: "mg/dl", unit2: "mmol/l", factor2: 0.0555 }],
+      // Printed with 1 decimal (101.0 mg/dl), as on the lab's report.
+      rows: [{ key: "fbs", test: "Fasting Blood Sugar", unit: "mg/dl", unit2: "mmol/l", factor2: 0.0555, decimals: 1 }],
     },
     { type: "static", heading: true, text: "EXPECTED VALUES" },
     { type: "static", text: "70 - 100 mg/dl  :  Normal" },
     { type: "static", text: "101 - 125 mg/dl  :  Impaired" },
     { type: "static", text: ">= 126 mg/dl  :  High" },
+    { type: "static", note: true, text: LAB_NOTE },
+    { type: "signature", label: "Verified by", subtitle: "Medical Laboratory Technologist · SLMC Reg." },
+  ],
+} satisfies Template;
+
+/**
+ * Cholesterol (total) — Unawatuna Medical Centre's printed report. Only the result is entered; the
+ * REMARKS column (Normal / Low / High) follows from the 150-200 mg/dl range.
+ */
+export const cholesterolTemplate = {
+  name: "Cholesterol",
+  version: 1,
+  locked: true,
+  sections: [
+    { type: "patient_info", fields: ["name", "age", "gender", "referred_by", "specimen_no", "datetime", "source"] },
+    { type: "static", heading: true, text: "Cholesterol" },
     {
-      type: "static",
-      text:
-        "Note:  1. The values will vary from one laboratory to another.\n" +
-        "          2. Laboratory values depend on the age, sex and time of collecting the samples, and may vary accordingly.\n" +
-        "          3. Laboratory reports should not be interpreted in isolation. They should always be correlated with clinical findings and other medical reports.",
+      type: "results_table",
+      style: "ranged",
+      listHeader: { left: "CHEMISTRY", right: "RESULT" },
+      rangeHeader: "REF.RANGE",
+      remarksHeader: "REMARKS",
+      rows: [
+        {
+          key: "tc",
+          test: "Total Cholesterol",
+          unit: "mg/dl",
+          ref_low: 150,
+          ref_high: 200,
+          ref_text: "150 - 200 mg/dl",
+          decimals: 1,
+        },
+      ],
     },
+    { type: "static", note: true, text: LAB_NOTE },
     { type: "signature", label: "Verified by", subtitle: "Medical Laboratory Technologist · SLMC Reg." },
   ],
 } satisfies Template;
@@ -279,6 +314,318 @@ export const lipidProfileTemplate = {
         ["Cholesterol/HDL Ratio", "Men\nWomen", "<3.8\n<3.1", "3.8-5.9\n3.1-4.5", ">5.9\n>4.5"],
       ],
     },
+    { type: "signature", label: "Verified by", subtitle: "Medical Laboratory Technologist · SLMC Reg." },
+  ],
+} satisfies Template;
+
+/**
+ * Urine Full Report (UFR) — Unawatuna Medical Centre's printed report. Every value is entered by
+ * hand and most are words ("Straw", "Nil", "1 to 2"), so the rows are text with typing suggestions;
+ * nothing is calculated or flagged. Sp. gravity and pH are text too, so "1.030" keeps its zero.
+ */
+const GRADES = ["Nil", "Trace", "+", "++", "+++", "++++"];
+const PER_HPF = [
+  "Nil",
+  "Occasional",
+  "0 to 1",
+  "1 to 2",
+  "2 to 3",
+  "3 to 5",
+  "5 to 10",
+  "10 to 15",
+  "15 to 20",
+  "Field full",
+];
+
+export const urineFullReportTemplate = {
+  name: "Urine Full Report",
+  version: 1,
+  locked: true,
+  sections: [
+    {
+      type: "patient_info",
+      fields: ["name", "age", "gender", "referred_by", "specimen_no", "datetime", "source"],
+      defaultSource: "Urine",
+    },
+    { type: "static", heading: true, text: "Urine Full Report" },
+    {
+      type: "results_table",
+      style: "list",
+      rows: [
+        {
+          key: "colour",
+          test: "Colour",
+          value_type: "text",
+          suggestions: ["Straw", "Pale Yellow", "Yellow", "Dark Yellow", "Amber", "Red", "Brown"],
+        },
+        {
+          key: "appearance",
+          test: "Appearance",
+          value_type: "text",
+          suggestions: ["Clear", "Slightly Turbid", "Turbid"],
+        },
+        { key: "reaction", test: "Reaction", value_type: "text", suggestions: ["Acidic", "Neutral", "Alkaline"] },
+        {
+          key: "sg",
+          test: "Sp. Gravity",
+          value_type: "text",
+          suggestions: ["1.005", "1.010", "1.015", "1.020", "1.025", "1.030"],
+        },
+        { key: "protein", test: "Protein", value_type: "text", suggestions: GRADES },
+        { key: "sugar", test: "Sugar", value_type: "text", suggestions: GRADES },
+        { key: "acetone", test: "Acetone", value_type: "text", suggestions: ["Negative", "Positive"] },
+        { key: "bile", test: "Bile Pigments", value_type: "text", suggestions: ["Negative", "Positive"] },
+        { key: "urobilinogen", test: "Urobilinogen", value_type: "text", suggestions: ["+ Normal", "Increased"] },
+        {
+          key: "blood",
+          test: "Occult Blood",
+          value_type: "text",
+          suggestions: ["Negative", "Trace", "+", "++", "+++"],
+        },
+        {
+          key: "leucocytes",
+          test: "Leucocytes",
+          value_type: "text",
+          suggestions: ["Negative", "Trace", "+", "++", "+++"],
+        },
+        {
+          key: "ph",
+          test: "pH",
+          value_type: "text",
+          suggestions: ["5", "5.5", "6", "6.5", "7", "7.5", "8", "8.5"],
+        },
+      ],
+    },
+    { type: "static", heading: true, text: "DEPOSITS" },
+    {
+      type: "results_table",
+      style: "list",
+      rows: [
+        { key: "pus", test: "Pus Cells", unit: "/H.P.F", value_type: "text", suggestions: PER_HPF },
+        { key: "rbc", test: "Red Cells", unit: "/H.P.F", value_type: "text", suggestions: PER_HPF },
+        { key: "epithelial", test: "Epithelial Cells", value_type: "text", suggestions: GRADES },
+        { key: "casts", test: "Casts", value_type: "text", suggestions: ["Nil"] },
+        { key: "crystals", test: "Crystals", value_type: "text", suggestions: ["Nil"] },
+        { key: "organisms", test: "Organisms", value_type: "text", suggestions: ["Nil"] },
+      ],
+    },
+    { type: "signature", label: "Verified by", subtitle: "Medical Laboratory Technologist · SLMC Reg." },
+  ],
+} satisfies Template;
+
+/**
+ * ESR — Unawatuna Medical Centre's printed report. Only the result is entered. The reference
+ * range depends on sex and age, so it is printed as a block below (no flag on the result).
+ */
+export const esrTemplate = {
+  name: "ESR",
+  version: 1,
+  locked: true,
+  sections: [
+    { type: "patient_info", fields: ["name", "age", "gender", "referred_by", "specimen_no", "datetime", "source"] },
+    { type: "static", heading: true, text: "E.S.R" },
+    {
+      type: "results_table",
+      style: "list",
+      rows: [{ key: "esr", test: "Erythrocytes Sedimentation Rate", unit: "mm (1st Hour)" }],
+    },
+    { type: "static", heading: true, text: "REFERENCE RANGE" },
+    { type: "static", subheading: true, text: "Male :" },
+    { type: "static", text: "Age < 50  :  0 - 15 mm 1st Hour" },
+    { type: "static", text: "Age > 50  :  0 - 20 mm 1st Hour" },
+    { type: "static", subheading: true, text: "Female :" },
+    { type: "static", text: "Age < 50  :  0 - 25 mm 1st Hour" },
+    { type: "static", text: "Age > 50  :  0 - 30 mm 1st Hour" },
+    { type: "signature", label: "Verified by", subtitle: "Medical Laboratory Technologist · SLMC Reg." },
+  ],
+} satisfies Template;
+
+/**
+ * Renal Function Test — Unawatuna Medical Centre's printed report. All eight results are entered and
+ * flagged against the printed ranges; values print with the lab's usual decimals.
+ */
+export const renalFunctionTemplate = {
+  name: "Renal Function Test",
+  version: 1,
+  locked: true,
+  sections: [
+    { type: "patient_info", fields: ["name", "age", "gender", "referred_by", "specimen_no", "datetime", "source"] },
+    { type: "static", heading: true, text: "RENAL FUNCTION TEST" },
+    {
+      type: "results_table",
+      style: "ranged",
+      listHeader: { left: "TEST", right: "RESULT" },
+      rangeHeader: "REF.RANGE",
+      rows: [
+        { key: "urea", test: "Serum Urea", unit: "mg/dl", ref_low: 10, ref_high: 40 },
+        { key: "scr", test: "Serum Creatinine", unit: "mg/dl", ref_low: 0.9, ref_high: 1.3, decimals: 2 },
+        {
+          key: "uric",
+          test: "Serum Uric Acid",
+          unit: "mg/dl",
+          ref_low: 3.4,
+          ref_high: 7,
+          ref_text: "3.4 - 7.0",
+          decimals: 1,
+        },
+        { key: "ca", test: "Serum Calcium", unit: "mg/dl", ref_low: 8.1, ref_high: 10.4, decimals: 2 },
+        {
+          key: "phos",
+          test: "Serum Phosphorus (Inorganic)",
+          unit: "mg/dl",
+          ref_low: 2.5,
+          ref_high: 4.9,
+          decimals: 1,
+        },
+        { key: "na", test: "Serum Na^+", unit: "mmol/l", ref_low: 135, ref_high: 145, decimals: 2 },
+        { key: "k", test: "Serum K^+", unit: "mmol/l", ref_low: 3.5, ref_high: 5.3, decimals: 2 },
+        { key: "cl", test: "Serum Cl^-", unit: "mmol/l", ref_low: 95, ref_high: 111, decimals: 2 },
+      ],
+    },
+    { type: "signature", label: "Verified by", subtitle: "Medical Laboratory Technologist · SLMC Reg." },
+  ],
+} satisfies Template;
+
+/**
+ * Blood Sugar Series Test — Unawatuna Medical Centre's printed report: six timed glucose readings,
+ * all entered. Only the fasting value has a reference range; the rest print "-".
+ */
+export const bloodSugarSeriesTemplate = {
+  name: "Blood Sugar Series Test",
+  version: 1,
+  locked: true,
+  sections: [
+    { type: "patient_info", fields: ["name", "age", "gender", "referred_by", "specimen_no", "datetime", "source"] },
+    { type: "static", heading: true, text: "BLOOD SUGAR SERIES TEST" },
+    {
+      type: "results_table",
+      style: "ranged",
+      listHeader: { left: "TEST", right: "RESULT" },
+      rangeHeader: "REF. RANGE",
+      rows: [
+        {
+          key: "fbs",
+          test: "Fasting Blood Sugar",
+          unit: "mg/dl",
+          ref_low: 75,
+          ref_high: 120,
+          ref_text: "75 - 120 mg/dl",
+        },
+        { key: "pp_breakfast", test: "Post Prandial Blood Sugar (Post Breakfast)", unit: "mg/dl", ref_text: "-" },
+        { key: "pre_lunch", test: "Pre. Lunch Blood Sugar", unit: "mg/dl", ref_text: "-" },
+        { key: "pp_lunch", test: "Post Prandial Blood Sugar (Post Lunch)", unit: "mg/dl", ref_text: "-" },
+        { key: "pre_dinner", test: "Pre. Dinner Blood Sugar", unit: "mg/dl", ref_text: "-" },
+        { key: "pp_dinner", test: "Post Prandial Blood Sugar (Post Dinner)", unit: "mg/dl", ref_text: "-" },
+      ],
+    },
+    { type: "signature", label: "Verified by", subtitle: "Medical Laboratory Technologist · SLMC Reg." },
+  ],
+} satisfies Template;
+
+/**
+ * Liver Profile Test — Unawatuna Medical Centre's printed report. Seven results are entered;
+ * globulin is calculated: Globulin = Total Protein − Albumin (g/dl). The paper prints no range for it.
+ */
+export const liverProfileTemplate = {
+  name: "Liver Profile Test",
+  version: 1,
+  locked: true,
+  sections: [
+    { type: "patient_info", fields: ["name", "age", "gender", "referred_by", "specimen_no", "datetime", "source"] },
+    { type: "static", heading: true, text: "LIVER PROFILE TEST" },
+    {
+      type: "results_table",
+      style: "ranged",
+      listHeader: { left: "TEST TYPE", right: "RESULT" },
+      rangeHeader: "REF.RANGE",
+      rows: [
+        {
+          key: "tbil",
+          test: "Total Bilirubin",
+          unit: "mg/dl",
+          ref_low: 0.2,
+          ref_high: 1,
+          ref_text: "0.2 - 1.0",
+          decimals: 2,
+        },
+        { key: "alp", test: "S. Alkaline Phosphatase", unit: "u/l", ref_low: 40, ref_high: 130, decimals: 1 },
+        { key: "ast", test: "SGOT (AST)", unit: "u/l", ref_high: 35, ref_text: "< 35", decimals: 1 },
+        { key: "alt", test: "SGPT (ALT)", unit: "u/l", ref_high: 40, ref_text: "< 40", decimals: 1 },
+        { key: "ggt", test: "Gamma GT", unit: "u/l", ref_high: 49, ref_text: "< 49", decimals: 1 },
+        { key: "tp", test: "Total Protein", unit: "g/dl", ref_low: 6.6, ref_high: 8.8, decimals: 1 },
+        { key: "alb", test: "Albumin", unit: "g/dl", ref_low: 3.5, ref_high: 5.2, decimals: 1 },
+        { key: "glob", test: "Globulin", unit: "g/dl", formula: "tp - alb", decimals: 1 },
+      ],
+    },
+    { type: "signature", label: "Verified by", subtitle: "Medical Laboratory Technologist · SLMC Reg." },
+  ],
+} satisfies Template;
+
+/**
+ * Random Blood Sugar — Unawatuna Medical Centre's printed report. Only the result is entered; mmol/l
+ * is derived (× 0.0555) and printed in its own column beside the range (111.0 mg/dl → 6.1 mmol/l).
+ */
+export const randomBloodSugarTemplate = {
+  name: "Random Blood Sugar",
+  version: 1,
+  locked: true,
+  sections: [
+    { type: "patient_info", fields: ["name", "age", "gender", "referred_by", "specimen_no", "datetime", "source"] },
+    { type: "static", heading: true, text: "Random Blood Sugar" },
+    {
+      type: "results_table",
+      style: "ranged",
+      listHeader: { left: "CHEMISTRY", right: "RESULT" },
+      rangeHeader: "REF.RANGE",
+      rows: [
+        {
+          key: "rbs",
+          test: "Random Blood Sugar",
+          unit: "mg/dl",
+          unit2: "mmol/l",
+          factor2: 0.0555,
+          ref_low: 65,
+          ref_high: 140,
+          ref_text: "65-140 mg/dl",
+          decimals: 1,
+        },
+      ],
+    },
+    { type: "signature", label: "Verified by", subtitle: "Medical Laboratory Technologist · SLMC Reg." },
+  ],
+} satisfies Template;
+
+/**
+ * Postprandial Blood Sugar — Unawatuna Medical Centre's printed report, in the Fasting Blood Sugar
+ * style: blood sugar entered (mmol/l derived), urine sugar entered as text, then the expected values.
+ */
+export const postprandialBloodSugarTemplate = {
+  name: "Postprandial Blood Sugar",
+  version: 1,
+  locked: true,
+  sections: [
+    { type: "patient_info", fields: ["name", "age", "gender", "referred_by", "specimen_no", "datetime", "source"] },
+    {
+      type: "results_table",
+      style: "list",
+      title: "Postprandial Blood Sugar",
+      listHeader: { left: "Chemistry", right: "Result" },
+      rows: [
+        {
+          key: "ppbs",
+          test: "Postprandial Blood Sugar",
+          unit: "mg/dl",
+          unit2: "mmol/l",
+          factor2: 0.0555,
+          decimals: 1,
+        },
+        { key: "ppus", test: "Postprandial Urine Sugar", value_type: "text", suggestions: GRADES },
+      ],
+    },
+    { type: "static", heading: true, text: "EXPECTED VALUES" },
+    { type: "static", text: "70 - 140 mg/dl  :  Normal" },
+    { type: "static", text: "140 - 200 mg/dl  :  Impaired" },
+    { type: "static", text: ">= 200 mg/dl  :  High" },
     { type: "signature", label: "Verified by", subtitle: "Medical Laboratory Technologist · SLMC Reg." },
   ],
 } satisfies Template;

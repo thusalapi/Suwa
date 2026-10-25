@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { templateSchema, parseTemplate } from "@/lib/report-engine/template";
-import { computeResults, validateReportData } from "@/lib/report-engine/report-data";
+import { computeResults, formatResult, validateReportData } from "@/lib/report-engine/report-data";
 import { fastingBloodSugarTemplate, bloodGroupingTemplate } from "@/lib/report-engine/examples";
 
 describe("house-style templates", () => {
@@ -66,5 +66,14 @@ describe("results_table validation", () => {
       ],
     };
     expect(templateSchema.safeParse(ok).success).toBe(true);
+  });
+});
+
+describe("Fasting Blood Sugar display", () => {
+  it("prints the result with 1 decimal beside mmol/l, as on the lab's report (101.0 mg/dl, 5.6 mmol/l)", () => {
+    const out = computeResults(fastingBloodSugarTemplate, { fbs: "101" });
+    expect(out.fbs).toEqual({ value: 101, flag: "normal", value2: 5.6 });
+    const row = fastingBloodSugarTemplate.sections.flatMap((s) => (s.type === "results_table" ? s.rows : []))[0];
+    expect(formatResult(out.fbs.value, row)).toBe("101.0");
   });
 });

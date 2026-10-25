@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatPatientValue, titleCase, unitParts } from "@/lib/report-engine/display";
+import { formatPatientValue, nameParts, noteParts, plainName, titleCase, unitParts } from "@/lib/report-engine/display";
 
 describe("unitParts", () => {
   it("raises squared/cubed length units", () => {
@@ -28,5 +28,34 @@ describe("patient values", () => {
     expect(formatPatientValue("name", "w.shanthi")).toBe("w.shanthi");
     expect(formatPatientValue("age", 67)).toBe("67");
     expect(titleCase("other")).toBe("Other");
+  });
+});
+
+describe("noteParts", () => {
+  it("splits the label and numbered points, ignoring the source's space-indentation", () => {
+    const text = "Note:  1. First point.\n          2. Second point\n             continues here.\n   3. Third.";
+    expect(noteParts(text)).toEqual({
+      label: "Note:",
+      items: [
+        { num: "1.", text: "First point." },
+        { num: "2.", text: "Second point continues here." },
+        { num: "3.", text: "Third." },
+      ],
+    });
+  });
+
+  it("handles plain text without a label or numbers", () => {
+    expect(noteParts("Fasting required.")).toEqual({ label: undefined, items: [{ text: "Fasting required." }] });
+  });
+});
+
+describe("nameParts (ion charges in test names)", () => {
+  it("raises explicit caret charges and leaves other names alone", () => {
+    expect(nameParts("Serum Na^+")).toEqual([{ text: "Serum Na" }, { text: "+", sup: true }]);
+    expect(nameParts("Serum Cl^-")).toEqual([{ text: "Serum Cl" }, { text: "-", sup: true }]);
+    expect(nameParts("Serum Ca^2+")).toEqual([{ text: "Serum Ca" }, { text: "2+", sup: true }]);
+    expect(nameParts("Cholesterol/HDL Ratio")).toEqual([{ text: "Cholesterol/HDL Ratio" }]);
+    expect(nameParts("Serum Urea m2")).toEqual([{ text: "Serum Urea m2" }]); // no length-unit magic in names
+    expect(plainName("Serum K^+")).toBe("Serum K+");
   });
 });

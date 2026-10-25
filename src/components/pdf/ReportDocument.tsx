@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Document, Page, View, Text, Image, StyleSheet } from "@react-pdf/renderer";
+import { Document, Page, View, Text, Image, StyleSheet, Font } from "@react-pdf/renderer";
 import { semanticLight as c } from "@/lib/design/tokens.semantic";
 import { brand } from "@/lib/branding/brand";
 import { getT, formatDate } from "@/lib/i18n";
@@ -7,7 +7,7 @@ import type { Locale } from "@/lib/i18n/types";
 import { PAGE_CONTENT, tableWidths, type Template, type Section, type ResultRow } from "@/lib/report-engine/template";
 import { formatResult, type ReportData, type ResultValue } from "@/lib/report-engine/report-data";
 import { isAbnormal, isCritical, type Flag } from "@/lib/report-engine/flag";
-import { formatPatientValue, unitParts } from "@/lib/report-engine/display";
+import { formatPatientValue, nameParts, noteParts, unitParts, type UnitPart } from "@/lib/report-engine/display";
 
 /**
  * Branded PDF for a report — server-side via @react-pdf/renderer (pure Node, no headless
@@ -40,6 +40,9 @@ export interface ReportDocumentProps {
     createdAt: Date;
   };
 }
+
+// Wrap only at spaces — never hyphenate a word mid-way ("Break-/fast") on a medical report.
+Font.registerHyphenationCallback((word) => [word]);
 
 const styles = StyleSheet.create({
   page: { paddingTop: 36, paddingBottom: 48, paddingHorizontal: 40, fontSize: 10, color: c.ink },
@@ -97,11 +100,18 @@ const styles = StyleSheet.create({
   rValue: { width: "14%", fontSize: 10, textAlign: "right", paddingRight: 10 },
   rUnit: { width: "18%", fontSize: 10 },
   rRange: { width: "34%", fontSize: 10 },
+  remark: { fontSize: 10, fontWeight: 700, color: c.primaryDark },
   // Fixed text table (e.g. the lipid risk chart): underlined bold headers, no grid, like the print.
   fxHead: { fontSize: 8.5, fontWeight: 700, textDecoration: "underline", paddingRight: 6 },
   fxRow: { flexDirection: "row", paddingVertical: 4 },
   fxCell: { fontSize: 9, paddingRight: 6 },
   subheading: { fontSize: 9.5, fontWeight: 700, color: c.ink, marginTop: 6, marginBottom: 2 },
+  // Footnote: well below the content, "Note:" label with numbered points hanging-indented.
+  note: { flexDirection: "row", marginTop: 48 },
+  noteLabel: { width: 34, fontSize: 8.5, color: c.muted },
+  noteItem: { flexDirection: "row", marginBottom: 2 },
+  noteNum: { width: 14, fontSize: 8.5, color: c.muted },
+  noteText: { flex: 1, fontSize: 8.5, color: c.muted },
   sectionTitle: { fontSize: 11, fontWeight: 700, marginTop: 10, marginBottom: 4 },
   tHead: { flexDirection: "row", borderBottomWidth: 1, borderBottomColor: c.border, paddingBottom: 3 },
   tRow: { flexDirection: "row", borderBottomWidth: 0.5, borderBottomColor: c.border, paddingVertical: 3 },
@@ -130,12 +140,21 @@ const styles = StyleSheet.create({
   },
 });
 
+/** A test name with explicit carets raised (Na⁺, Cl⁻) — nested inside a parent <Text>. */
+function PdfName({ name }: { name: string }) {
+  return <PdfParts parts={nameParts(name)} />;
+}
+
 /** A unit with its powers raised (m², 10³) — nested inside a parent <Text>. */
 function PdfUnit({ unit }: { unit: string | undefined }) {
   if (!unit) return null;
+  return <PdfParts parts={unitParts(unit)} />;
+}
+
+function PdfParts({ parts }: { parts: UnitPart[] }) {
   return (
     <>
-      {unitParts(unit).map((p, i) =>
+      {parts.map((p, i) =>
         p.sup ? (
           <Text key={i} style={{ verticalAlign: "super", fontSize: 7 }}>
             {p.text}
@@ -170,6 +189,22 @@ export function ReportDocument({ locale, clinic, qrDataUrl, report }: ReportDocu
   const renderInner = (section: Section): ReactNode => {
     switch (section.type) {
       case "static":
+        if (section.note) {
+          const { label, items } = noteParts(section.text);
+          return (
+            <View style={styles.note} wrap={false}>
+              {label ? <Text style={styles.noteLabel}>{label}</Text> : null}
+              <View style={{ flex: 1 }}>
+                {items.map((it, j) => (
+                  <View key={j} style={styles.noteItem}>
+                    {it.num ? <Text style={styles.noteNum}>{it.num}</Text> : null}
+                    <Text style={styles.noteText}>{it.text}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          );
+        }
         return (
           <Text style={section.heading ? styles.sectionTitle : section.subheading ? styles.subheading : styles.meta}>
             {section.text}
@@ -205,7 +240,9 @@ export function ReportDocument({ locale, clinic, qrDataUrl, report }: ReportDocu
                 const entry = results[row.key];
                 return (
                   <View key={row.key} style={styles.colRow}>
-                    <Text style={styles.dTest}>{row.test}</Text>
+                    <Text style={styles.dTest}>
+                      <PdfName name={row.test} />
+                    </Text>
                     <Text style={styles.dValue}>
                       {entry ? (
                         <>
@@ -231,16 +268,34 @@ export function ReportDocument({ locale, clinic, qrDataUrl, report }: ReportDocu
           );
         }
         if (section.style === "ranged") {
+          // Column widths (%): test · value · unit · range [· remarks].
+          // Column widths (%): test · value · unit · range · remarks · second unit (e.g. mmol/l).
+          const remarks = !!section.remarksHeader;
+          const second = section.rows.some((r) => r.unit2);
+          const w =
+            remarks && second
+              ? [26, 10, 12, 20, 16, 16]
+              : remarks
+                ? [30, 12, 14, 24, 20, 0]
+                : second
+                  ? [30, 12, 14, 24, 0, 20]
+                  : [34, 14, 18, 34, 0, 0];
           return (
             <View wrap={false} style={{ marginTop: 6 }}>
               {section.title ? <Text style={styles.listTitle}>{section.title}</Text> : null}
               {section.rangeHeader || section.listHeader ? (
                 <View style={styles.colRow}>
-                  <Text style={[styles.colHead, { width: "34%", marginTop: 0 }]}>{section.listHeader?.left ?? ""}</Text>
-                  <Text style={[styles.colHead, { width: "32%", marginTop: 0 }]}>
+                  <Text style={[styles.colHead, { width: `${w[0]}%`, marginTop: 0 }]}>
+                    {section.listHeader?.left ?? ""}
+                  </Text>
+                  <Text style={[styles.colHead, { width: `${w[1] + w[2]}%`, marginTop: 0 }]}>
                     {section.listHeader?.right ?? ""}
                   </Text>
-                  <Text style={[styles.colHead, { width: "34%", marginTop: 0 }]}>{section.rangeHeader ?? ""}</Text>
+                  <Text style={[styles.colHead, { width: `${w[3]}%`, marginTop: 0 }]}>{section.rangeHeader ?? ""}</Text>
+                  {remarks ? (
+                    <Text style={[styles.colHead, { width: `${w[4]}%`, marginTop: 0 }]}>{section.remarksHeader}</Text>
+                  ) : null}
+                  {second ? <Text style={{ width: `${w[5]}%` }} /> : null}
                 </View>
               ) : null}
               {section.rows.map((row) => {
@@ -249,14 +304,34 @@ export function ReportDocument({ locale, clinic, qrDataUrl, report }: ReportDocu
                 const abn = !!flag && isAbnormal(flag);
                 return (
                   <View key={row.key} style={styles.colRow}>
-                    <Text style={styles.rTest}>{row.test}</Text>
-                    <Text style={abn ? [styles.rValue, styles.abnormal] : styles.rValue}>
+                    <Text style={[styles.rTest, { width: `${w[0]}%` }]}>
+                      <PdfName name={row.test} />
+                    </Text>
+                    <Text style={[styles.rValue, { width: `${w[1]}%` }, ...(abn ? [styles.abnormal] : [])]}>
                       {entry ? formatResult(entry.value, row) : "-"}
                     </Text>
-                    <Text style={styles.rUnit}>
+                    <Text style={[styles.rUnit, { width: `${w[2]}%` }]}>
                       <PdfUnit unit={row.unit} />
                     </Text>
-                    <Text style={styles.rRange}>{rangeLabel(row) === "-" ? "" : rangeLabel(row)}</Text>
+                    <Text style={[styles.rRange, { width: `${w[3]}%` }]}>
+                      {rangeLabel(row) === "-" && !row.ref_text ? "" : rangeLabel(row)}
+                    </Text>
+                    {remarks ? (
+                      <Text style={[styles.remark, { width: `${w[4]}%` }, ...(abn ? [styles.abnormal] : [])]}>
+                        {flag ? t(`reports.flag_${flag}`) : ""}
+                      </Text>
+                    ) : null}
+                    {second ? (
+                      <Text style={[styles.rRange, { width: `${w[5]}%` }]}>
+                        {entry?.value2 != null && row.unit2 ? (
+                          <>
+                            {entry.value2} <PdfUnit unit={row.unit2} />
+                          </>
+                        ) : (
+                          ""
+                        )}
+                      </Text>
+                    ) : null}
                   </View>
                 );
               })}
@@ -293,7 +368,9 @@ export function ReportDocument({ locale, clinic, qrDataUrl, report }: ReportDocu
                   );
                 return (
                   <View key={row.key} style={styles.listRow}>
-                    <Text style={styles.listTest}>{row.test}</Text>
+                    <Text style={styles.listTest}>
+                      <PdfName name={row.test} />
+                    </Text>
                     <Text style={styles.listResult}>{result}</Text>
                   </View>
                 );
@@ -321,7 +398,9 @@ export function ReportDocument({ locale, clinic, qrDataUrl, report }: ReportDocu
                   key={row.key}
                   style={flag && isCritical(flag) ? [styles.tRow, { backgroundColor: "#FEECEC" }] : styles.tRow}
                 >
-                  <Text style={[styles.td, styles.cTest]}>{row.test}</Text>
+                  <Text style={[styles.td, styles.cTest]}>
+                    <PdfName name={row.test} />
+                  </Text>
                   <Text style={[...cell, styles.cResult]}>{entry ? formatResult(entry.value, row) : "-"}</Text>
                   <Text style={[styles.td, styles.cUnit]}>{row.unit ? <PdfUnit unit={row.unit} /> : "-"}</Text>
                   <Text style={[styles.td, styles.cRange]}>{rangeLabel(row)}</Text>

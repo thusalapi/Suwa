@@ -8,6 +8,14 @@ import {
   serumCreatinineTemplate,
   urineMicroalbuminTemplate,
   lipidProfileTemplate,
+  urineFullReportTemplate,
+  cholesterolTemplate,
+  esrTemplate,
+  renalFunctionTemplate,
+  bloodSugarSeriesTemplate,
+  liverProfileTemplate,
+  randomBloodSugarTemplate,
+  postprandialBloodSugarTemplate,
 } from "@/lib/report-engine/examples";
 import { fromTemplate, toTemplate, withPositions, NEW_BLOCKS, type BSection } from "@/app/(app)/templates/builderModel";
 
@@ -41,6 +49,14 @@ describe("builder serialisation", () => {
       serumCreatinineTemplate,
       urineMicroalbuminTemplate,
       lipidProfileTemplate,
+      urineFullReportTemplate,
+      cholesterolTemplate,
+      esrTemplate,
+      renalFunctionTemplate,
+      bloodSugarSeriesTemplate,
+      liverProfileTemplate,
+      randomBloodSugarTemplate,
+      postprandialBloodSugarTemplate,
     ] as Template[]) {
       const tpl: Template = { ...seeded };
       delete tpl.locked;

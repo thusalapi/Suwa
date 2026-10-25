@@ -75,6 +75,8 @@ const staticSection = z.object({
   heading: z.boolean().optional(),
   /** A small bold line (e.g. "Elevated in:") — between a heading and body text. */
   subheading: z.boolean().optional(),
+  /** A footnote ("Note: 1. … 2. …"): set apart below the content with a hanging indent. */
+  note: z.boolean().optional(),
   pos: positionSchema,
 });
 
@@ -101,6 +103,8 @@ const resultRow = z.object({
   formula2: z.string().trim().min(1).optional(),
   /** "number" (default) flags against the range; "text" stores a qualitative value (e.g. "B Positive"). */
   value_type: z.enum(["number", "text"]).optional(),
+  /** Common values offered while typing (e.g. Nil / Trace / +). Free text is still allowed. */
+  suggestions: z.array(z.string().min(1)).optional(),
   /** Calculated row: the value is arithmetic over other rows' keys (e.g. `hb * 100 / pcv`), not
    *  entered by hand. See formula.ts for the grammar. */
   formula: z.string().trim().min(1).optional(),
@@ -124,12 +128,16 @@ const resultsTableSection = z.object({
   /** "table" (default): the 5-column Test/Result/Unit/Range/Flag grid. "list": a compact
    *  Test — Result two-column list (the lab house style); ranges live in a separate static block.
    *  "dual": Test | value unit | value2 unit2 (e.g. a differential count beside its absolute count).
-   *  "ranged": Test | value | unit | reference range, with no flag column (the printed FBC style). */
+   *  "ranged": Test | value | unit | reference range, with no flag column (the printed FBC style);
+   *  plus a second-unit column (e.g. mmol/l) when any row has `unit2`. */
   style: z.enum(["table", "list", "dual", "ranged"]).optional(),
   /** Column labels for the "list"/"dual"/"ranged" header (e.g. CHEMISTRY / RESULT). Omit to hide it. */
   listHeader: z.object({ left: z.string().min(1), right: z.string().min(1) }).optional(),
   /** Heading over the reference-range column in the "ranged" style (e.g. "REF. VALUE"). */
   rangeHeader: z.string().min(1).optional(),
+  /** "ranged" style: adds a column, headed by this, showing each result's flag in words
+   *  (Normal / Low / High) — derived from the stored flag, never typed. */
+  remarksHeader: z.string().min(1).optional(),
   rows: z.array(resultRow).min(1),
   pos: positionSchema,
 });

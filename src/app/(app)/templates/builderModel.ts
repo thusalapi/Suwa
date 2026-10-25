@@ -35,11 +35,13 @@ export interface BRow {
   decimals2?: number;
   /** Printed reference range text (display only). Carried opaquely. */
   refText?: string;
+  /** Typing suggestions for text results. Carried opaquely. */
+  suggestions?: string[];
 }
 
 type BSectionBase =
   | { _id: string; type: "patient_info"; fields: PatientField[]; defaultSource?: string }
-  | { _id: string; type: "static"; text: string; heading: boolean; subheading?: boolean }
+  | { _id: string; type: "static"; text: string; heading: boolean; subheading?: boolean; note?: boolean }
   | { _id: string; type: "field"; key: string; label: string; inputType: InputType; options: string; required: boolean }
   | {
       _id: string;
@@ -50,6 +52,7 @@ type BSectionBase =
       style?: "table" | "list" | "dual" | "ranged";
       listHeader?: { left: string; right: string };
       rangeHeader?: string;
+      remarksHeader?: string;
     }
   | { _id: string; type: "textarea"; key: string; label: string }
   // Fixed text table (e.g. a risk chart). Carried opaquely — no editor UI yet.
@@ -94,7 +97,15 @@ export function fromTemplate(tpl: Template): BSection[] {
           pos,
         };
       case "static":
-        return { _id: uid(), type: "static", text: s.text, heading: !!s.heading, subheading: s.subheading, pos };
+        return {
+          _id: uid(),
+          type: "static",
+          text: s.text,
+          heading: !!s.heading,
+          subheading: s.subheading,
+          note: s.note,
+          pos,
+        };
       case "field":
         return {
           _id: uid(),
@@ -114,6 +125,7 @@ export function fromTemplate(tpl: Template): BSection[] {
           style: s.style,
           listHeader: s.listHeader,
           rangeHeader: s.rangeHeader,
+          remarksHeader: s.remarksHeader,
           rows: s.rows.map((r) => ({
             _id: uid(),
             key: r.key,
@@ -130,6 +142,7 @@ export function fromTemplate(tpl: Template): BSection[] {
             formula2: r.formula2,
             decimals: r.decimals,
             refText: r.ref_text,
+            suggestions: r.suggestions,
             decimals2: r.decimals2,
           })),
           pos,
@@ -198,6 +211,7 @@ export function toTemplate(
               text: s.text,
               ...(s.heading ? { heading: true } : {}),
               ...(s.subheading ? { subheading: true } : {}),
+              ...(s.note ? { note: true } : {}),
             },
             s,
           );
@@ -226,6 +240,7 @@ export function toTemplate(
                 ? { listHeader: { left: s.listHeader.left.trim(), right: s.listHeader.right.trim() } }
                 : {}),
               ...(s.rangeHeader?.trim() ? { rangeHeader: s.rangeHeader.trim() } : {}),
+              ...(s.remarksHeader?.trim() ? { remarksHeader: s.remarksHeader.trim() } : {}),
               rows: s.rows.map((r) => ({
                 key: r.key.trim(),
                 test: r.test,
@@ -242,6 +257,7 @@ export function toTemplate(
                 ...numField(r.critical_low, "critical_low"),
                 ...numField(r.critical_high, "critical_high"),
                 ...(r.refText?.trim() ? { ref_text: r.refText.trim() } : {}),
+                ...(r.suggestions?.length ? { suggestions: r.suggestions } : {}),
               })),
             },
             s,

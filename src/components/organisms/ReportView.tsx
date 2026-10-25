@@ -1,5 +1,5 @@
 import { Badge } from "@/components/atoms/Badge";
-import { Unit } from "@/components/atoms/Unit";
+import { TestName, Unit } from "@/components/atoms/Unit";
 import { FixedTable } from "@/components/organisms/FixedTable";
 import { formatPatientValue } from "@/lib/report-engine/display";
 import { getT } from "@/lib/i18n";
@@ -40,6 +40,10 @@ export function ReportView({ locale, snapshot, data }: ReportViewProps) {
               <h2 key={i} className="text-lg font-semibold text-ink">
                 {section.text}
               </h2>
+            ) : section.note ? (
+              <p key={i} className="mt-8 whitespace-pre-line text-xs text-muted">
+                {section.text}
+              </p>
             ) : section.subheading ? (
               <p key={i} className="text-sm font-semibold text-ink">
                 {section.text}
@@ -86,7 +90,9 @@ export function ReportView({ locale, snapshot, data }: ReportViewProps) {
                           const entry = results[row.key];
                           return (
                             <tr key={row.key} className="border-b border-border last:border-0">
-                              <td className="px-3 py-2 text-ink">{row.test}</td>
+                              <td className="px-3 py-2 text-ink">
+                                <TestName name={row.test} />
+                              </td>
                               <td className="px-3 py-2 text-ink">
                                 {entry ? (
                                   <>
@@ -132,7 +138,9 @@ export function ReportView({ locale, snapshot, data }: ReportViewProps) {
                           key={row.key}
                           className="flex items-center gap-3 border-b border-border px-3 py-2 last:border-0"
                         >
-                          <span className="flex-1 text-ink">{row.test}</span>
+                          <span className="flex-1 text-ink">
+                            <TestName name={row.test} />
+                          </span>
                           <span className="w-1/2 text-ink">
                             {entry != null ? (
                               <>
@@ -177,7 +185,9 @@ export function ReportView({ locale, snapshot, data }: ReportViewProps) {
                         const flag = entry?.flag as Flag | undefined;
                         return (
                           <tr key={row.key} className="border-b border-border last:border-0">
-                            <td className="px-3 py-2 text-ink">{row.test}</td>
+                            <td className="px-3 py-2 text-ink">
+                              <TestName name={row.test} />
+                            </td>
                             <td
                               className={
                                 flag && isAbnormal(flag)

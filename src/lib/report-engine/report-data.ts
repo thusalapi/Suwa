@@ -122,7 +122,9 @@ export function computeResults(
     const n = typeof v === "number" ? v : Number(v);
     if (Number.isNaN(n)) continue;
     const entry: ResultValue = { value: n, flag: computeFlag(n, row) };
-    if (row.factor2 != null && row.unit2) entry.value2 = Math.round(n * row.factor2 * 10) / 10;
+    // Truncated (not rounded) to 1 dp, as the lab prints it: 111 mg/dl → 6.1605 → 6.1 mmol/l.
+    // The epsilon keeps float noise (e.g. 5.6 * 10 = 55.99999…) from dropping a digit.
+    if (row.factor2 != null && row.unit2) entry.value2 = Math.trunc(n * row.factor2 * 10 + 1e-9) / 10;
     out[row.key] = entry;
   }
 
