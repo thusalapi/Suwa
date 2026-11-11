@@ -4,11 +4,13 @@ Approach: **ship the engine before the editor**, validate continuously with the
 design-partner clinic, and reach a chargeable product before adding breadth.
 
 **Deployment:** the **pilot** ran on the clinic's own PC (local Postgres, nightly encrypted
-backup to Google Drive) to validate the product cheaply. **Production moves to hosted,
-multi-clinic infrastructure** — one install per clinic PC does not scale to more customers,
-remote support, or reliable backups. The plan and the code changes it needs are in
-[production-plan.md](production-plan.md). The stack was built cloud-agnostic, so this is
-configuration + data, not a rewrite.
+backup to Google Drive) to validate the product cheaply. **Production moves to AWS, reachable
+only over Tailscale** (no public endpoint; one shared, multi-clinic install) — one install per
+clinic PC does not scale to more customers, remote support, or reliable backups. The plan is in
+[production-plan.md](production-plan.md) and the setup steps in
+[deploy/aws/README.md](../deploy/aws/README.md). The code for it is merged; the infrastructure
+is not provisioned yet. The stack stays cloud-agnostic, so this is configuration + data, not a
+rewrite.
 
 ## Stack decisions (locked for MVP)
 
@@ -19,8 +21,8 @@ configuration + data, not a rewrite.
 | Auth | **Self-hosted credentials auth** | **No Clerk.** Email/username + password, hashed (argon2/bcrypt), HTTP-only session cookies, server-side role checks. |
 | DB migrations | **Liquibase** | Versioned changelogs, runs against local Postgres. **Not** Drizzle/Prisma migrate. |
 | Patient identity | **Phone number is the lookup key** | Unique per clinic. **NIC is optional.** UUID stays as the internal PK. |
-| Hosting | **Pilot: client's PC → production: hosted** | Next.js standalone server + PostgreSQL; see production-plan.md |
-| Backups | **Nightly Google Drive upload** | `pg_dump` → encrypted dump → Google Drive (rclone or Drive API), via Windows Task Scheduler. |
+| Hosting | **Pilot: client's PC → production: AWS + Tailscale** | Next.js standalone server in Docker on EC2 + RDS PostgreSQL (ap-south-1); clinics reach it only over Tailscale. See production-plan.md |
+| Backups | **Nightly encrypted dump, off-site** | `pg_dump` → encrypted dump → rclone. Pilot: Google Drive via Windows Task Scheduler. Production: S3 via a systemd timer, plus RDS point-in-time recovery. |
 
 ## Build sequence (~6 weeks to MVP)
 
@@ -93,11 +95,29 @@ configuration + data, not a rewrite.
 - Clinic **footer line** on every printed document; no app branding printed
 - Patient **visits** (reports + bills grouped by day)
 
-## Next: hosted production
+## Hosted production (AWS + Tailscale)
 
-See [production-plan.md](production-plan.md): hosting choice, the code changes needed first
-(time zone, multi-clinic provisioning, login rate limiting, audit log viewer…), backups,
-monitoring, data protection, and moving the pilot clinic's data across.
+Plan: [production-plan.md](production-plan.md). Setup: [deploy/aws/README.md](../deploy/aws/README.md).
+
+**Code — done (Oct 2026, merged):**
+- Clinic **time zone** (`APP_TIMEZONE`, default Asia/Colombo) so a UTC server shows Sri Lanka time
+- **Sign-in rate limiting** stored in the database (5 failures per email / 20 per IP in 15 min)
+- **Multi-clinic provisioning** (`clinic:create`; `seed:templates -- --clinic` / `--all-clinics`)
+- Tenant-isolation fix: a bill can't reference another clinic's patient or service
+- Build needs no database; `/api/health`; `Dockerfile` (app + tools images)
+- `deploy/aws/`: Docker Compose with a Tailscale sidecar (HTTPS via `tailscale serve`, Funnel
+  off), access policy (clinic PCs → app:443 only), nightly S3 backup timer
+
+**Infrastructure — to do:**
+1. Create the tailnet; apply the access policy; create the server and clinic auth keys
+2. Provision AWS: VPC, RDS PostgreSQL 17, S3 backup bucket + instance role, EC2 (no inbound ports)
+3. First Docker image build and start (not yet built anywhere); `db:deploy`
+4. Backup + **restore drill** on the new setup
+5. Move the pilot clinic's data across; install Tailscale on its front-desk PCs
+6. Keep the old clinic PC read-only for 30 days, then wipe it
+
+**Code — still open** (production-plan.md): audit log viewer, session revocation, CI/CD,
+tenant-isolation tests, per-clinic time zone, password reset.
 
 ## Post-MVP (after first revenue)
 
@@ -105,13 +125,12 @@ monitoring, data protection, and moving the pilot clinic's data across.
   (pulled forward): visual `TemplateBuilder` replaced the Phase-1 JSON editor.
 - ~~**Phase 3 report builder** — drag-and-drop canvas (`dnd-kit`)~~ — **done** (pulled forward):
   dnd-kit drag-to-reorder for blocks and results-table rows.
-- Hosted production (see production-plan.md)
 - Real visit records (separate same-day visits, move a report between visits)
 - Audit log viewer for the owner
 - SMS / email notifications
 - Appointments & scheduling
 - Age/gender-specific reference ranges (per-row ranges by sex/age)
-- Multi-branch / multi-clinic
+- Multi-branch (several clinics in one database is already supported; branches of one clinic are not)
 - Prescriptions, fuller medical records
 - Inventory
 
@@ -127,7 +146,8 @@ done; hosting is now the next step, not out of scope.)
 1. **Template snapshotting** — issued reports re-render exactly as released
 2. **Audit log** — every create/edit/verify on bills and reports
 3. **Doctor verification** before a report is released
-4. **Nightly DB backup to Google Drive** — clinical + financial data; restore tested
+4. **Nightly encrypted off-site DB backup** (pilot: Google Drive; production: S3) — clinical +
+   financial data; restore tested
 5. **Money as integers**; gap-free sequential bill/report numbers
 6. **Role checks server-side** on every mutation
 7. **Phone number as the patient lookup key**; NIC optional
@@ -145,5 +165,5 @@ done; hosting is now the next step, not out of scope.)
 ## Immediate next action
 
 1. Confirm the open calculation questions with the clinic (verification sheet).
-2. Make the time zone explicit and add login rate limiting (production-plan.md §4, blockers).
-3. Stand up staging, then move the pilot clinic onto hosted production.
+2. Create the tailnet and provision AWS (deploy/aws/README.md §1–4); build the image there.
+3. Run the restore drill, then move the pilot clinic onto hosted production.
