@@ -204,6 +204,7 @@ export const en = {
     receiptThanks: "Thank you!",
     pdfReceipt: "RECEIPT",
     pdfInvoice: "INVOICE",
+    pdfCancelled: "CANCELLED INVOICE",
     invalidItems: "Please check the bill items.",
     saveError: "Couldn’t create the bill. Please try again.",
     payInvalid: "Enter a valid payment amount.",

@@ -60,7 +60,12 @@ const styles = StyleSheet.create({
 export function BillReceipt({ locale, clinic, bill }: BillReceiptProps) {
   const t = getT(locale);
   const money = (v: number) => formatMoney(v, locale);
-  const title = bill.status === "paid" ? t("bills.pdfReceipt") : t("bills.pdfInvoice");
+  const title =
+    bill.status === "cancelled"
+      ? t("bills.pdfCancelled")
+      : bill.status === "paid"
+        ? t("bills.pdfReceipt")
+        : t("bills.pdfInvoice");
 
   return (
     <Document title={`${title} #${bill.billNumber}`}>
