@@ -79,6 +79,20 @@ or SSD disk) is billed.
    In `.env` (§3) uncomment the "Small servers" block: `PG_SHARED_BUFFERS`, `NODE_OPTIONS`,
    `SUWA_APP_IMAGE`, `SUWA_TOOLS_IMAGE` (with your GitHub owner name, lowercase).
 
+   **Without GitHub Actions** (e.g. while it is unavailable): build on your own PC and copy the
+   images across. On the PC, in the repository root, with Docker running:
+
+   ```bash
+   docker build --target app -t suwa-app:latest .
+   docker build --target tools -t suwa-tools:latest .
+   docker save suwa-app:latest suwa-tools:latest | gzip > suwa-images.tar.gz     # several hundred MB
+   gcloud compute scp suwa-images.tar.gz <instance>:~ --tunnel-through-iap
+   ```
+
+   On the server: `gunzip -c ~/suwa-images.tar.gz | sudo docker load && rm ~/suwa-images.tar.gz`.
+   Then in `.env` uncomment only `PG_SHARED_BUFFERS` and `NODE_OPTIONS` (leave the two image
+   lines commented) and skip the `pull` step in §3.
+
 ## 2B. The server — Oracle Cloud (Always Free ARM)
 
 1. Sign up at oracle.com/cloud/free. Choose a **home region** near Sri Lanka (Mumbai, Hyderabad or
