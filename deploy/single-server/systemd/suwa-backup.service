@@ -5,7 +5,7 @@ After=network-online.target docker.service
 
 [Service]
 Type=oneshot
-WorkingDirectory=/opt/suwa/deploy/oracle
+WorkingDirectory=/opt/suwa/deploy/single-server
 ExecStart=/usr/bin/docker compose --profile tools run --rm tools npm run backup
 # Fails loudly in the journal: `journalctl -u suwa-backup.service`. Check it weekly.
 StandardOutput=journal

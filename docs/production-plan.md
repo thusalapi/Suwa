@@ -133,14 +133,16 @@ Tailscale admin accounts, least-privilege IAM, CloudTrail on.
 
 ## 11. Pilot on a free single server
 
-The AWS free tier on the project account has expired, so the pilot starts at zero cost on an
-**Oracle Cloud Always Free** ARM VM instead: Tailscale, the app and PostgreSQL in one Compose
-stack, with the nightly encrypted dump copied to object storage
-([deploy/oracle/README.md](../deploy/oracle/README.md)). Access is unchanged — Tailscale only, no
-public endpoint.
+The AWS free tier on the project account has expired, so the pilot starts at zero cost on a
+single free VM instead — **Google Cloud's free e2-micro** (current choice) or Oracle Cloud Always
+Free ARM: Tailscale, the app and PostgreSQL in one Compose stack, with the nightly encrypted dump
+copied to object storage ([deploy/single-server/README.md](../deploy/single-server/README.md)).
+Access is unchanged — Tailscale only, no public endpoint.
 
 What this gives up compared with §2: RPO is **up to 24 hours** (no point-in-time recovery), the
-database shares a disk with the app, and Oracle may reclaim idle free resources. Acceptable for
+database shares a disk with the app, the Google server is in the US with 1 GB of memory (slower
+from Sri Lanka, images must be built by GitHub Actions), and Oracle may reclaim idle free
+resources. Acceptable for
 one pilot clinic with a tested restore; not for paying clinics. Moving to AWS later is a dump
 and restore (§9), with the same image and Tailscale policy.
 

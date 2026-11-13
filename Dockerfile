@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 #
-# Suwa production images (see deploy/aws/README.md and deploy/oracle/README.md).
+# Suwa production images (see deploy/aws/README.md and deploy/single-server/README.md).
 #
 #   app    — the Next.js standalone server only (small; what runs all day)
 #   tools  — full repo + tsx + pg_dump/rclone, for one-off and scheduled jobs:

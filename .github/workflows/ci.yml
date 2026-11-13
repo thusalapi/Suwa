@@ -1,0 +1,69 @@
+# Checks every push and pull request; on master (or a manual run) also builds the production
+# images and pushes them to GitHub Container Registry, so a small server can pull them instead of
+# building (a 1 GB VM cannot run `next build`). See deploy/single-server/README.md.
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+
+  images:
+    needs: checks
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      # Image names must be lowercase; the owner may not be.
+      - id: names
+        run: echo "owner=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_OUTPUT"
+      # linux/amd64 only (Google Cloud e2-micro). An ARM server (Oracle A1) builds its own images.
+      - name: Build and push app image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: app
+          push: true
+          tags: |
+            ghcr.io/${{ steps.names.outputs.owner }}/suwa-app:latest
+            ghcr.io/${{ steps.names.outputs.owner }}/suwa-app:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Build and push tools image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: tools
+          push: true
+          tags: |
+            ghcr.io/${{ steps.names.outputs.owner }}/suwa-tools:latest
+            ghcr.io/${{ steps.names.outputs.owner }}/suwa-tools:${{ github.sha }}
+          cache-from: type=gha

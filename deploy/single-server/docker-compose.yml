@@ -1,6 +1,6 @@
-# Suwa pilot stack on ONE server (Oracle Cloud Always Free ARM, or any small Linux VM):
+# Suwa pilot stack on ONE small Linux server (Google Cloud e2-micro, Oracle Always Free ARM, …):
 # Tailscale + the app + PostgreSQL. Reachable ONLY over Tailscale — no ports published.
-# Setup and operations: deploy/oracle/README.md
+# Setup and operations: deploy/single-server/README.md
 #
 #   docker compose up -d                                  # start (or update after a new build)
 #   docker compose run --rm tools npm run db:deploy       # apply migrations
@@ -44,7 +44,14 @@ services:
     network_mode: service:tailscale
     depends_on:
       - tailscale
-    command: ["postgres", "-c", "listen_addresses=127.0.0.1", "-c", "max_connections=40"]
+    command:
+      - postgres
+      - -c
+      - listen_addresses=127.0.0.1
+      - -c
+      - max_connections=40
+      - -c
+      - shared_buffers=${PG_SHARED_BUFFERS:-128MB} # lower on a 1 GB server (see .env.example)
     environment:
       POSTGRES_USER: suwa
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
@@ -75,6 +82,8 @@ services:
       NODE_ENV: production
       HOSTNAME: 127.0.0.1
       PORT: "3000"
+      # Heap cap for small servers, e.g. --max-old-space-size=384 (empty = Node default).
+      NODE_OPTIONS: ${NODE_OPTIONS:-}
       # Built here so the password is written once. POSTGRES_PASSWORD must be URL-safe (hex).
       DATABASE_URL: postgresql://suwa:${POSTGRES_PASSWORD}@127.0.0.1:5432/suwa
     logging: *logging

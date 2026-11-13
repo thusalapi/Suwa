@@ -1,18 +1,19 @@
-# Deploying the Suwa pilot on Oracle Cloud (Always Free) with Tailscale
+# Deploying the Suwa pilot on one free server with Tailscale
 
-A zero-cost setup for the **pilot clinic**: one ARM server runs everything — Tailscale, the app
-and PostgreSQL — with nightly encrypted backups copied off the server. There is **no public
+A zero-cost setup for the **pilot clinic**: one small Linux server runs everything — Tailscale, the
+app and PostgreSQL — with nightly encrypted backups copied off the server. There is **no public
 endpoint**; the clinic reaches the app only over Tailscale at `https://suwa.<your-tailnet>.ts.net`.
 
-The same files work on any small Linux VM (2 GB+ memory, x86 or ARM); only §2 is Oracle-specific.
-For several clinics, or when a day of data loss is not acceptable, move to the managed-database
-setup in [deploy/aws](../aws/README.md).
+Two free hosts are covered: **Google Cloud** (§2A, the current choice) and **Oracle Cloud** (§2B).
+Everything else is the same. For several clinics, or when a day of data loss is not acceptable,
+move to the managed-database setup in [deploy/aws](../aws/README.md).
 
 | File | What it is |
 |------|------------|
 | `docker-compose.yml` | `tailscale` (HTTPS front door) + `app` + `db` (PostgreSQL 17) + on-demand `tools` |
 | `.env.example` | Environment (copy to `.env` on the server) |
 | `systemd/suwa-backup.{service,timer}` | Nightly backup at 01:30 Sri Lanka time |
+| `../../.github/workflows/ci.yml` | Builds the images and pushes them to GitHub Container Registry |
 | `../aws/tailscale/serve.json` | Tailscale serve: HTTPS on 443 → app on 127.0.0.1:3000, Funnel off (shared) |
 | `../aws/tailscale-policy.hujson` | Access rules: clinic PCs → app:443 only; admins → everything (shared) |
 
@@ -20,11 +21,13 @@ setup in [deploy/aws](../aws/README.md).
 
 - **One server, one disk.** If it is lost, you restore last night's backup: up to a day of entries
   can be lost. The off-site backup (§5) and a tested restore are not optional.
-- **Oracle can reclaim idle Always Free servers** and has closed free accounts with little notice.
-  Upgrading the account to Pay As You Go keeps Always Free resources free and, as far as we know,
-  exempts them from idle reclamation — check Oracle's current terms.
-- **Capacity.** Free ARM servers are often "out of capacity" in a region; retry, or pick another
-  availability domain.
+- **Google Cloud:** the free server is tiny (1 GB memory) and exists only in three US regions, so
+  every click from Sri Lanka travels to the US and back — expect pages to feel slower than a
+  nearby server. Only about 1 GB of outbound traffic a month is free; beyond that it is billed by
+  the GB (cents for one clinic, but not zero). Set a **budget alert**.
+- **Oracle Cloud:** a far bigger server near Sri Lanka, but free ARM capacity is often
+  unavailable and Oracle can reclaim idle free servers or close free accounts.
+- Free-tier terms change. Check the provider's current page before relying on any number here.
 
 ---
 
@@ -37,18 +40,54 @@ setup in [deploy/aws](../aws/README.md).
 5. Create a **reusable, tagged** key for the clinic (`tag:clinic-unawatuna`, pre-approved) for its
    front-desk PCs (§6). Never enable **Funnel**.
 
-## 2. The server (Oracle Cloud)
+## 2A. The server — Google Cloud (free e2-micro)
+
+The free allowance is **one `e2-micro` VM** in `us-west1`, `us-central1` or `us-east1`, with a
+**30 GB standard persistent disk**. Anything else (another region, a bigger machine, a "balanced"
+or SSD disk) is billed.
+
+1. Create a Google Cloud project with billing enabled (a card is required). In **Billing →
+   Budgets & alerts** create a budget of a few dollars with email alerts.
+2. **Compute Engine → VM instances → Create instance**
+   - Region: **us-west1** (Oregon). Machine: **E2 → e2-micro**.
+   - Boot disk: **Ubuntu 24.04 LTS (x86/64)**, **Standard persistent disk**, **30 GB**.
+   - Firewall: leave **Allow HTTP/HTTPS traffic unticked**.
+   - Observability: untick **Install Ops Agent** (it uses memory this server does not have).
+3. **Lock down SSH.** In **VPC network → Firewall**, edit `default-allow-ssh`: change the source
+   from `0.0.0.0/0` to `35.235.240.0/20` (Google's IAP range). From then on use the **SSH** button
+   in the console (or `gcloud compute ssh --tunnel-through-iap`). Delete `default-allow-rdp`.
+   The app needs no ingress rule at all.
+4. SSH in, add swap (essential with 1 GB of memory) and install Docker:
+
+   ```bash
+   sudo fallocate -l 2G /swapfile && sudo chmod 600 /swapfile
+   sudo mkswap /swapfile && sudo swapon /swapfile
+   echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+   sudo apt-get update && sudo apt-get install -y docker.io docker-compose-v2 git
+   sudo systemctl enable --now docker
+   ```
+
+5. **Images are built by GitHub, not on this server** (it cannot run the build). Every push to
+   `master` runs `.github/workflows/ci.yml`, which publishes `ghcr.io/<owner>/suwa-app` and
+   `suwa-tools`. Let the server pull them: on GitHub create a **personal access token (classic)**
+   with only the `read:packages` scope, then on the server:
+
+   ```bash
+   sudo docker login ghcr.io -u <your-github-username>     # paste the token as the password
+   ```
+
+   In `.env` (§3) uncomment the "Small servers" block: `PG_SHARED_BUFFERS`, `NODE_OPTIONS`,
+   `SUWA_APP_IMAGE`, `SUWA_TOOLS_IMAGE` (with your GitHub owner name, lowercase).
+
+## 2B. The server — Oracle Cloud (Always Free ARM)
 
 1. Sign up at oracle.com/cloud/free. Choose a **home region** near Sri Lanka (Mumbai, Hyderabad or
    Singapore) — it cannot be changed later, and Always Free resources exist only there.
-2. **Compute → Instances → Create instance**
-   - Image: **Ubuntu 24.04** (aarch64).
-   - Shape: **VM.Standard.A1.Flex** (Ampere), **2 OCPU / 12 GB** (Always Free allows up to 4 / 24).
-   - Networking: the default VCN with a public subnet and a public IPv4 address (needed for
-     outbound internet; nothing will listen on it).
-   - SSH key: upload your public key. Boot volume: 50 GB.
-3. **Lock down the network.** In the subnet's **security list**, change the SSH rule (TCP 22) from
-   `0.0.0.0/0` to **your own IP address only**. Add no other ingress rules — the app needs none.
+2. **Compute → Instances → Create instance:** Ubuntu 24.04 (aarch64), shape
+   **VM.Standard.A1.Flex** with **2 OCPU / 12 GB**, default VCN with a public IPv4 address, your
+   SSH public key, 50 GB boot volume.
+3. In the subnet's **security list**, change the SSH rule (TCP 22) from `0.0.0.0/0` to **your own
+   IP address only**. Add no other ingress rules.
 4. SSH in (`ssh ubuntu@<public-ip>`) and install Docker:
 
    ```bash
@@ -56,11 +95,15 @@ setup in [deploy/aws](../aws/README.md).
    sudo systemctl enable --now docker
    ```
 
+5. This server is big enough to **build the images itself** (the GitHub-built ones are x86 only):
+   leave the "Small servers" block in `.env` commented and, in §3, run
+   `sudo docker compose --profile tools build` instead of `pull`.
+
 ## 3. Code, configuration, first start
 
 ```bash
 sudo git clone https://github.com/<you>/Suwa.git /opt/suwa     # private repo: use a deploy key or token
-cd /opt/suwa/deploy/oracle
+cd /opt/suwa/deploy/single-server
 sudo cp .env.example .env && sudo chmod 600 .env
 sudo nano .env      # POSTGRES_PASSWORD, SESSION_SECRET, TS_AUTHKEY, BACKUP_ENCRYPTION_KEY, backup remote
 ```
@@ -70,7 +113,8 @@ Generate secrets on the server: `openssl rand -hex 24` (database password) and
 somewhere **off this server** — without it no backup can be restored.
 
 ```bash
-sudo docker compose --profile tools build      # app + tools images, built on the server (a few minutes)
+sudo docker compose --profile tools pull       # Google Cloud: fetch the GitHub-built images
+# sudo docker compose --profile tools build    # Oracle: build on the server instead
 sudo docker compose up -d                      # tailscale + db + app
 sudo docker compose ps                         # all "running"; db and app "healthy"
 sudo docker compose logs -f tailscale          # the device "suwa" appears in the Tailscale console
@@ -79,7 +123,7 @@ sudo docker compose logs -f tailscale          # the device "suwa" appears in th
 ## 4. Database schema and the clinic
 
 ```bash
-cd /opt/suwa/deploy/oracle
+cd /opt/suwa/deploy/single-server
 sudo docker compose --profile tools run --rm tools npm run db:deploy
 sudo docker compose --profile tools run --rm tools npm run clinic:create -- \
   --clinic "Unawatuna Medical Centre" --name "Owner Name" --email owner@clinic.lk --password "a-strong-password"
@@ -94,11 +138,11 @@ Check it: from a device on the tailnet open `https://suwa.<tailnet>.ts.net` → 
 
 ## 5. Backups (do this before any real data goes in)
 
-Fill in the backup remote in `.env` (Oracle Object Storage or Cloudflare R2 — see `.env.example`),
-then:
+Fill in the backup remote in `.env` — **Cloudflare R2** on Google Cloud (a different provider
+from the server), or Oracle Object Storage on Oracle; see `.env.example` — then:
 
 ```bash
-sudo cp /opt/suwa/deploy/oracle/systemd/suwa-backup.* /etc/systemd/system/
+sudo cp /opt/suwa/deploy/single-server/systemd/suwa-backup.* /etc/systemd/system/
 sudo systemctl daemon-reload
 sudo systemctl enable --now suwa-backup.timer
 sudo systemctl start suwa-backup.service      # run once now
@@ -129,22 +173,28 @@ The Tailscale name stays the same if you remove the old device from the console 
 
 ## 7. Updating
 
+Push to `master` and wait for the **CI** workflow to finish (it publishes the new images), then:
+
 ```bash
 cd /opt/suwa && sudo git pull
-cd deploy/oracle
+cd deploy/single-server
 sudo systemctl start suwa-backup.service                          # back up first
-sudo docker compose --profile tools build
+sudo docker compose --profile tools pull                           # Oracle: build instead
 sudo docker compose --profile tools run --rm tools npm run db:deploy
 sudo docker compose up -d                                          # restarts the app on the new image
 sudo docker compose --profile tools run --rm tools npm run seed:templates -- --all-clinics
+sudo docker image prune -f                                         # the disk is small
 ```
 
 ## Operations notes
 
-- **No inbound ports** except SSH from your own IP. The database listens on 127.0.0.1 inside the
-  shared container network and is not reachable from the tailnet or the internet.
+- **No inbound ports** except SSH (through IAP on Google Cloud, from your own IP on Oracle). The
+  database listens on 127.0.0.1 inside the shared container network and is not reachable from the
+  tailnet or the internet.
 - **Times:** `APP_TIMEZONE=Asia/Colombo` drives every date in the app; the server clock stays UTC.
 - **Health:** `/api/health` (200 = app + database OK); `sudo docker compose ps` on the server.
+- **Memory (1 GB server):** `free -m`; if the app is killed under load (`dmesg | grep -i oom`),
+  the server is too small — move to a 2 GB one.
 - **Logs:** `sudo docker compose logs app` (rotated: 3 × 10 MB per container).
 - **Disk:** `df -h /` now and then; local dumps are pruned to `BACKUP_KEEP`.
 - **Never** run `docker compose down -v` — `-v` deletes the database volume.
