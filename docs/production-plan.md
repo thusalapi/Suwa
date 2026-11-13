@@ -131,7 +131,20 @@ Tailscale admin accounts, least-privilege IAM, CloudTrail on.
 | 3. Cutover | §9 | 1 day + 30-day fallback |
 | 4. Hardening | §4 items before a second clinic | 1–2 weeks |
 
-## 11. Decisions still needed
+## 11. Pilot on a free single server
+
+The AWS free tier on the project account has expired, so the pilot starts at zero cost on an
+**Oracle Cloud Always Free** ARM VM instead: Tailscale, the app and PostgreSQL in one Compose
+stack, with the nightly encrypted dump copied to object storage
+([deploy/oracle/README.md](../deploy/oracle/README.md)). Access is unchanged — Tailscale only, no
+public endpoint.
+
+What this gives up compared with §2: RPO is **up to 24 hours** (no point-in-time recovery), the
+database shares a disk with the app, and Oracle may reclaim idle free resources. Acceptable for
+one pilot clinic with a tested restore; not for paying clinics. Moving to AWS later is a dump
+and restore (§9), with the same image and Tailscale policy.
+
+## 12. Decisions still needed
 
 1. Tailscale plan (number of users/devices across clinics) and who owns the tailnet.
 2. Whether Mumbai hosting is acceptable to the clinics (legal review).

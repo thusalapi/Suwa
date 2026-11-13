@@ -55,7 +55,10 @@ Plan: [docs/production-plan.md](docs/production-plan.md); setup: [deploy/aws/REA
 - [x] **Tenant isolation** — `createBill` rejects another clinic's patient or service ids.
 - [x] **Container-ready** — lazy DB client (build needs no database), `/api/health`, `Dockerfile`
   (app + tools images), `deploy/aws/` (compose with Tailscale serve, ACL policy, backup timer).
-- [ ] Provision AWS + tailnet, restore drill, move the pilot (see the plan's rollout).
+- [x] **Free pilot hosting** — `deploy/oracle/`: single-server Compose (Tailscale + app +
+  PostgreSQL), env template, backup timer, guide for Oracle Cloud Always Free.
+- [ ] Pilot: create the tailnet + Oracle server, restore drill, move the pilot clinic.
+- [ ] Later: provision AWS (RDS) when a second clinic joins (see the plan's rollout).
 
 ### 2026-10-25 — Pilot clinic report types, receipts, visits ✅
 Built from photos of the clinic's real printed reports; every calculated value was checked

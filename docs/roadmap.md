@@ -108,7 +108,13 @@ Plan: [production-plan.md](production-plan.md). Setup: [deploy/aws/README.md](..
 - `deploy/aws/`: Docker Compose with a Tailscale sidecar (HTTPS via `tailscale serve`, Funnel
   off), access policy (clinic PCs → app:443 only), nightly S3 backup timer
 
-**Infrastructure — to do:**
+**Pilot first, on a free single server.** The pilot clinic runs on one Oracle Cloud Always Free
+ARM VM (app + PostgreSQL + Tailscale in one Compose stack, nightly encrypted dumps copied
+off-site): [deploy/oracle/README.md](../deploy/oracle/README.md). Same image, same Tailscale
+policy; the trade-off is one disk (restore = last night's backup) and no provider guarantee. The
+AWS steps below are the target once there is revenue or a second clinic.
+
+**Infrastructure (AWS) — to do:**
 1. Create the tailnet; apply the access policy; create the server and clinic auth keys
 2. Provision AWS: VPC, RDS PostgreSQL 17, S3 backup bucket + instance role, EC2 (no inbound ports)
 3. First Docker image build and start (not yet built anywhere); `db:deploy`
@@ -165,5 +171,8 @@ done; hosting is now the next step, not out of scope.)
 ## Immediate next action
 
 1. Confirm the open calculation questions with the clinic (verification sheet).
-2. Create the tailnet and provision AWS (deploy/aws/README.md §1–4); build the image there.
-3. Run the restore drill, then move the pilot clinic onto hosted production.
+2. Pilot hosting at zero cost: create the tailnet and an Oracle Cloud Always Free server
+   (deploy/oracle/README.md §1–3); build the image there.
+3. Run the restore drill, then move the pilot clinic onto it.
+4. Move to AWS + RDS (deploy/aws/README.md) when a second clinic joins or a day of data loss
+   stops being acceptable.

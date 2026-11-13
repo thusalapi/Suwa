@@ -115,7 +115,9 @@ clinic's demo rows each run, so it is safe to re-run between demos.
 [docs/production-plan.md](docs/production-plan.md) for the plan and
 [deploy/aws/README.md](deploy/aws/README.md) for the step-by-step setup (Docker image,
 Tailscale serve, RDS, S3 backups). `GET /api/health` returns `{"status":"ok"}` when the app and
-database are up. The pilot runs on a single Windows PC with
+database are up. **The pilot** goes first onto a free single server (Oracle Cloud Always Free:
+app + PostgreSQL + Tailscale on one VM) — see [deploy/oracle/README.md](deploy/oracle/README.md).
+Until then the pilot runs on a single Windows PC with
 the app and PostgreSQL locally:
 `scripts/install.ps1` does it in one pass — installs Node + PostgreSQL, creates the database,
 generates real secrets, migrates, seeds the owner, builds, and registers the startup and
