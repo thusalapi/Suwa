@@ -2,9 +2,9 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { requireUser } from "@/lib/auth";
-import { billSchema, paymentSchema } from "@/lib/schema/bill";
-import { createBill, recordPayment, getBill, BillError } from "@/lib/bills";
+import { requireUser, requireRole } from "@/lib/auth";
+import { billSchema, paymentSchema, cancelBillSchema } from "@/lib/schema/bill";
+import { createBill, recordPayment, cancelBill, getBill, BillError } from "@/lib/bills";
 
 export interface BillFormState {
   error?: string;
@@ -80,5 +80,36 @@ export async function recordPaymentAction(_prev: PaymentFormState, formData: For
   }
 
   revalidatePath(`/bills/${billId}`);
+  return { success: true };
+}
+
+export interface CancelBillState {
+  error?: string;
+  success?: boolean;
+}
+
+/**
+ * Void a bill. Owner-only: a bill number is a financial record, so cancelling one is not a
+ * front-desk correction. Re-checked here rather than relying on the page guard alone.
+ */
+export async function cancelBillAction(_prev: CancelBillState, formData: FormData): Promise<CancelBillState> {
+  const user = await requireRole("owner");
+
+  const parsed = cancelBillSchema.safeParse({
+    billId: formData.get("billId"),
+    reason: formData.get("reason") ?? "",
+  });
+  if (!parsed.success) return { error: "bills.cancelError" };
+
+  try {
+    await cancelBill(user.clinicId, user.id, parsed.data.billId, parsed.data.reason || undefined);
+  } catch (e) {
+    if (e instanceof BillError && e.code === "has_payments") return { error: "bills.cancelHasPayments" };
+    if (e instanceof BillError && e.code === "not_found") return { error: "bills.cancelNotFound" };
+    return { error: "bills.cancelError" };
+  }
+
+  revalidatePath(`/bills/${parsed.data.billId}`);
+  revalidatePath("/bills");
   return { success: true };
 }

@@ -4,7 +4,13 @@ import { db, type Tx } from "@/lib/db";
 import { reports, patients, users, type ReportStatus } from "@/lib/db/schema";
 import { recordAudit } from "@/lib/audit";
 import { getTemplate } from "@/lib/report-templates";
-import { computeResults, validateReportData, type Template, type ReportData } from "@/lib/report-engine";
+import {
+  computeResults,
+  invalidNumericResults,
+  validateReportData,
+  type Template,
+  type ReportData,
+} from "@/lib/report-engine";
 import { ageFromDob } from "@/lib/utils/age";
 
 /** Raw, stringy entry from the form. The service coerces it against the template snapshot. */
@@ -105,6 +111,15 @@ function buildData(
     const trimmed = raw?.trim();
     if (trimmed) resultValues[key] = trimmed;
   }
+
+  // Refuse the write rather than let computeResults drop a value it cannot store. A result typed
+  // as "12,1" (comma decimal) or with a stray unit used to vanish silently, and the report then
+  // rendered "-" for that analyte with nothing to indicate a value had been entered at all.
+  const invalid = invalidNumericResults(snapshot, resultValues);
+  if (invalid.length > 0) {
+    throw new ReportValidationError(`Enter a number for: ${invalid.join(", ")}.`);
+  }
+
   // Patient info (age, sex) feeds formulas such as eGFR — taken from the record, not the form.
   const results = computeResults(snapshot, resultValues, patient);
   if (Object.keys(results).length) data.results = results;

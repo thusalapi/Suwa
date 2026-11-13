@@ -28,3 +28,14 @@ export const paymentSchema = z.object({
 });
 
 export type PaymentInput = z.infer<typeof paymentSchema>;
+
+/**
+ * Cancelling a bill. The reason is optional but recorded in the audit metadata — it is the only
+ * explanation anyone gets later for why a bill number has no money against it.
+ */
+export const cancelBillSchema = z.object({
+  billId: z.string().uuid(),
+  reason: z.string().trim().max(500).optional().default(""),
+});
+
+export type CancelBillInput = z.infer<typeof cancelBillSchema>;
