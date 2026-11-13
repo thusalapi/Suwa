@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Privacy policy — Suwa</title>
+    <meta name="description" content="How Suwa and the Suwa Backup app handle data." />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header class="top">
+      <a class="brand" href="/">Suwa</a>
+      <nav><a href="/privacy.html">Privacy</a></nav>
+    </header>
+
+    <main class="doc">
+      <h1>Privacy policy</h1>
+      <p class="muted">Effective 13 November 2026</p>
+
+      <p>
+        This policy explains how Suwa, a clinic management system, and its companion backup app, <strong>Suwa
+        Backup</strong>, handle data. It is written in plain language; if something is unclear, write to
+        <a href="mailto:thusalapi@gmail.com">thusalapi@gmail.com</a>.
+      </p>
+
+      <h2>Who is responsible for the data</h2>
+      <p>
+        Suwa is operated by Thusala Piyarisi (Sri Lanka). Each clinic that uses Suwa decides what patient and billing
+        information it records and is responsible for that information. Suwa stores it on the clinic's behalf and
+        does not use it for any other purpose.
+      </p>
+
+      <h2>What Suwa stores</h2>
+      <ul>
+        <li>
+          <strong>Clinic records entered by staff:</strong> patient details (name, phone number, date of birth or age,
+          optional ID number), lab reports and results, bills and payments.
+        </li>
+        <li><strong>Staff accounts:</strong> name, email address, role, and a salted password hash. Passwords are never stored in readable form.</li>
+        <li><strong>Security records:</strong> sign-in attempts (email and network address) to block repeated failed logins, and an audit log of changes.</li>
+      </ul>
+      <p>
+        Suwa is not a public website: it has no advertising, no analytics trackers, and no public sign-up. It is
+        reachable only by a clinic's own staff over a private network.
+      </p>
+
+      <h2>How data is protected</h2>
+      <ul>
+        <li>Access is limited to authorised staff devices over an encrypted private network.</li>
+        <li>Data is stored on a private server that accepts no connections from the open internet.</li>
+        <li>Database backups are encrypted (AES-256-GCM) before they leave the server.</li>
+      </ul>
+
+      <h2>Suwa Backup and Google Drive</h2>
+      <p>
+        Suwa Backup is the small app that copies each night's encrypted database backup to a Google Drive folder
+        chosen by the account holder.
+      </p>
+      <ul>
+        <li>
+          It asks for one Google permission only: <code>https://www.googleapis.com/auth/drive.file</code>. This lets
+          the app see and manage <em>only the files it created itself</em>. It cannot see any other file in the
+          Drive.
+        </li>
+        <li>
+          It uploads encrypted backup files to the account holder's own Drive and reads them back only to restore the
+          system. The files cannot be read without a separate encryption key that is never stored in Drive.
+        </li>
+        <li>It does not read the account holder's email, contacts, or any other Google data.</li>
+        <li>
+          Google user data obtained through this permission is not shared with anyone, not sold, not used for
+          advertising, and not used to train any model. Suwa's use of information received from Google APIs adheres to
+          the <a href="https://developers.google.com/terms/api-services-user-data-policy">Google API Services User
+          Data Policy</a>, including its Limited Use requirements.
+        </li>
+        <li>
+          The account holder can revoke access at any time at
+          <a href="https://myaccount.google.com/permissions">myaccount.google.com/permissions</a> and delete the
+          backup folder from Drive.
+        </li>
+      </ul>
+
+      <h2>Sharing</h2>
+      <p>
+        Suwa does not sell data and does not share it with third parties, except the infrastructure providers that
+        host it (a cloud server and, for backups, Google Drive) and where the law requires it.
+      </p>
+
+      <h2>Retention and deletion</h2>
+      <p>
+        Clinic records are kept for as long as the clinic uses Suwa. Backups are kept for a short rolling period (the
+        most recent seven nightly copies on the server). A clinic can ask for its data to be exported or deleted by
+        writing to the address below.
+      </p>
+
+      <h2>Your rights</h2>
+      <p>
+        If you are a patient and want to see, correct or remove information a clinic holds about you, please contact
+        that clinic first. You may also write to the address below and we will pass your request on to the clinic.
+      </p>
+
+      <h2>Changes</h2>
+      <p>If this policy changes, the new version will be posted on this page with a new effective date.</p>
+
+      <h2>Contact</h2>
+      <p>Thusala Piyarisi, Sri Lanka &middot; <a href="mailto:thusalapi@gmail.com">thusalapi@gmail.com</a></p>
+    </main>
+
+    <footer>
+      <p>&copy; 2026 Suwa &middot; <a href="/">Home</a></p>
+    </footer>
+  </body>
+</html>

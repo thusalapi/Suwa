@@ -1,0 +1,11 @@
+// Static site for Google's OAuth consent screen (homepage + privacy policy).
+// Deploy:  npx wrangler deploy --config site/wrangler.jsonc
+{
+  "name": "suwa-site",
+  "compatibility_date": "2026-11-13",
+  "assets": {
+    "directory": "./public",
+    "html_handling": "auto-trailing-slash"
+  },
+  "routes": [{ "pattern": "suwa.pegbench.com", "custom_domain": true }]
+}

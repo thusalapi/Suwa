@@ -163,6 +163,17 @@ sudo systemctl start suwa-backup.service      # run once now
 journalctl -u suwa-backup.service -n 50       # a .dump.enc must appear in the bucket
 ```
 
+**Google Drive instead of R2 (what the pilot uses).** Backups can go to a Drive folder. Create your own Google
+OAuth client (Google Cloud → Google Auth Platform: Desktop app, scope `drive.file`) and publish the app to
+**Production** — in Testing, Google expires the sign-in after 7 days — which needs a homepage and privacy-policy URL
+on a domain you own (see `site/`, deployed to suwa.pegbench.com with `npx wrangler deploy` from `site/`). Do not use
+rclone's built-in shared client: Google is retiring it. On a PC with rclone run
+`rclone authorize "drive" "<client id>" "<client secret>" --drive-scope drive.file`, approve it in the browser, then set on
+the server in `.env`: `BACKUP_RCLONE_REMOTE=gdrive:suwa-backups`, `RCLONE_CONFIG_GDRIVE_TYPE=drive`,
+`RCLONE_CONFIG_GDRIVE_SCOPE=drive.file`, `RCLONE_CONFIG_GDRIVE_CLIENT_ID`, `RCLONE_CONFIG_GDRIVE_CLIENT_SECRET` and
+`RCLONE_CONFIG_GDRIVE_TOKEN='{...}'` (single quotes). A client only sees files it created itself, so dumps
+uploaded with a different client are invisible to it.
+
 **Restore drill (before go-live, then every few months)** — into a throwaway database:
 
 ```bash
@@ -211,4 +222,8 @@ sudo docker image prune -f                                         # the disk is
   the server is too small — move to a 2 GB one.
 - **Logs:** `sudo docker compose logs app` (rotated: 3 × 10 MB per container).
 - **Disk:** `df -h /` now and then; local dumps are pruned to `BACKUP_KEEP`.
+- **Restarting Tailscale restarts everything.** The app and database share the Tailscale container's
+  network, so after `docker compose restart tailscale` (or if it is recreated) also run
+  `docker compose restart db` and then `docker compose restart app`; until then `/api/health` answers 503
+  "database unreachable". Simplest: `docker compose up -d --force-recreate`.
 - **Never** run `docker compose down -v` — `-v` deletes the database volume.
